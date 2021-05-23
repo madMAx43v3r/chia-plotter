@@ -58,12 +58,20 @@ void DiskSort<T, Sort, Key>::bucket_t::flush()
 }
 
 template<typename T, typename Sort, typename Key>
-std::vector<std::vector<T>>
-DiskSort<T, Sort, Key>::read_bucket(const size_t index, const size_t M)
+void DiskSort<T, Sort, Key>::read(Thread<std::vector<T>>& output, size_t M)
 {
-	if(index >= buckets.size()) {
-		throw std::logic_error("index out of range");
+	Thread<std::vector<std::vector<T>>> sort(
+			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &output));
+	for(size_t i = 0; i < buckets.size(); ++i) {
+		read_bucket(i, sort, output, M);
 	}
+}
+
+template<typename T, typename Sort, typename Key>
+void DiskSort<T, Sort, Key>::read_bucket(	const size_t index,
+											Thread<std::vector<std::vector<T>>>& sort,
+											Thread<std::vector<T>>& output, const size_t M)
+{
 	auto& bucket = buckets[index];
 	auto& file = bucket.file;
 	if(file) {
@@ -110,22 +118,26 @@ DiskSort<T, Sort, Key>::read_bucket(const size_t index, const size_t M)
 			return Sort{}(lhs.first, rhs.first);
 		});
 	
-	std::vector<std::vector<T>> out;
-	out.reserve(list.size());
+	std::vector<std::vector<T>> blocks;
+	blocks.reserve(list.size());
 	for(auto& entry : list) {
-		out.emplace_back(std::move(entry.second));
+		blocks.emplace_back(std::move(entry.second));
 	}
 	list.clear();
 	
-#pragma omp parallel for
-	for(size_t i = 0; i < out.size(); ++i) {
-		auto& block = out[i];
+	sort.take(blocks);
+}
+
+template<typename T, typename Sort, typename Key>
+void DiskSort<T, Sort, Key>::sort_bucket(std::vector<std::vector<T>>& blocks, Thread<std::vector<T>>* output)
+{
+	for(auto& block : blocks) {
 		std::sort(block.begin(), block.end(),
 			[](const T& lhs, const T& rhs) -> bool {
 				return Sort{}(Key{}(lhs), Key{}(rhs));
 			});
+		output->take(block);
 	}
-	return out;
 }
 
 template<typename T, typename Sort, typename Key>

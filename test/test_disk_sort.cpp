@@ -43,15 +43,16 @@ int main(int argc, char** argv)
 		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.f << " ms" << std::endl;
 		
 		FILE* out = fopen("sorted.out", "wb");
-		const auto sort_begin = get_wall_time_micros();
-		for(size_t i = 0; i < num_buckets; ++i) {
-			const auto sorted = sort.read_bucket(i, 15113);
-			for(const auto& block : sorted) {
+		
+		Thread<std::vector<phase1::entry_1>> thread(
+			[out](std::vector<phase1::entry_1>& block) {
 				fwrite(block.data(), sizeof(phase1::entry_1), block.size(), out);
-			}
-		}
-		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.f << " ms" << std::endl;
+			});
+		
+		const auto sort_begin = get_wall_time_micros();
+		sort.read(thread, 15113);
 		fclose(out);
+		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.f << " ms" << std::endl;
 	}
 	
 	return 0;

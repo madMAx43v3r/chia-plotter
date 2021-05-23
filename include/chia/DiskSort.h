@@ -8,10 +8,14 @@
 #ifndef INCLUDE_CHIA_DISKSORT_H_
 #define INCLUDE_CHIA_DISKSORT_H_
 
+#include <chia/Thread.h>
+
 #include <vector>
 #include <string>
 #include <cstdio>
 #include <cstddef>
+#include <memory>
+#include <functional>
 
 
 template<typename T, typename Sort, typename Key>
@@ -23,11 +27,7 @@ public:
 		clear();
 	}
 	
-	std::vector<std::vector<T>> read_bucket(const size_t index) {
-		return read_bucket(index, 4096);
-	}
-	
-	std::vector<std::vector<T>> read_bucket(const size_t index, const size_t M);
+	void read(Thread<std::vector<T>>& output, size_t M);
 	
 	void finish();
 	
@@ -48,6 +48,14 @@ private:
 		char buffer[262144];
 		void flush();
 	};
+	
+	void read_bucket(	const size_t index,
+						Thread<std::vector<std::vector<T>>>& sort,
+						Thread<std::vector<T>>& output, const size_t M);
+	
+	void sort_bucket_test(std::vector<std::vector<T>>& blocks) {}
+	
+	void sort_bucket(std::vector<std::vector<T>>& blocks, Thread<std::vector<T>>* output);
 	
 private:
 	int key_size = 0;
