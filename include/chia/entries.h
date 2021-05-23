@@ -9,7 +9,9 @@
 #define INCLUDE_CHIA_ENTRIES_H_
 
 #include <array>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
 
 // Extra bits of output from the f functions. Instead of being a function from k -> k bits,
 // it's a function from k -> k + kExtraBits bits. This allows less collisions in matches.
@@ -29,14 +31,28 @@ const uint16_t kBC = kB * kC;
 namespace phase1 {
 
 struct entry_1 {
-	uint64_t f : 38;
-	uint32_t x;
+	uint64_t f;			// 38 bit
+	uint32_t x;			// 32 bit
+	
+	static constexpr size_t disk_size = 9;
+	
+	size_t read(const char* buf) {
+		f = 0;
+		memcpy(&f, buf, 5);
+		memcpy(&x, buf + 5, 4);
+		return disk_size;
+	}
+	size_t write(char* buf) const {
+		memcpy(buf, &f, 5);
+		memcpy(buf + 5, &x, 4);
+		return disk_size;
+	}
 };
 
 struct entry_t {
-	uint64_t f : 38;
-	uint16_t off : 10;
-	uint32_t pos;
+	uint64_t f;			// 38 bit
+	uint32_t pos;		// 32 bit
+	uint16_t off;		// 10 bit
 };
 
 template<int N>

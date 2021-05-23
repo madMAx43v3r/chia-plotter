@@ -43,7 +43,10 @@ private:
 	struct bucket_t {
 		FILE* file = nullptr;
 		std::string file_name;
+		size_t offset = 0;
 		size_t num_entries = 0;
+		char buffer[262144];
+		void flush();
 	};
 	
 private:

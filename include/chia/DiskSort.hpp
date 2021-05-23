@@ -41,10 +41,20 @@ void DiskSort<T, Sort, Key>::add(const T& entry)
 		throw std::logic_error("index out of range");
 	}
 	auto& bucket = buckets[index];
-	if(fwrite(&entry, 1, sizeof(entry), bucket.file) != sizeof(entry)) {
+	if(bucket.offset + T::disk_size > sizeof(bucket.buffer)) {
+		bucket.flush();
+	}
+	bucket.offset += entry.write(bucket.buffer + bucket.offset);
+	bucket.num_entries++;
+}
+
+template<typename T, typename Sort, typename Key>
+void DiskSort<T, Sort, Key>::bucket_t::flush()
+{
+	if(fwrite(buffer, 1, offset, file) != offset) {
 		throw std::runtime_error("fwrite() failed");
 	}
-	bucket.num_entries++;
+	offset = 0;
 }
 
 template<typename T, typename Sort, typename Key>
@@ -66,16 +76,25 @@ DiskSort<T, Sort, Key>::read_bucket(const size_t index, const size_t M)
 	std::unordered_map<size_t, std::vector<T>> table;
 	table.reserve(4096);
 	
-	for(size_t i = 0; i < bucket.num_entries; ++i) {
-		T entry;
-		if(fread(&entry, 1, sizeof(entry), file) != sizeof(entry)) {
+	constexpr size_t N = 1024;
+	char buffer[N * T::disk_size];
+	
+	for(size_t i = 0; i < bucket.num_entries;) {
+		const size_t num_entries = std::min(N, bucket.num_entries - i);
+		if(fread(buffer, T::disk_size, num_entries, file) != num_entries) {
 			throw std::runtime_error("fread() failed");
 		}
-		auto& block = table[Key{}(entry) / M];
-		if(block.empty()) {
-			block.reserve(M);
+		for(size_t k = 0; k < num_entries; ++k) {
+			T entry;
+			entry.read(buffer + k * T::disk_size);
+			
+			auto& block = table[Key{}(entry) / M];
+			if(block.empty()) {
+				block.reserve(M);
+			}
+			block.push_back(entry);
 		}
-		block.push_back(entry);
+		i += num_entries;
 	}
 	
 	std::vector<std::pair<size_t, std::vector<T>>> list;
@@ -112,6 +131,7 @@ DiskSort<T, Sort, Key>::read_bucket(const size_t index, const size_t M)
 template<typename T, typename Sort, typename Key>
 void DiskSort<T, Sort, Key>::finish() {
 	for(auto& bucket : buckets) {
+		bucket.flush();
 		fflush(bucket.file);
 	}
 	is_finished = true;
