@@ -19,13 +19,17 @@ class DiskSort {
 public:
 	DiskSort(int key_size, int log_num_buckets, std::string file_prefix);
 	
-	~DiskSort();
+	~DiskSort() {
+		clear();
+	}
 	
 	std::vector<std::vector<T>> read_bucket(const size_t index) {
 		return read_bucket(index, 4096);
 	}
 	
 	std::vector<std::vector<T>> read_bucket(const size_t index, const size_t M);
+	
+	void finish();
 	
 	void clear();
 	
@@ -45,6 +49,7 @@ private:
 private:
 	int key_size = 0;
 	int log_num_buckets = 0;
+	bool is_finished = false;
 	std::vector<bucket_t> buckets;
 	
 };

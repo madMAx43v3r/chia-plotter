@@ -22,8 +22,8 @@ DiskSort<T, Sort, Key>::DiskSort(int key_size, int log_num_buckets, std::string 
 {
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		auto& bucket = buckets[i];
-		bucket.file_name = file_prefix + ".sort_bucket." + std::to_string(i);
-		bucket.file = ::fopen(bucket.file_name.c_str(), "wb");
+		bucket.file_name = file_prefix + ".sort_bucket_" + std::to_string(i) + ".tmp";
+		bucket.file = fopen(bucket.file_name.c_str(), "wb");
 		if(!bucket.file) {
 			throw std::runtime_error("fopen() failed");
 		}
@@ -33,12 +33,15 @@ DiskSort<T, Sort, Key>::DiskSort(int key_size, int log_num_buckets, std::string 
 template<typename T, typename Sort, typename Key>
 void DiskSort<T, Sort, Key>::add(const T& entry)
 {
-	const size_t index = Key(entry) >> (key_size - log_num_buckets);
+	if(is_finished) {
+		throw std::logic_error("read only");
+	}
+	const size_t index = Key{}(entry) >> (key_size - log_num_buckets);
 	if(index >= buckets.size()) {
 		throw std::logic_error("index out of range");
 	}
 	auto& bucket = buckets[index];
-	if(::fwrite(&entry, 1, sizeof(entry), bucket.file) != sizeof(entry)) {
+	if(fwrite(&entry, 1, sizeof(entry), bucket.file) != sizeof(entry)) {
 		throw std::runtime_error("fwrite() failed");
 	}
 	bucket.num_entries++;
@@ -54,9 +57,9 @@ DiskSort<T, Sort, Key>::read_bucket(const size_t index, const size_t M)
 	auto& bucket = buckets[index];
 	auto& file = bucket.file;
 	if(file) {
-		::fclose(file);
+		fclose(file);
 	}
-	file = ::fopen(bucket.file_name.c_str(), "rb");
+	file = fopen(bucket.file_name.c_str(), "rb");
 	if(!file) {
 		throw std::runtime_error("fopen() failed");
 	}
@@ -65,10 +68,10 @@ DiskSort<T, Sort, Key>::read_bucket(const size_t index, const size_t M)
 	
 	for(size_t i = 0; i < bucket.num_entries; ++i) {
 		T entry;
-		if(::fread(&entry, 1, sizeof(entry), file) != sizeof(entry)) {
+		if(fread(&entry, 1, sizeof(entry), file) != sizeof(entry)) {
 			throw std::runtime_error("fread() failed");
 		}
-		auto& block = table[Key(entry) / M];
+		auto& block = table[Key{}(entry) / M];
 		if(block.empty()) {
 			block.reserve(M);
 		}
@@ -95,22 +98,30 @@ DiskSort<T, Sort, Key>::read_bucket(const size_t index, const size_t M)
 	}
 	list.clear();
 	
-	// TODO: openmp
+#pragma omp parallel for
 	for(size_t i = 0; i < out.size(); ++i) {
 		auto& block = out[i];
-		std::sort(list.begin(), list.end(),
+		std::sort(block.begin(), block.end(),
 			[](const T& lhs, const T& rhs) -> bool {
-				return Sort{}(Key(lhs), Key(rhs));
+				return Sort{}(Key{}(lhs), Key{}(rhs));
 			});
 	}
 	return out;
 }
 
 template<typename T, typename Sort, typename Key>
+void DiskSort<T, Sort, Key>::finish() {
+	for(auto& bucket : buckets) {
+		fflush(bucket.file);
+	}
+	is_finished = true;
+}
+
+template<typename T, typename Sort, typename Key>
 void DiskSort<T, Sort, Key>::clear()
 {
 	for(auto& bucket : buckets) {
-		::fclose(bucket.file);
+		fclose(bucket.file);
 		bucket.file = nullptr;
 		std::remove(bucket.file_name.c_str());
 	}

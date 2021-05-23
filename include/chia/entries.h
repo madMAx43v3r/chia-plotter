@@ -51,6 +51,13 @@ typedef entry_tx<4> entry_5;
 typedef entry_tx<3> entry_6;
 typedef entry_tx<2> entry_7;
 
+template<typename T>
+struct get_f {
+	uint64_t operator()(const T& entry) {
+		return entry.f;
+	}
+};
+
 } // phase1
 
 
