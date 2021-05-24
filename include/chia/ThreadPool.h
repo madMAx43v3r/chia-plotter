@@ -46,6 +46,7 @@ public:
 		close();
 	}
 	
+	// NOT thread-safe
 	void take(T& data) {
 		auto state = threads[next % threads.size()];
 		state->thread->wait();
@@ -57,12 +58,14 @@ public:
 		next++;
 	}
 	
+	// NOT thread-safe
 	void wait() {
 		for(auto state : threads) {
 			state->thread->wait();
 		}
 	}
 	
+	// NOT thread-safe
 	void close() {
 		wait();
 		for(auto state : threads) {

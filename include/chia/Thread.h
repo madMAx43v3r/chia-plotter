@@ -30,6 +30,7 @@ public:
 		close();
 	}
 	
+	// thread-safe
 	void take(T& data) {
 		{
 			std::unique_lock<std::mutex> lock(mutex);
@@ -45,6 +46,7 @@ public:
 		signal.notify_all();
 	}
 	
+	// thread-safe
 	void wait() {
 		std::unique_lock<std::mutex> lock(mutex);
 		while(do_run && is_busy) {
@@ -52,6 +54,7 @@ public:
 		}
 	}
 	
+	// NOT thread-safe
 	void close() {
 		std::unique_lock<std::mutex> lock(mutex);
 		do_run = false;
