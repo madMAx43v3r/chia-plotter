@@ -55,9 +55,8 @@ private:
 		void flush();
 	};
 	
-	void read_bucket(	const size_t index,
-						Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort,
-						Thread<output_t>* output, const size_t M);
+	void read_bucket(	const size_t index, const size_t M,
+						Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort);
 	
 	void sort_bucket(	std::pair<std::vector<std::vector<T>>, bool>& input,
 						Thread<output_t>* output);

@@ -63,14 +63,13 @@ void DiskSort<T, Key>::read(Thread<output_t>& output, size_t M)
 	Thread<std::pair<std::vector<std::vector<T>>, bool>> sort(
 			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &output), "DiskSort/sort");
 	for(size_t i = 0; i < buckets.size(); ++i) {
-		read_bucket(i, &sort, &output, M);
+		read_bucket(i, M, &sort);
 	}
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read_bucket(	const size_t index,
-									Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort,
-									Thread<output_t>* output, const size_t M)
+void DiskSort<T, Key>::read_bucket(	const size_t index, const size_t M,
+									Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort)
 {
 	auto& bucket = buckets[index];
 	auto& file = bucket.file;
@@ -106,7 +105,7 @@ void DiskSort<T, Key>::read_bucket(	const size_t index,
 		if(fread(buffer, T::disk_size, num_entries, file) != num_entries) {
 			throw std::runtime_error("fread() failed");
 		}
-		auto out = std::make_pair(buffer, num_entries);
+		std::pair<uint8_t*, size_t> out(buffer, num_entries);
 		scatter.take(out);
 		i += num_entries;
 	}
