@@ -33,7 +33,7 @@ public:
 		clear();
 	}
 	
-	void read(Thread<output_t>* output, size_t M);
+	void read(Processor<output_t>* output, size_t M);
 	
 	void finish();
 	
@@ -55,13 +55,11 @@ private:
 		void flush();
 	};
 	
-	void read_bucket(	const size_t index, const size_t M,
-						Thread<std::vector<std::vector<T>>>* sort);
+	void read_bucket(size_t& index, std::vector<std::vector<T>>& out, const size_t M);
 	
-	void sort_bucket(	std::vector<std::vector<T>>& input,
-						Thread<output_t>* output);
+	void sort_bucket(std::vector<std::vector<T>>& input, Processor<output_t>* output);
 	
-	void sort_block(	output_t& input, output_t& out);
+	void sort_block(output_t& input, output_t& out);
 	
 private:
 	int key_size = 0;

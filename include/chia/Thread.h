@@ -16,9 +16,21 @@
 
 #include <pthread.h>
 
+template<typename T>
+class Processor {
+public:
+	virtual ~Processor() {}
+	
+	virtual void take(T& data) = 0;
+	
+	void take_copy(const T& data) {
+		T copy = data;
+		take(copy);
+	}
+};
 
 template<typename T>
-class Thread {
+class Thread : public Processor<T> {
 public:
 	Thread(const std::function<void(T&)>& func, const std::string& name = "")
 		:	execute(func)
@@ -31,7 +43,7 @@ public:
 	}
 	
 	// thread-safe
-	void take(T& data) {
+	void take(T& data) override {
 		{
 			std::unique_lock<std::mutex> lock(mutex);
 			if(is_fail) {

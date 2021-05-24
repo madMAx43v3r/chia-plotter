@@ -60,18 +60,20 @@ void DiskSort<T, Key>::bucket_t::flush()
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read(Thread<output_t>* output, size_t M)
+void DiskSort<T, Key>::read(Processor<output_t>* output, size_t M)
 {
-	Thread<std::vector<std::vector<T>>> sort(
-			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, output), "DiskSort");
+	Thread<std::vector<std::vector<T>>> sort_thread(
+			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, output), "DiskSort/sort");
+	ThreadPool<size_t, std::vector<std::vector<T>>> read_pool(
+			std::bind(&DiskSort::read_bucket, this, std::placeholders::_1, std::placeholders::_2, M),
+			&sort_thread, num_threads, "DiskSort/read");
 	for(size_t i = 0; i < buckets.size(); ++i) {
-		read_bucket(i, M, &sort);
+		read_pool.take_copy(i);
 	}
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read_bucket(	const size_t index, const size_t M,
-									Thread<std::vector<std::vector<T>>>* sort)
+void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& out, const size_t M)
 {
 	auto& bucket = buckets[index];
 	auto& file = bucket.file;
@@ -85,33 +87,27 @@ void DiskSort<T, Key>::read_bucket(	const size_t index, const size_t M,
 	std::unordered_map<size_t, std::vector<T>> table;
 	table.reserve(4096);
 	
-	Thread<std::pair<uint8_t*, size_t>> scatter(
-		[&table, M](const std::pair<uint8_t*, size_t>& input) {
-			for(size_t k = 0; k < input.second; ++k) {
-				T entry;
-				entry.read(input.first + k * T::disk_size);
-				
-				auto& block = table[Key{}(entry) / M];
-				if(block.empty()) {
-					block.reserve(M);
-				}
-				block.push_back(entry);
-			}
-			delete [] input.first;
-		}, "DiskSort/scatter");
+	static constexpr size_t N = 65536;
+	uint8_t buffer[N * T::disk_size];
 	
 	for(size_t i = 0; i < bucket.num_entries;)
 	{
-		const size_t num_entries = std::min(size_t(65536), bucket.num_entries - i);
-		uint8_t* buffer = new uint8_t[num_entries * T::disk_size];
+		const size_t num_entries = std::min(N, bucket.num_entries - i);
 		if(fread(buffer, T::disk_size, num_entries, file) != num_entries) {
 			throw std::runtime_error("fread() failed");
 		}
-		std::pair<uint8_t*, size_t> out(buffer, num_entries);
-		scatter.take(out);
+		for(size_t k = 0; k < num_entries; ++k) {
+			T entry;
+			entry.read(buffer + k * T::disk_size);
+			
+			auto& block = table[Key{}(entry) / M];
+			if(block.empty()) {
+				block.reserve(M);
+			}
+			block.push_back(entry);
+		}
 		i += num_entries;
 	}
-	scatter.wait();
 	
 	std::map<size_t, std::vector<T>> sorted;
 	for(auto& entry : table) {
@@ -119,30 +115,26 @@ void DiskSort<T, Key>::read_bucket(	const size_t index, const size_t M,
 	}
 	table.clear();
 	
-	std::vector<std::vector<T>> blocks;
-	blocks.reserve(sorted.size());
+	out.reserve(sorted.size());
 	for(auto& entry : sorted) {
-		blocks.emplace_back(std::move(entry.second));
+		out.emplace_back(std::move(entry.second));
 	}
-	sorted.clear();
-	
-	sort->take(blocks);
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::sort_bucket(	std::vector<std::vector<T>>& input,
-									Thread<output_t>* output)
+void DiskSort<T, Key>::sort_bucket(std::vector<std::vector<T>>& input, Processor<output_t>* output)
 {
-	ThreadPool<output_t, output_t> pool(
+	ThreadPool<output_t, output_t> sort_pool(
 			std::bind(&DiskSort::sort_block, this, std::placeholders::_1, std::placeholders::_2),
-			output, num_threads, "DiskSort");
+			output, num_threads, "DiskSort/sort");
 	for(size_t i = 0; i < input.size(); ++i) {
 		output_t out;
 		out.is_begin = (i == 0);
 		out.is_end = (i + 1 == input.size());
 		out.block = std::move(input[i]);
-		pool.take(out);
+		sort_pool.take(out);
 	}
+	sort_pool.wait();
 }
 
 template<typename T, typename Key>

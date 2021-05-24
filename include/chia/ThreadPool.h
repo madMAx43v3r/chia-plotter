@@ -15,7 +15,7 @@
 
 
 template<typename T, typename S>
-class ThreadPool {
+class ThreadPool : public Processor<T> {
 private:
 	struct thread_t {
 		uint64_t job = -1;
@@ -25,7 +25,7 @@ private:
 	};
 	
 public:
-	ThreadPool(	const std::function<void(T&, S&)>& func, Thread<S>* output,
+	ThreadPool(	const std::function<void(T&, S&)>& func, Processor<S>* output,
 				int num_threads, const std::string& name = "")
 		:	output(output),
 			execute(func)
@@ -47,7 +47,7 @@ public:
 	}
 	
 	// NOT thread-safe
-	void take(T& data) {
+	void take(T& data) override {
 		auto state = threads[next % threads.size()];
 		state->thread->wait();
 		{
@@ -88,7 +88,7 @@ private:
 			}
 		}
 		if(output) {
-			output->take(out);
+			output->take(out);	// only one thread can be at this position
 		}
 		{
 			std::lock_guard<std::mutex> lock(state->mutex);
@@ -99,7 +99,7 @@ private:
 	
 private:
 	uint64_t next = 0;
-	Thread<S>* output = nullptr;
+	Processor<S>* output = nullptr;
 	std::function<void(T&, S&)> execute;
 	std::vector<std::shared_ptr<thread_t>> threads;
 	
