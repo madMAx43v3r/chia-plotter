@@ -8,24 +8,12 @@
 #ifndef INCLUDE_CHIA_ENTRIES_H_
 #define INCLUDE_CHIA_ENTRIES_H_
 
+#include <chia/chia.h>
+
 #include <array>
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
-
-// Extra bits of output from the f functions. Instead of being a function from k -> k bits,
-// it's a function from k -> k + kExtraBits bits. This allows less collisions in matches.
-// Refer to the paper for mathematical motivations.
-const uint8_t kExtraBits = 6;
-
-// Convenience variable
-const uint8_t kExtraBitsPow = 1 << kExtraBits;
-
-// B and C groups which constitute a bucket, or BC group. These groups determine how
-// elements match with each other. Two elements must be in adjacent buckets to match.
-const uint16_t kB = 119;
-const uint16_t kC = 127;
-const uint16_t kBC = kB * kC;
 
 
 namespace phase1 {
@@ -36,13 +24,13 @@ struct entry_1 {
 	
 	static constexpr size_t disk_size = 9;
 	
-	size_t read(const char* buf) {
+	size_t read(const uint8_t* buf) {
 		f = 0;
 		memcpy(&f, buf, 5);
 		memcpy(&x, buf + 5, 4);
 		return disk_size;
 	}
-	size_t write(char* buf) const {
+	size_t write(uint8_t* buf) const {
 		memcpy(buf, &f, 5);
 		memcpy(buf + 5, &x, 4);
 		return disk_size;
@@ -58,6 +46,33 @@ struct entry_t {
 template<int N>
 struct entry_tx : entry_t {
 	std::array<uint32_t, N> C;
+	
+	static constexpr size_t disk_size = 10 + N * 4;
+	
+	size_t read(const uint8_t* buf) {
+		memcpy(&f, buf, 5);
+		f &= 0x3FFFFFFFFFull;
+		off = 0;
+		off |= buf[4] >> 6;
+		off |= uint16_t(buf[5]) << 2;
+		memcpy(&pos, buf + 6, 4);
+		buf += 10;
+		for(int i = 0; i < N; ++i) {
+			memcpy(&C[i], buf + i * 4, 4);
+		}
+		return disk_size;
+	}
+	size_t write(uint8_t* buf) const {
+		memcpy(buf, &f, 5);
+		buf[4] |= off << 6;
+		buf[5] = off >> 2;
+		memcpy(buf + 6, &pos, 4);
+		buf += 10;
+		for(int i = 0; i < N; ++i) {
+			memcpy(buf + i * 4, &C[i], 4);
+		}
+		return disk_size;
+	}
 };
 
 typedef entry_tx<1> entry_2;
@@ -87,6 +102,24 @@ struct entry_t {
 
 
 } // phase2
+
+
+template<typename T>
+bool write_entry(FILE* file, const T& entry) {
+	uint8_t buf[T::disk_size];
+	entry.write(buf);
+	return fwrite(buf, 1, T::disk_size, file) == T::disk_size;
+}
+
+template<typename T>
+bool read_entry(FILE* file, T& entry) {
+	uint8_t buf[T::disk_size];
+	if(fread(buf, 1, T::disk_size, file) != T::disk_size) {
+		return false;
+	}
+	entry.read(buf);
+	return true;
+}
 
 
 #endif /* INCLUDE_CHIA_ENTRIES_H_ */

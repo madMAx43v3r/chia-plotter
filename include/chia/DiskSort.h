@@ -18,16 +18,22 @@
 #include <functional>
 
 
-template<typename T, typename Sort, typename Key>
+template<typename T, typename Key>
 class DiskSort {
 public:
+	struct output_t {
+		bool last_block = false;
+		bool last_bucket = false;
+		std::vector<T> block;
+	};
+	
 	DiskSort(int key_size, int log_num_buckets, std::string file_prefix);
 	
 	~DiskSort() {
 		clear();
 	}
 	
-	void read(Thread<std::vector<T>>& output, size_t M);
+	void read(Thread<output_t>& output, size_t M);
 	
 	void finish();
 	
@@ -45,17 +51,16 @@ private:
 		std::string file_name;
 		size_t offset = 0;
 		size_t num_entries = 0;
-		char buffer[262144];
+		uint8_t buffer[262144];
 		void flush();
 	};
 	
 	void read_bucket(	const size_t index,
-						Thread<std::vector<std::vector<T>>>& sort,
-						Thread<std::vector<T>>& output, const size_t M);
+						Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort,
+						Thread<output_t>* output, const size_t M);
 	
-	void sort_bucket_test(std::vector<std::vector<T>>& blocks) {}
-	
-	void sort_bucket(std::vector<std::vector<T>>& blocks, Thread<std::vector<T>>* output);
+	void sort_bucket(	std::pair<std::vector<std::vector<T>>, bool>& input,
+						Thread<output_t>* output);
 	
 private:
 	int key_size = 0;

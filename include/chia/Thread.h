@@ -13,14 +13,16 @@
 #include <functional>
 #include <condition_variable>
 
+#include <pthread.h>
+
 
 template<typename T>
 class Thread {
 public:
-	Thread(const std::function<void(T&)>& func)
+	Thread(const std::function<void(T&)>& func, const std::string& name = "")
 		:	execute(func)
 	{
-		thread = std::thread(&Thread::loop, this);
+		thread = std::thread(&Thread::loop, this, name);
 	}
 	
 	virtual ~Thread() {
@@ -50,7 +52,16 @@ public:
 	}
 	
 private:
-	void loop() noexcept {
+	void loop(const std::string& name) noexcept
+	{
+		if(!name.empty()) {
+			std::string thread_name = name;
+			// limit the name to 15 chars, otherwise pthread_setname_np() fails
+			if(thread_name.size() > 15) {
+				thread_name.resize(15);
+			}
+			pthread_setname_np(pthread_self(), thread_name.c_str());
+		}
 		std::unique_lock<std::mutex> lock(mutex);
 		while(true) {
 			while(do_run && !is_avail) {

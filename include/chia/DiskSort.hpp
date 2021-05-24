@@ -14,8 +14,8 @@
 #include <unordered_map>
 
 
-template<typename T, typename Sort, typename Key>
-DiskSort<T, Sort, Key>::DiskSort(int key_size, int log_num_buckets, std::string file_prefix)
+template<typename T, typename Key>
+DiskSort<T, Key>::DiskSort(int key_size, int log_num_buckets, std::string file_prefix)
 	:	key_size(key_size),
 		log_num_buckets(log_num_buckets),
 		buckets(1 << log_num_buckets)
@@ -30,8 +30,8 @@ DiskSort<T, Sort, Key>::DiskSort(int key_size, int log_num_buckets, std::string 
 	}
 }
 
-template<typename T, typename Sort, typename Key>
-void DiskSort<T, Sort, Key>::add(const T& entry)
+template<typename T, typename Key>
+void DiskSort<T, Key>::add(const T& entry)
 {
 	if(is_finished) {
 		throw std::logic_error("read only");
@@ -48,8 +48,8 @@ void DiskSort<T, Sort, Key>::add(const T& entry)
 	bucket.num_entries++;
 }
 
-template<typename T, typename Sort, typename Key>
-void DiskSort<T, Sort, Key>::bucket_t::flush()
+template<typename T, typename Key>
+void DiskSort<T, Key>::bucket_t::flush()
 {
 	if(fwrite(buffer, 1, offset, file) != offset) {
 		throw std::runtime_error("fwrite() failed");
@@ -57,20 +57,20 @@ void DiskSort<T, Sort, Key>::bucket_t::flush()
 	offset = 0;
 }
 
-template<typename T, typename Sort, typename Key>
-void DiskSort<T, Sort, Key>::read(Thread<std::vector<T>>& output, size_t M)
+template<typename T, typename Key>
+void DiskSort<T, Key>::read(Thread<output_t>& output, size_t M)
 {
-	Thread<std::vector<std::vector<T>>> sort(
-			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &output));
+	Thread<std::pair<std::vector<std::vector<T>>, bool>> sort(
+			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &output), "DiskSort");
 	for(size_t i = 0; i < buckets.size(); ++i) {
-		read_bucket(i, sort, output, M);
+		read_bucket(i, &sort, &output, M);
 	}
 }
 
-template<typename T, typename Sort, typename Key>
-void DiskSort<T, Sort, Key>::read_bucket(	const size_t index,
-											Thread<std::vector<std::vector<T>>>& sort,
-											Thread<std::vector<T>>& output, const size_t M)
+template<typename T, typename Key>
+void DiskSort<T, Key>::read_bucket(	const size_t index,
+									Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort,
+									Thread<output_t>* output, const size_t M)
 {
 	auto& bucket = buckets[index];
 	auto& file = bucket.file;
@@ -85,7 +85,7 @@ void DiskSort<T, Sort, Key>::read_bucket(	const size_t index,
 	table.reserve(4096);
 	
 	constexpr size_t N = 1024;
-	char buffer[N * T::disk_size];
+	uint8_t buffer[N * T::disk_size];
 	
 	for(size_t i = 0; i < bucket.num_entries;) {
 		const size_t num_entries = std::min(N, bucket.num_entries - i);
@@ -115,7 +115,7 @@ void DiskSort<T, Sort, Key>::read_bucket(	const size_t index,
 	std::sort(list.begin(), list.end(),
 		[](	const std::pair<size_t, std::vector<T>>& lhs,
 			const std::pair<size_t, std::vector<T>>& rhs) -> bool {
-			return Sort{}(lhs.first, rhs.first);
+			return lhs.first < rhs.first;
 		});
 	
 	std::vector<std::vector<T>> blocks;
@@ -125,23 +125,32 @@ void DiskSort<T, Sort, Key>::read_bucket(	const size_t index,
 	}
 	list.clear();
 	
-	sort.take(blocks);
+	std::pair<std::vector<std::vector<T>>, bool> out;
+	out.first = std::move(blocks);
+	out.second = index + 1 == buckets.size();
+	sort->take(out);
 }
 
-template<typename T, typename Sort, typename Key>
-void DiskSort<T, Sort, Key>::sort_bucket(std::vector<std::vector<T>>& blocks, Thread<std::vector<T>>* output)
+template<typename T, typename Key>
+void DiskSort<T, Key>::sort_bucket(	std::pair<std::vector<std::vector<T>>, bool>& input,
+									Thread<output_t>* output)
 {
-	for(auto& block : blocks) {
+	for(size_t i = 0; i < input.first.size(); ++i) {
+		auto& block = input.first[i];
 		std::sort(block.begin(), block.end(),
 			[](const T& lhs, const T& rhs) -> bool {
-				return Sort{}(Key{}(lhs), Key{}(rhs));
+				return Key{}(lhs) < Key{}(rhs);
 			});
-		output->take(block);
+		output_t out;
+		out.last_block = i + 1 == input.first.size();
+		out.last_bucket = input.second;
+		out.block = std::move(block);
+		output->take(out);
 	}
 }
 
-template<typename T, typename Sort, typename Key>
-void DiskSort<T, Sort, Key>::finish() {
+template<typename T, typename Key>
+void DiskSort<T, Key>::finish() {
 	for(auto& bucket : buckets) {
 		bucket.flush();
 		fflush(bucket.file);
@@ -149,8 +158,8 @@ void DiskSort<T, Sort, Key>::finish() {
 	is_finished = true;
 }
 
-template<typename T, typename Sort, typename Key>
-void DiskSort<T, Sort, Key>::clear()
+template<typename T, typename Key>
+void DiskSort<T, Key>::clear()
 {
 	for(auto& bucket : buckets) {
 		fclose(bucket.file);
