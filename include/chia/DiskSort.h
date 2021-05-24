@@ -8,7 +8,7 @@
 #ifndef INCLUDE_CHIA_DISKSORT_H_
 #define INCLUDE_CHIA_DISKSORT_H_
 
-#include <chia/Thread.h>
+#include <chia/ThreadPool.h>
 
 #include <vector>
 #include <string>
@@ -22,18 +22,18 @@ template<typename T, typename Key>
 class DiskSort {
 public:
 	struct output_t {
-		bool last_block = false;
-		bool last_bucket = false;
+		bool is_begin = false;		// start of a sort bucket
+		bool is_end = false;		// end of a sort bucket
 		std::vector<T> block;
 	};
 	
-	DiskSort(int key_size, int log_num_buckets, std::string file_prefix);
+	DiskSort(int key_size, int log_num_buckets, int num_threads, std::string file_prefix);
 	
 	~DiskSort() {
 		clear();
 	}
 	
-	void read(Thread<output_t>& output, size_t M);
+	void read(Thread<output_t>* output, size_t M);
 	
 	void finish();
 	
@@ -56,14 +56,17 @@ private:
 	};
 	
 	void read_bucket(	const size_t index, const size_t M,
-						Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort);
+						Thread<std::vector<std::vector<T>>>* sort);
 	
-	void sort_bucket(	std::pair<std::vector<std::vector<T>>, bool>& input,
+	void sort_bucket(	std::vector<std::vector<T>>& input,
 						Thread<output_t>* output);
+	
+	void sort_block(	output_t& input, output_t& out);
 	
 private:
 	int key_size = 0;
 	int log_num_buckets = 0;
+	int num_threads = 0;
 	bool is_finished = false;
 	std::vector<bucket_t> buckets;
 	

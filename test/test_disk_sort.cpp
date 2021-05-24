@@ -26,13 +26,14 @@ int main(int argc, char** argv)
 	const size_t test_size = size_t(1) << test_bits;
 	const size_t log_num_buckets = argc > 2 ? atoi(argv[2]) : 7;
 	const size_t num_buckets = size_t(1) << log_num_buckets;
+	const size_t num_threads = 4;
 	
 	if(false) {
 		std::cout << "sizeof(phase1::entry_1) = " << sizeof(phase1::entry_1) << std::endl;
 		
 		typedef DiskSort<phase1::entry_1, phase1::get_f<phase1::entry_1>> DiskSort1;
 		
-		DiskSort1 sort(test_bits, log_num_buckets, "test");
+		DiskSort1 sort(test_bits, log_num_buckets, num_threads, "test");
 		
 		const auto add_begin = get_wall_time_micros();
 		for(size_t i = 0; i < test_size; ++i) {
@@ -54,7 +55,7 @@ int main(int argc, char** argv)
 			}, "test_output");
 		
 		const auto sort_begin = get_wall_time_micros();
-		sort.read(thread, 15113);
+		sort.read(&thread, 15113);
 		fclose(out);
 		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.f << " ms" << std::endl;
 	}
@@ -64,7 +65,7 @@ int main(int argc, char** argv)
 		
 		typedef DiskSort<phase1::entry_4, phase1::get_f<phase1::entry_4>> DiskSort4;
 		
-		DiskSort4 sort(test_bits, log_num_buckets, "test");
+		DiskSort4 sort(test_bits, log_num_buckets, num_threads, "test");
 		
 		const auto add_begin = get_wall_time_micros();
 		for(size_t i = 0; i < test_size; ++i) {
@@ -76,17 +77,22 @@ int main(int argc, char** argv)
 		sort.finish();
 		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.f << " ms" << std::endl;
 		
+		uint64_t f_max = 0;
 		FILE* out = fopen("sorted.out", "wb");
 		
 		Thread<DiskSort4::output_t> thread(
-			[out](DiskSort4::output_t& input) {
+			[out, &f_max](DiskSort4::output_t& input) {
 				for(const auto& entry : input.block) {
 					write_entry(out, entry);
+					if(entry.f < f_max) {
+						throw std::logic_error("entry.f < f_max");
+					}
+					f_max = entry.f;
 				}
 			}, "test_output");
 		
 		const auto sort_begin = get_wall_time_micros();
-		sort.read(thread, 15113);
+		sort.read(&thread, 15113);
 		fclose(out);
 		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.f << " ms" << std::endl;
 	}

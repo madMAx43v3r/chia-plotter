@@ -10,14 +10,16 @@
 
 #include <chia/DiskSort.h>
 
+#include <map>
 #include <algorithm>
 #include <unordered_map>
 
 
 template<typename T, typename Key>
-DiskSort<T, Key>::DiskSort(int key_size, int log_num_buckets, std::string file_prefix)
+DiskSort<T, Key>::DiskSort(int key_size, int log_num_buckets, int num_threads, std::string file_prefix)
 	:	key_size(key_size),
 		log_num_buckets(log_num_buckets),
+		num_threads(num_threads),
 		buckets(1 << log_num_buckets)
 {
 	for(size_t i = 0; i < buckets.size(); ++i) {
@@ -58,10 +60,10 @@ void DiskSort<T, Key>::bucket_t::flush()
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read(Thread<output_t>& output, size_t M)
+void DiskSort<T, Key>::read(Thread<output_t>* output, size_t M)
 {
-	Thread<std::pair<std::vector<std::vector<T>>, bool>> sort(
-			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &output), "DiskSort/sort");
+	Thread<std::vector<std::vector<T>>> sort(
+			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, output), "DiskSort");
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		read_bucket(i, M, &sort);
 	}
@@ -69,7 +71,7 @@ void DiskSort<T, Key>::read(Thread<output_t>& output, size_t M)
 
 template<typename T, typename Key>
 void DiskSort<T, Key>::read_bucket(	const size_t index, const size_t M,
-									Thread<std::pair<std::vector<std::vector<T>>, bool>>* sort)
+									Thread<std::vector<std::vector<T>>>* sort)
 {
 	auto& bucket = buckets[index];
 	auto& file = bucket.file;
@@ -111,48 +113,47 @@ void DiskSort<T, Key>::read_bucket(	const size_t index, const size_t M,
 	}
 	scatter.wait();
 	
-	std::vector<std::pair<size_t, std::vector<T>>> list;
-	list.reserve(table.size());
+	std::map<size_t, std::vector<T>> sorted;
 	for(auto& entry : table) {
-		list.emplace_back(entry.first, std::move(entry.second));
+		sorted.emplace(entry.first, std::move(entry.second));
 	}
 	table.clear();
 	
-	std::sort(list.begin(), list.end(),
-		[](	const std::pair<size_t, std::vector<T>>& lhs,
-			const std::pair<size_t, std::vector<T>>& rhs) -> bool {
-			return lhs.first < rhs.first;
-		});
-	
 	std::vector<std::vector<T>> blocks;
-	blocks.reserve(list.size());
-	for(auto& entry : list) {
+	blocks.reserve(sorted.size());
+	for(auto& entry : sorted) {
 		blocks.emplace_back(std::move(entry.second));
 	}
-	list.clear();
+	sorted.clear();
 	
-	std::pair<std::vector<std::vector<T>>, bool> out;
-	out.first = std::move(blocks);
-	out.second = index + 1 == buckets.size();
-	sort->take(out);
+	sort->take(blocks);
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::sort_bucket(	std::pair<std::vector<std::vector<T>>, bool>& input,
+void DiskSort<T, Key>::sort_bucket(	std::vector<std::vector<T>>& input,
 									Thread<output_t>* output)
 {
-	for(size_t i = 0; i < input.first.size(); ++i) {
-		auto& block = input.first[i];
-		std::sort(block.begin(), block.end(),
-			[](const T& lhs, const T& rhs) -> bool {
-				return Key{}(lhs) < Key{}(rhs);
-			});
+	ThreadPool<output_t, output_t> pool(
+			std::bind(&DiskSort::sort_block, this, std::placeholders::_1, std::placeholders::_2),
+			output, num_threads, "DiskSort");
+	for(size_t i = 0; i < input.size(); ++i) {
 		output_t out;
-		out.last_block = i + 1 == input.first.size();
-		out.last_bucket = input.second;
-		out.block = std::move(block);
-		output->take(out);
+		out.is_begin = (i == 0);
+		out.is_end = (i + 1 == input.size());
+		out.block = std::move(input[i]);
+		pool.take(out);
 	}
+}
+
+template<typename T, typename Key>
+void DiskSort<T, Key>::sort_block(output_t& input, output_t& out)
+{
+	auto& block = input.block;
+	std::sort(block.begin(), block.end(),
+		[](const T& lhs, const T& rhs) -> bool {
+			return Key{}(lhs) < Key{}(rhs);
+		});
+	out = std::move(input);
 }
 
 template<typename T, typename Key>
