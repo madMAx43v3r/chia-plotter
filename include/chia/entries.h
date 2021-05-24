@@ -82,6 +82,24 @@ typedef entry_tx<4> entry_5;
 typedef entry_tx<3> entry_6;
 typedef entry_tx<2> entry_7;
 
+struct tmp_entry_t {
+	uint32_t pos;		// 32 bit
+	uint16_t off;		// 10 bit
+	
+	static constexpr size_t disk_size = 6;
+	
+	size_t read(const uint8_t* buf) {
+		memcpy(&pos, buf, 4);
+		memcpy(&off, buf + 4, 2);
+		return disk_size;
+	}
+	size_t write(uint8_t* buf) const {
+		memcpy(buf, &pos, 4);
+		memcpy(buf + 4, &off, 2);
+		return disk_size;
+	}
+};
+
 template<typename T>
 struct get_f {
 	uint64_t operator()(const T& entry) {
@@ -97,9 +115,30 @@ namespace phase2 {
 struct entry_t {
 	uint32_t key;
 	uint32_t pos;
-	uint16_t off : 10;
+	uint16_t off;		// 10 bit
+	
+	static constexpr size_t disk_size = 10;
+	
+	size_t read(const uint8_t* buf) {
+		memcpy(&key, buf, 4);
+		memcpy(&pos, buf + 4, 4);
+		memcpy(&off, buf + 8, 2);
+		return disk_size;
+	}
+	size_t write(uint8_t* buf) const {
+		memcpy(buf, &key, 4);
+		memcpy(buf + 4, &pos, 4);
+		memcpy(buf + 8, &off, 2);
+		return disk_size;
+	}
 };
 
+template<typename T>
+struct get_pos {
+	uint64_t operator()(const T& entry) {
+		return entry.pos;
+	}
+};
 
 } // phase2
 
