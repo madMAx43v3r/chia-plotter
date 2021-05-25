@@ -38,12 +38,12 @@ int main(int argc, char** argv)
 		const auto add_begin = get_wall_time_micros();
 		for(size_t i = 0; i < test_size; ++i) {
 			phase1::entry_1 entry = {};
-			entry.f = generator() % test_size;
+			entry.y = generator() % test_size;
 			entry.x = i;
 			sort.add(entry);
 		}
 		sort.finish();
-		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.f << " ms" << std::endl;
+		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.y << " ms" << std::endl;
 		
 		FILE* out = fopen("sorted.out", "wb");
 		
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 		const auto sort_begin = get_wall_time_micros();
 		sort.read(&thread, 15113);
 		fclose(out);
-		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.f << " ms" << std::endl;
+		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.y << " ms" << std::endl;
 	}
 	
 	if(true) {
@@ -70,12 +70,12 @@ int main(int argc, char** argv)
 		const auto add_begin = get_wall_time_micros();
 		for(size_t i = 0; i < test_size; ++i) {
 			phase1::entry_4 entry = {};
-			entry.f = generator() % test_size;
+			entry.y = generator() % test_size;
 			entry.pos = i;
 			sort.add(entry);
 		}
 		sort.finish();
-		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.f << " ms" << std::endl;
+		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.y << " ms" << std::endl;
 		
 		uint64_t f_max = 0;
 		FILE* out = fopen("sorted.out", "wb");
@@ -84,17 +84,17 @@ int main(int argc, char** argv)
 			[out, &f_max](DiskSort4::output_t& input) {
 				for(const auto& entry : input.block) {
 					write_entry(out, entry);
-					if(entry.f < f_max) {
+					if(entry.y < f_max) {
 						throw std::logic_error("entry.f < f_max");
 					}
-					f_max = entry.f;
+					f_max = entry.y;
 				}
 			}, "test_output");
 		
 		const auto sort_begin = get_wall_time_micros();
 		sort.read(&thread, 15113);
 		fclose(out);
-		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.f << " ms" << std::endl;
+		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.y << " ms" << std::endl;
 	}
 	
 	return 0;

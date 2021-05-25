@@ -19,26 +19,26 @@
 namespace phase1 {
 
 struct entry_1 {
-	uint64_t f;			// 38 bit
+	uint64_t y;			// 38 bit
 	uint32_t x;			// 32 bit
 	
 	static constexpr size_t disk_size = 9;
 	
 	size_t read(const uint8_t* buf) {
-		f = 0;
-		memcpy(&f, buf, 5);
+		y = 0;
+		memcpy(&y, buf, 5);
 		memcpy(&x, buf + 5, 4);
 		return disk_size;
 	}
 	size_t write(uint8_t* buf) const {
-		memcpy(buf, &f, 5);
+		memcpy(buf, &y, 5);
 		memcpy(buf + 5, &x, 4);
 		return disk_size;
 	}
 };
 
 struct entry_t {
-	uint64_t f;			// 38 bit
+	uint64_t y;			// 38 bit
 	uint32_t pos;		// 32 bit
 	uint16_t off;		// 10 bit
 };
@@ -50,8 +50,8 @@ struct entry_tx : entry_t {
 	static constexpr size_t disk_size = 10 + N * 4;
 	
 	size_t read(const uint8_t* buf) {
-		memcpy(&f, buf, 5);
-		f &= 0x3FFFFFFFFFull;
+		memcpy(&y, buf, 5);
+		y &= 0x3FFFFFFFFFull;
 		off = 0;
 		off |= buf[4] >> 6;
 		off |= uint16_t(buf[5]) << 2;
@@ -63,7 +63,7 @@ struct entry_tx : entry_t {
 		return disk_size;
 	}
 	size_t write(uint8_t* buf) const {
-		memcpy(buf, &f, 5);
+		memcpy(buf, &y, 5);
 		buf[4] |= off << 6;
 		buf[5] = off >> 2;
 		memcpy(buf + 6, &pos, 4);
