@@ -25,9 +25,11 @@ static constexpr uint16_t kB = 119;
 static constexpr uint16_t kC = 127;
 static constexpr uint16_t kBC = kB * kC;
 
+// This (times k) is the length of the metadata that must be kept for each entry. For example,
+// for a table 4 entry, we must keep 4k additional bits for each entry, which is used to
+// compute f5.
+static const uint8_t kVectorLens[] = {0, 0, 1, 2, 4, 4, 3, 2};
 
-template <typename Int>
-constexpr inline Int cdiv(Int a, int b) { return (a + b - 1) / b; }
 
 
 #endif /* INCLUDE_CHIA_CHIA_H_ */
