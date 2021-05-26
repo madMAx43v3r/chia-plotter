@@ -60,7 +60,7 @@ void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector<entry_
 	static constexpr size_t M = 4096;
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
-		[id, M](uint64_t& offset, std::vector<entry_1>& out) {
+		[id](uint64_t& offset, std::vector<entry_1>& out) {
 			out.resize(M * 16);
 			F1Calculator F1(id);
 			for(size_t i = 0; i < M; ++i) {

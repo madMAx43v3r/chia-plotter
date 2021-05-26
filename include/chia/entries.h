@@ -101,9 +101,9 @@ struct tmp_entry_t {
 };
 
 template<typename T>
-struct get_f {
+struct get_y {
 	uint64_t operator()(const T& entry) {
-		return entry.f;
+		return entry.y;
 	}
 };
 

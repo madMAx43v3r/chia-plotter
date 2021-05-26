@@ -25,13 +25,13 @@ int main(int argc, char** argv)
 	const size_t test_bits = argc > 1 ? atoi(argv[1]) : 24;
 	const size_t test_size = size_t(1) << test_bits;
 	const size_t log_num_buckets = argc > 2 ? atoi(argv[2]) : 7;
-	const size_t num_buckets = size_t(1) << log_num_buckets;
+//	const size_t num_buckets = size_t(1) << log_num_buckets;
 	const size_t num_threads = 4;
 	
 	if(false) {
 		std::cout << "sizeof(phase1::entry_1) = " << sizeof(phase1::entry_1) << std::endl;
 		
-		typedef DiskSort<phase1::entry_1, phase1::get_f<phase1::entry_1>> DiskSort1;
+		typedef DiskSort<phase1::entry_1, phase1::get_y<phase1::entry_1>> DiskSort1;
 		
 		DiskSort1 sort(test_bits, log_num_buckets, num_threads, "test");
 		
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 			sort.add(entry);
 		}
 		sort.finish();
-		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.y << " ms" << std::endl;
+		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000. << " ms" << std::endl;
 		
 		FILE* out = fopen("sorted.out", "wb");
 		
@@ -57,13 +57,13 @@ int main(int argc, char** argv)
 		const auto sort_begin = get_wall_time_micros();
 		sort.read(&thread, 15113);
 		fclose(out);
-		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.y << " ms" << std::endl;
+		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000. << " ms" << std::endl;
 	}
 	
 	if(true) {
 		std::cout << "sizeof(phase1::entry_4) = " << sizeof(phase1::entry_4) << std::endl;
 		
-		typedef DiskSort<phase1::entry_4, phase1::get_f<phase1::entry_4>> DiskSort4;
+		typedef DiskSort<phase1::entry_4, phase1::get_y<phase1::entry_4>> DiskSort4;
 		
 		DiskSort4 sort(test_bits, log_num_buckets, num_threads, "test");
 		
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 			sort.add(entry);
 		}
 		sort.finish();
-		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000.y << " ms" << std::endl;
+		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000. << " ms" << std::endl;
 		
 		uint64_t f_max = 0;
 		FILE* out = fopen("sorted.out", "wb");
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 		const auto sort_begin = get_wall_time_micros();
 		sort.read(&thread, 15113);
 		fclose(out);
-		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000.y << " ms" << std::endl;
+		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000. << " ms" << std::endl;
 	}
 	
 	return 0;
