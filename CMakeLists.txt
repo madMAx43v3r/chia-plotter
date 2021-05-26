@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 2.6)
-project(vnx)
+cmake_minimum_required(VERSION 3.14)
+set(CMAKE_CXX_STANDARD 17)
+project(chia-plotter C CXX ASM)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -fopenmp -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fopenmp -Wall -Wno-unused-function")
 
 include_directories(
 	include
-	src/b3/
+	src
 )
 
 IF (WIN32)

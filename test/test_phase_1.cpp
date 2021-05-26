@@ -6,7 +6,7 @@
  */
 
 #include <chia/entries.h>
-#include <chia/phase1.h>
+#include <chia/phase1.hpp>
 #include <chia/DiskSort.hpp>
 
 #include <random>
@@ -20,12 +20,15 @@ int64_t get_wall_time_micros() {
 
 int main(int argc, char** argv)
 {
-	const size_t log_num_buckets = argc > 1 ? atoi(argv[1]) : 9;
 	const size_t num_threads = 4;
+	const size_t log_num_buckets = argc > 1 ? atoi(argv[1]) : 9;
 	
 	uint8_t id[32] = {};
 	
+	phase1::initialize();
+	
 	typedef DiskSort<phase1::entry_1, phase1::get_y<phase1::entry_1>> DiskSort1;
+	typedef DiskSort<phase1::entry_2, phase1::get_y<phase1::entry_2>> DiskSort2;
 	
 	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t1");
 	{
@@ -35,9 +38,19 @@ int main(int argc, char** argv)
 					sort_1.add(entry);
 				}
 			}, "DiskSort/add");
+		const auto begin = get_wall_time_micros();
 		phase1::compute_f1(id, num_threads, &thread);
+		sort_1.finish();
+		std::cout << "F1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 	}
-	sort_1.finish();
+	
+	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t2");
+	{
+		const auto begin = get_wall_time_micros();
+		phase1::compute_matches<phase1::entry_1, phase1::entry_2>(2, num_threads, &sort_1, &sort_2, nullptr);
+		std::cout << "T2 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
+	}
+	sort_1.close();
 	
 }
 

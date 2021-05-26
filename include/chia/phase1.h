@@ -9,7 +9,6 @@
 #define INCLUDE_CHIA_PHASE1_H_
 
 #include <chia/entries.h>
-#include <chia/Thread.h>
 
 #include <vector>
 
@@ -24,8 +23,13 @@ struct ouput_t {
 	
 };
 
-
-void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector<entry_1>>* output);
+template<typename T>
+struct match_t {
+	T left;
+	T right;
+	uint32_t pos = 0;
+	uint16_t off = 0;
+};
 
 
 } // phase1

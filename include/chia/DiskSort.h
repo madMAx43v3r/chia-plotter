@@ -30,14 +30,14 @@ public:
 	DiskSort(int key_size, int log_num_buckets, int num_threads, std::string file_prefix);
 	
 	~DiskSort() {
-		clear();
+		close();
 	}
 	
 	void read(Processor<output_t>* output, size_t M);
 	
 	void finish();
 	
-	void clear();
+	void close();
 	
 	void add(const T& entry);
 	

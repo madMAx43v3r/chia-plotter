@@ -9,6 +9,7 @@
 #define INCLUDE_CHIA_ENTRIES_H_
 
 #include <chia/chia.h>
+#include <chia/util.hpp>
 
 #include <array>
 #include <cstdio>
@@ -22,6 +23,8 @@ struct entry_1 {
 	uint64_t y;			// 38 bit
 	uint32_t x;			// 32 bit
 	
+	static constexpr uint32_t pos = 0;		// dummy
+	static constexpr uint16_t off = 0;		// dummy
 	static constexpr size_t disk_size = 9;
 	
 	size_t read(const uint8_t* buf) {
@@ -45,7 +48,7 @@ struct entry_t {
 
 template<int N>
 struct entry_tx : entry_t {
-	std::array<uint32_t, N> C;
+	std::array<uint8_t, N * 4> c;
 	
 	static constexpr size_t disk_size = 10 + N * 4;
 	
@@ -56,10 +59,7 @@ struct entry_tx : entry_t {
 		off |= buf[4] >> 6;
 		off |= uint16_t(buf[5]) << 2;
 		memcpy(&pos, buf + 6, 4);
-		buf += 10;
-		for(int i = 0; i < N; ++i) {
-			memcpy(&C[i], buf + i * 4, 4);
-		}
+		memcpy(c.data(), buf + 10, sizeof(c));
 		return disk_size;
 	}
 	size_t write(uint8_t* buf) const {
@@ -67,10 +67,7 @@ struct entry_tx : entry_t {
 		buf[4] |= off << 6;
 		buf[5] = off >> 2;
 		memcpy(buf + 6, &pos, 4);
-		buf += 10;
-		for(int i = 0; i < N; ++i) {
-			memcpy(buf + i * 4, &C[i], 4);
-		}
+		memcpy(buf + 10, c.data(), sizeof(c));
 		return disk_size;
 	}
 };
@@ -104,6 +101,23 @@ template<typename T>
 struct get_y {
 	uint64_t operator()(const T& entry) {
 		return entry.y;
+	}
+};
+
+template<typename T>
+struct get_metadata {
+	void operator()(const T& entry, uint8_t* bytes, size_t* num_bytes) {
+		*num_bytes = sizeof(entry.c);
+		memcpy(bytes, entry.c.data(), sizeof(entry.c));
+	}
+};
+
+template<>
+struct get_metadata<entry_1> {
+	void operator()(const entry_1& entry, uint8_t* bytes, size_t* num_bytes) {
+		*num_bytes = sizeof(uint32_t);
+		const uint32_t tmp = bswap_32(entry.x);
+		memcpy(bytes, &tmp, sizeof(uint32_t));
 	}
 };
 

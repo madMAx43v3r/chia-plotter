@@ -158,13 +158,14 @@ void DiskSort<T, Key>::finish() {
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::clear()
+void DiskSort<T, Key>::close()
 {
 	for(auto& bucket : buckets) {
 		fclose(bucket.file);
 		bucket.file = nullptr;
 		std::remove(bucket.file_name.c_str());
 	}
+	buckets.clear();
 }
 
 
