@@ -114,12 +114,7 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 		for(size_t k = 0; k < num_entries; ++k) {
 			T entry;
 			entry.read(buffer + k * T::disk_size);
-			
-			auto& block = table[Key{}(entry) >> key_shift];
-//			if(block.empty()) {
-//				block.reserve(block_size);
-//			}
-			block.push_back(entry);
+			table[Key{}(entry) >> key_shift].push_back(entry);
 		}
 		i += num_entries;
 	}

@@ -193,9 +193,6 @@ public:
         for (size_t pos_R = 0; pos_R < bucket_R.size(); pos_R++) {
             const uint64_t r_y = bucket_R[pos_R].y - offset;
 
-//            if(r_y >= rmap.size()) {
-//            	throw std::logic_error("r_y >= rmap.size() -> " + std::to_string(r_y));
-//            }
             if (!rmap[r_y].count) {
                 rmap[r_y].pos = pos_R;
             }
@@ -209,17 +206,9 @@ public:
             const uint64_t r = bucket_L[pos_L].y - offset_y;
             for (int i = 0; i < kExtraBitsPow; i++) {
                 const uint16_t r_target = L_targets[parity][r][i];
-//                if(r_target >= rmap.size()) {
-//					throw std::logic_error("r_target >= rmap.size() -> " + std::to_string(r_target));
-//				}
                 for (size_t j = 0; j < rmap[r_target].count; j++) {
-//                    if(idx_count >= kBC) {
-//                    	throw std::logic_error("idx_count >= kBC");
-//                    }
-//                	if(idx_L != nullptr) {
-                        idx_L[idx_count] = pos_L;
-                        idx_R[idx_count] = rmap[r_target].pos + j;
-//                    }
+					idx_L[idx_count] = pos_L;
+					idx_R[idx_count] = rmap[r_target].pos + j;
                     idx_count++;
                 }
             }
@@ -267,9 +256,11 @@ inline void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector
 			}
 		}, output, num_threads, "F1");
 	
-	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M / 64; ++k) {
+	// TODO: remove div
+	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M / 4; ++k) {
 		pool.take_copy(k);
 	}
+	pool.wait();
 }
 
 template<typename T, typename S, typename R, typename DS_L, typename DS_R>
