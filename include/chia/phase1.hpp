@@ -193,6 +193,9 @@ public:
         for (size_t pos_R = 0; pos_R < bucket_R.size(); pos_R++) {
             const uint64_t r_y = bucket_R[pos_R].y - offset;
 
+//            if(r_y >= rmap.size()) {
+//            	throw std::logic_error("r_y >= rmap.size() -> " + std::to_string(r_y));
+//            }
             if (!rmap[r_y].count) {
                 rmap[r_y].pos = pos_R;
             }
@@ -206,11 +209,17 @@ public:
             const uint64_t r = bucket_L[pos_L].y - offset_y;
             for (int i = 0; i < kExtraBitsPow; i++) {
                 const uint16_t r_target = L_targets[parity][r][i];
+//                if(r_target >= rmap.size()) {
+//					throw std::logic_error("r_target >= rmap.size() -> " + std::to_string(r_target));
+//				}
                 for (size_t j = 0; j < rmap[r_target].count; j++) {
-                    if(idx_L != nullptr) {
-                        idx_L[idx_count]=pos_L;
-                        idx_R[idx_count]=rmap[r_target].pos + j;
-                    }
+//                    if(idx_count >= kBC) {
+//                    	throw std::logic_error("idx_count >= kBC");
+//                    }
+//                	if(idx_L != nullptr) {
+                        idx_L[idx_count] = pos_L;
+                        idx_R[idx_count] = rmap[r_target].pos + j;
+//                    }
                     idx_count++;
                 }
             }
@@ -250,76 +259,79 @@ inline void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector
 	static constexpr size_t M = 4096;
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
-		[id](uint64_t& offset, std::vector<entry_1>& out) {
+		[id](uint64_t& block, std::vector<entry_1>& out) {
 			out.resize(M * 16);
 			F1Calculator F1(id);
 			for(size_t i = 0; i < M; ++i) {
-				F1.compute_entry_1_block(offset + i, &out[i * 16]);
+				F1.compute_entry_1_block(block * M + i, &out[i * 16]);
 			}
 		}, output, num_threads, "F1");
 	
-	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M; ++k) {
+	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M / 64; ++k) {
 		pool.take_copy(k);
 	}
 }
 
-template<typename T, typename S, typename DS_L, typename DS_R>
+template<typename T, typename S, typename R, typename DS_L, typename DS_R>
 uint64_t compute_matches(	int R_index, int num_threads,
 							DS_L* L_sort, DS_R* R_sort,
-							Processor<std::vector<tmp_entry_t>>* L_tmp_out)
+							Processor<std::vector<R>>* L_tmp_out)
 {
-	typedef typename DS_L::output_t L_block_t;
-	
-	uint64_t L_pos_begin = 0;
 	uint64_t num_found = 0;
-	std::vector<T> L_prev;
-	std::vector<T> L_next;
+	uint64_t L_index[2] = {};
+	uint64_t L_offset[2] = {};
+	std::vector<T> L_bucket[2];
 	FxMatcher<T> Fx_matcher;
 	
 	Thread<std::vector<match_t<T>>> eval_thread(
 		[R_index, R_sort](std::vector<match_t<T>>& matches) {
-			std::vector<tmp_entry_t> tmp_out;
 			FxCalculator<T, S> Fx(R_index);
 			for(const auto& match : matches) {
 				S entry;
 				entry.pos = match.pos;
 				entry.off = match.off;
 				Fx.evaluate(match.left, match.right, entry);
+				R_sort->add(entry);
 			}
 		}, "phase1/F" + std::to_string(R_index));
 	
-	Thread<L_block_t> match_thread(
-		[&num_found, &L_pos_begin, &L_prev, &L_next, &Fx_matcher, &eval_thread, L_tmp_out](L_block_t& input) {
+	Thread<std::vector<T>> match_thread(
+		[&num_found, &L_index, &L_offset, &L_bucket, &Fx_matcher, &eval_thread, L_tmp_out](std::vector<T>& input) {
 			if(L_tmp_out) {
-				std::vector<tmp_entry_t> tmp(input.block.size());
+				std::vector<R> tmp(input.size());
 				for(size_t i = 0; i < tmp.size(); ++i) {
-					const auto& src = input.block[i];
-					tmp[i].pos = src.pos;
-					tmp[i].off = src.off;
+					tmp[i].assign(input[i]);
 				}
 				L_tmp_out->take(tmp);
 			}
-			if(input.is_begin) {
-				L_next.insert(L_next.end(), input.block.begin(), input.block.end());
-			} else {
-				L_next = std::move(input.block);
+			for(const auto& entry : input) {
+				const uint64_t index = entry.y / kBC;
+//				std::cout << "x=" << entry.x << ", y=" << entry.y << ", index=" << index << std::endl;
+				if(index < L_index[0]) {
+					throw std::logic_error("input not sorted");
+				}
+				if(index > L_index[0]) {
+					if(L_index[1] + 1 == L_index[0]) {
+						auto matches = Fx_matcher.find_matches(L_offset[1], L_bucket[1], L_bucket[0]);
+						num_found += matches.size();
+						eval_thread.take(matches);
+					}
+					L_index[1] = L_index[0];
+					L_index[0] = index;
+					L_offset[1] = L_offset[0];
+					L_offset[0] += L_bucket[0].size();
+					L_bucket[1] = std::move(L_bucket[0]);
+					L_bucket[0].clear();
+				}
+				L_bucket[0].push_back(entry);
 			}
-			if(input.is_end) {
-				return;
-			}
-			auto matches = Fx_matcher.find_matches(L_pos_begin, L_prev, L_next);
-			num_found += matches.size();
-			eval_thread.take(matches);
-			L_pos_begin += L_prev.size();
-			L_prev = std::move(L_next);
-			L_next.clear();
 		}, "phase1/match");
 	
-	L_sort->read(&match_thread, kBC);
+	L_sort->read(&match_thread);
 	
 	match_thread.wait();
-	{
-		auto matches = Fx_matcher.find_matches(L_pos_begin, L_prev, L_next);
+	if(L_index[1] + 1 == L_index[0]) {
+		auto matches = Fx_matcher.find_matches(L_offset[1], L_bucket[1], L_bucket[0]);
 		num_found += matches.size();
 		eval_thread.take(matches);
 	}

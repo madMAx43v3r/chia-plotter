@@ -24,6 +24,9 @@ int main(int argc, char** argv)
 	const size_t log_num_buckets = argc > 1 ? atoi(argv[1]) : 9;
 	
 	uint8_t id[32] = {};
+	for(int i = 0; i < sizeof(id); ++i) {
+		id[i] = i + 1;
+	}
 	
 	phase1::initialize();
 	
@@ -36,6 +39,7 @@ int main(int argc, char** argv)
 			[&sort_1](std::vector<phase1::entry_1>& input) {
 				for(const auto& entry : input) {
 					sort_1.add(entry);
+//					std::cout << "x=" << entry.x << ", y=" << entry.y << std::endl;
 				}
 			}, "DiskSort/add");
 		const auto begin = get_wall_time_micros();
@@ -47,8 +51,11 @@ int main(int argc, char** argv)
 	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t2");
 	{
 		const auto begin = get_wall_time_micros();
-		phase1::compute_matches<phase1::entry_1, phase1::entry_2>(2, num_threads, &sort_1, &sort_2, nullptr);
-		std::cout << "T2 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
+		const auto num_matches =
+				phase1::compute_matches<phase1::entry_1, phase1::entry_2, phase1::tmp_entry_1>(
+						2, num_threads, &sort_1, &sort_2, nullptr);
+		std::cout << "T2 took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
+				<< ", found " << num_matches << " matches" << std::endl;
 	}
 	sort_1.close();
 	

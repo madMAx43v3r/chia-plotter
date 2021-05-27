@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 //	const size_t num_buckets = size_t(1) << log_num_buckets;
 	const size_t num_threads = 4;
 	
-	if(false) {
+	if(true) {
 		std::cout << "sizeof(phase1::entry_1) = " << sizeof(phase1::entry_1) << std::endl;
 		
 		typedef DiskSort<phase1::entry_1, phase1::get_y<phase1::entry_1>> DiskSort1;
@@ -47,20 +47,20 @@ int main(int argc, char** argv)
 		
 		FILE* out = fopen("sorted.out", "wb");
 		
-		Thread<DiskSort1::output_t> thread(
-			[out](DiskSort1::output_t& input) {
-				for(const auto& entry : input.block) {
+		Thread<std::vector<phase1::entry_1>> thread(
+			[out](std::vector<phase1::entry_1>& input) {
+				for(const auto& entry : input) {
 					write_entry(out, entry);
 				}
 			}, "test_output");
 		
 		const auto sort_begin = get_wall_time_micros();
-		sort.read(&thread, 15113);
+		sort.read(&thread);
 		fclose(out);
 		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000. << " ms" << std::endl;
 	}
 	
-	if(true) {
+	if(false) {
 		std::cout << "sizeof(phase1::entry_4) = " << sizeof(phase1::entry_4) << std::endl;
 		
 		typedef DiskSort<phase1::entry_4, phase1::get_y<phase1::entry_4>> DiskSort4;
@@ -80,9 +80,9 @@ int main(int argc, char** argv)
 		uint64_t f_max = 0;
 		FILE* out = fopen("sorted.out", "wb");
 		
-		Thread<DiskSort4::output_t> thread(
-			[out, &f_max](DiskSort4::output_t& input) {
-				for(const auto& entry : input.block) {
+		Thread<std::vector<phase1::entry_4>> thread(
+			[out, &f_max](std::vector<phase1::entry_4>& input) {
+				for(const auto& entry : input) {
 					write_entry(out, entry);
 					if(entry.y < f_max) {
 						throw std::logic_error("entry.f < f_max");
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 			}, "test_output");
 		
 		const auto sort_begin = get_wall_time_micros();
-		sort.read(&thread, 15113);
+		sort.read(&thread);
 		fclose(out);
 		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000. << " ms" << std::endl;
 	}

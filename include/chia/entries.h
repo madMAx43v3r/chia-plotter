@@ -79,12 +79,34 @@ typedef entry_tx<4> entry_5;
 typedef entry_tx<3> entry_6;
 typedef entry_tx<2> entry_7;
 
+struct tmp_entry_1 {
+	uint32_t x;			// 32 bit
+	
+	static constexpr size_t disk_size = 4;
+	
+	void assign(const entry_1& entry) {
+		x = entry.x;
+	}
+	size_t read(const uint8_t* buf) {
+		memcpy(&x, buf, 4);
+		return disk_size;
+	}
+	size_t write(uint8_t* buf) const {
+		memcpy(buf, &x, 4);
+		return disk_size;
+	}
+};
+
 struct tmp_entry_t {
 	uint32_t pos;		// 32 bit
 	uint16_t off;		// 10 bit
 	
 	static constexpr size_t disk_size = 6;
 	
+	void assign(const entry_t& entry) {
+		pos = entry.pos;
+		off = entry.off;
+	}
 	size_t read(const uint8_t* buf) {
 		memcpy(&pos, buf, 4);
 		memcpy(&off, buf + 4, 2);

@@ -21,19 +21,13 @@
 template<typename T, typename Key>
 class DiskSort {
 public:
-	struct output_t {
-		bool is_begin = false;		// start of a sort bucket
-		bool is_end = false;		// end of a sort bucket
-		std::vector<T> block;
-	};
-	
 	DiskSort(int key_size, int log_num_buckets, int num_threads, std::string file_prefix);
 	
 	~DiskSort() {
 		close();
 	}
 	
-	void read(Processor<output_t>* output, size_t M);
+	void read(Processor<std::vector<T>>* output);
 	
 	void finish();
 	
@@ -55,16 +49,18 @@ private:
 		void flush();
 	};
 	
-	void read_bucket(size_t& index, std::vector<std::vector<T>>& out, const size_t M);
+	void read_bucket(size_t& index, std::vector<std::vector<T>>& out);
 	
-	void sort_bucket(std::vector<std::vector<T>>& input, Processor<output_t>* output);
+	void sort_bucket(std::vector<std::vector<T>>& input, Processor<std::vector<T>>* sort);
 	
-	void sort_block(output_t& input, output_t& out);
+	void sort_block(std::vector<T>& input, std::vector<T>& out);
 	
 private:
-	int key_size = 0;
-	int log_num_buckets = 0;
-	int num_threads = 0;
+	const int key_size = 0;
+	const int log_num_buckets = 0;
+	const int bucket_key_shift = 0;
+	const int num_threads = 0;
+	
 	bool is_finished = false;
 	std::vector<bucket_t> buckets;
 	

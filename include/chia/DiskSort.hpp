@@ -19,6 +19,7 @@ template<typename T, typename Key>
 DiskSort<T, Key>::DiskSort(int key_size, int log_num_buckets, int num_threads, std::string file_prefix)
 	:	key_size(key_size),
 		log_num_buckets(log_num_buckets),
+		bucket_key_shift(key_size - log_num_buckets),
 		num_threads(num_threads),
 		buckets(1 << log_num_buckets)
 {
@@ -38,7 +39,7 @@ void DiskSort<T, Key>::add(const T& entry)
 	if(is_finished) {
 		throw std::logic_error("read only");
 	}
-	const size_t index = Key{}(entry) >> (key_size - log_num_buckets);
+	const size_t index = Key{}(entry) >> bucket_key_shift;
 	if(index >= buckets.size()) {
 		throw std::logic_error("index out of range");
 	}
@@ -60,20 +61,29 @@ void DiskSort<T, Key>::bucket_t::flush()
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read(Processor<output_t>* output, size_t M)
+void DiskSort<T, Key>::read(Processor<std::vector<T>>* output)
 {
+	ThreadPool<std::vector<T>, std::vector<T>> sort_pool(
+			std::bind(&DiskSort::sort_block, this, std::placeholders::_1, std::placeholders::_2),
+			output, num_threads, "DiskSort/sort");
+	
 	Thread<std::vector<std::vector<T>>> sort_thread(
-			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, output), "DiskSort/sort");
+			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &sort_pool), "DiskSort/sort");
+	
 	ThreadPool<size_t, std::vector<std::vector<T>>> read_pool(
-			std::bind(&DiskSort::read_bucket, this, std::placeholders::_1, std::placeholders::_2, M),
+			std::bind(&DiskSort::read_bucket, this, std::placeholders::_1, std::placeholders::_2),
 			&sort_thread, num_threads, "DiskSort/read");
+	
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		read_pool.take_copy(i);
 	}
+	read_pool.wait();
+	sort_thread.wait();
+	sort_pool.wait();
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& out, const size_t M)
+void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& out)
 {
 	auto& bucket = buckets[index];
 	auto& file = bucket.file;
@@ -84,8 +94,13 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 	if(!file) {
 		throw std::runtime_error("fopen() failed");
 	}
+	
+	const int key_shift = bucket_key_shift - log_num_buckets;
+	if(key_shift < 0) {
+		throw std::logic_error("key_shift < 0");
+	}
 	std::unordered_map<size_t, std::vector<T>> table;
-	table.reserve(4096);
+	table.reserve(size_t(1) << log_num_buckets);
 	
 	static constexpr size_t N = 65536;
 	uint8_t buffer[N * T::disk_size];
@@ -100,10 +115,10 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 			T entry;
 			entry.read(buffer + k * T::disk_size);
 			
-			auto& block = table[Key{}(entry) / M];
-			if(block.empty()) {
-				block.reserve(M);
-			}
+			auto& block = table[Key{}(entry) >> key_shift];
+//			if(block.empty()) {
+//				block.reserve(block_size);
+//			}
 			block.push_back(entry);
 		}
 		i += num_entries;
@@ -122,26 +137,17 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::sort_bucket(std::vector<std::vector<T>>& input, Processor<output_t>* output)
+void DiskSort<T, Key>::sort_bucket(std::vector<std::vector<T>>& input, Processor<std::vector<T>>* sort)
 {
-	ThreadPool<output_t, output_t> sort_pool(
-			std::bind(&DiskSort::sort_block, this, std::placeholders::_1, std::placeholders::_2),
-			output, num_threads, "DiskSort/sort");
-	for(size_t i = 0; i < input.size(); ++i) {
-		output_t out;
-		out.is_begin = (i == 0);
-		out.is_end = (i + 1 == input.size());
-		out.block = std::move(input[i]);
-		sort_pool.take(out);
+	for(auto& block : input) {
+		sort->take(block);
 	}
-	sort_pool.wait();
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::sort_block(output_t& input, output_t& out)
+void DiskSort<T, Key>::sort_block(std::vector<T>& input, std::vector<T>& out)
 {
-	auto& block = input.block;
-	std::sort(block.begin(), block.end(),
+	std::sort(input.begin(), input.end(),
 		[](const T& lhs, const T& rhs) -> bool {
 			return Key{}(lhs) < Key{}(rhs);
 		});
