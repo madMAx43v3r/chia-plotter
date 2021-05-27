@@ -277,17 +277,24 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
 	};
 	
-	Thread<std::vector<match_t<T>>> eval_thread(
-		[R_index, R_sort](std::vector<match_t<T>>& matches) {
+	Thread<std::vector<S>> write_thread(
+		[R_sort](std::vector<S>& entries) {
+			for(const auto& entry : entries) {
+				R_sort->add(entry);
+			}
+		}, "phase1/add");
+	
+	ThreadPool<std::vector<match_t<T>>, std::vector<S>> eval_pool(
+		[R_index](std::vector<match_t<T>>& matches, std::vector<S>& out, size_t&) {
 			FxCalculator<T, S> Fx(R_index);
 			for(const auto& match : matches) {
 				S entry;
 				entry.pos = match.pos;
 				entry.off = match.off;
 				Fx.evaluate(match.left, match.right, entry);
-				R_sort->add(entry);
+				out.push_back(entry);
 			}
-		}, "phase1/F" + std::to_string(R_index));
+		}, &write_thread, num_threads, "phase1/eval");
 	
 	ThreadPool<std::vector<match_input_t>, std::vector<match_t<T>>, FxMatcher<T>> match_pool(
 		[&num_found](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
@@ -296,7 +303,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 				out.insert(out.end(), matches.begin(), matches.end());
 				num_found += matches.size();
 			}
-		}, &eval_thread, num_threads, "phase1/match");
+		}, &eval_pool, num_threads, "phase1/match");
 	
 	Thread<std::vector<T>> read_thread(
 		[&L_index, &L_offset, &L_bucket, &match_pool, L_tmp_out](std::vector<T>& input) {
@@ -346,9 +353,10 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		FxMatcher<T> Fx;
 		auto matches = Fx.find_matches(L_offset[1], *L_bucket[1], *L_bucket[0]);
 		num_found += matches.size();
-		eval_thread.take(matches);
+		eval_pool.take(matches);
 	}
-	eval_thread.wait();
+	eval_pool.wait();
+	write_thread.wait();
 	
 	R_sort->finish();
 	return num_found;
