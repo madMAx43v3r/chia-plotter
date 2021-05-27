@@ -137,7 +137,7 @@ public:
         }
         uint8_t C_bytes[16];
         C.ToBytes(C_bytes);
-        memcpy(entry.c.data(), C_bytes, sizeof(entry.c));
+        memcpy(entry.meta.data(), C_bytes, sizeof(entry.meta));
     }
 
 private:
@@ -256,7 +256,7 @@ inline void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector
 		}, output, num_threads, "F1");
 	
 	// TODO: remove div
-	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M / 4; ++k) {
+	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M; ++k) {
 		pool.take_copy(k);
 	}
 	pool.wait();

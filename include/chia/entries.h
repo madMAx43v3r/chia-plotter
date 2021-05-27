@@ -48,7 +48,7 @@ struct entry_t {
 
 template<int N>
 struct entry_tx : entry_t {
-	std::array<uint8_t, N * 4> c;
+	std::array<uint8_t, N * 4> meta;
 	
 	static constexpr size_t disk_size = 10 + N * 4;
 	
@@ -59,7 +59,7 @@ struct entry_tx : entry_t {
 		off |= buf[4] >> 6;
 		off |= uint16_t(buf[5]) << 2;
 		memcpy(&pos, buf + 6, 4);
-		memcpy(c.data(), buf + 10, sizeof(c));
+		memcpy(meta.data(), buf + 10, sizeof(meta));
 		return disk_size;
 	}
 	size_t write(uint8_t* buf) const {
@@ -67,7 +67,7 @@ struct entry_tx : entry_t {
 		buf[4] |= off << 6;
 		buf[5] = off >> 2;
 		memcpy(buf + 6, &pos, 4);
-		memcpy(buf + 10, c.data(), sizeof(c));
+		memcpy(buf + 10, meta.data(), sizeof(meta));
 		return disk_size;
 	}
 };
@@ -129,8 +129,8 @@ struct get_y {
 template<typename T>
 struct get_metadata {
 	void operator()(const T& entry, uint8_t* bytes, size_t* num_bytes) {
-		*num_bytes = sizeof(entry.c);
-		memcpy(bytes, entry.c.data(), sizeof(entry.c));
+		*num_bytes = sizeof(entry.meta);
+		memcpy(bytes, entry.meta.data(), sizeof(entry.meta));
 	}
 };
 

@@ -65,14 +65,14 @@ void DiskSort<T, Key>::read(Processor<std::vector<T>>* output)
 {
 	ThreadPool<std::vector<T>, std::vector<T>> sort_pool(
 			std::bind(&DiskSort::sort_block, this, std::placeholders::_1, std::placeholders::_2),
-			output, num_threads, "DiskSort/sort");
+			output, num_threads, "Disk/sort");
 	
 	Thread<std::vector<std::vector<T>>> sort_thread(
-			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &sort_pool), "DiskSort/sort");
+			std::bind(&DiskSort::sort_bucket, this, std::placeholders::_1, &sort_pool), "Disk/sort");
 	
 	ThreadPool<size_t, std::vector<std::vector<T>>> read_pool(
 			std::bind(&DiskSort::read_bucket, this, std::placeholders::_1, std::placeholders::_2),
-			&sort_thread, num_threads, "DiskSort/read");
+			&sort_thread, num_threads, "Disk/read");
 	
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		read_pool.take_copy(i);

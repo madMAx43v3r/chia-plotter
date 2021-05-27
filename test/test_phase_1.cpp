@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 	const size_t log_num_buckets = argc > 1 ? atoi(argv[1]) : 8;
 	
 	uint8_t id[32] = {};
-	for(int i = 0; i < sizeof(id); ++i) {
+	for(size_t i = 0; i < sizeof(id); ++i) {
 		id[i] = i + 1;
 	}
 	
