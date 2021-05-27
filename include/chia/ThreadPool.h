@@ -14,7 +14,7 @@
 #include <memory>
 
 
-template<typename T, typename S>
+template<typename T, typename S, typename L = size_t>
 class ThreadPool : public Processor<T> {
 private:
 	struct thread_t {
@@ -22,10 +22,11 @@ private:
 		std::mutex mutex;
 		std::condition_variable signal;
 		std::shared_ptr<Thread<T>> thread;
+		L local;
 	};
 	
 public:
-	ThreadPool(	const std::function<void(T&, S&)>& func, Processor<S>* output,
+	ThreadPool(	const std::function<void(T&, S&, L&)>& func, Processor<S>* output,
 				int num_threads, const std::string& name = "")
 		:	output(output),
 			execute(func)
@@ -76,10 +77,11 @@ public:
 private:
 	void wrapper(const size_t index, T& input)
 	{
-		S out;
-		execute(input, out);
-		
 		auto state = threads[index];
+		
+		S out;
+		execute(input, out, state->local);
+		
 		auto prev = threads[(index - 1) % threads.size()];
 		{
 			std::unique_lock<std::mutex> lock(prev->mutex);
@@ -100,7 +102,7 @@ private:
 private:
 	uint64_t next = 0;
 	Processor<S>* output = nullptr;
-	std::function<void(T&, S&)> execute;
+	std::function<void(T&, S&, L&)> execute;
 	std::vector<std::shared_ptr<thread_t>> threads;
 	
 };

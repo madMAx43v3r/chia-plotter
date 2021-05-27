@@ -21,7 +21,8 @@ int64_t get_wall_time_micros() {
 int main(int argc, char** argv)
 {
 	const size_t num_threads = 4;
-	const size_t log_num_buckets = argc > 1 ? atoi(argv[1]) : 9;
+	const size_t num_threads_sort = 2;
+	const size_t log_num_buckets = argc > 1 ? atoi(argv[1]) : 8;
 	
 	uint8_t id[32] = {};
 	for(int i = 0; i < sizeof(id); ++i) {
@@ -33,7 +34,7 @@ int main(int argc, char** argv)
 	typedef DiskSort<phase1::entry_1, phase1::get_y<phase1::entry_1>> DiskSort1;
 	typedef DiskSort<phase1::entry_2, phase1::get_y<phase1::entry_2>> DiskSort2;
 	
-	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t1");
+	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t1");
 	{
 		Thread<std::vector<phase1::entry_1>> output(
 			[&sort_1](std::vector<phase1::entry_1>& input) {
@@ -51,7 +52,7 @@ int main(int argc, char** argv)
 		std::cout << "Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 	}
 	
-	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t2");
+	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t2");
 	{
 		FILE* tmp_file = fopen("test.table1.tmp", "wb");
 		Thread<std::vector<phase1::tmp_entry_1>> tmp_output(
@@ -59,7 +60,7 @@ int main(int argc, char** argv)
 				for(const auto& entry : input) {
 					write_entry(tmp_file, entry);
 				}
-			}, "phase1/tmp_write");
+			}, "phase1/write");
 		
 		const auto begin = get_wall_time_micros();
 		const auto num_matches =

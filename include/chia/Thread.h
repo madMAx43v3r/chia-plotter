@@ -10,6 +10,7 @@
 
 #include <mutex>
 #include <thread>
+#include <atomic>
 #include <iostream>
 #include <functional>
 #include <condition_variable>

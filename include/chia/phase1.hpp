@@ -10,7 +10,6 @@
 
 #include <chia/phase1.h>
 #include <chia/ThreadPool.h>
-
 #include <chia/bits.hpp>
 
 #include "b3/blake3.h"
@@ -248,7 +247,7 @@ inline void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector
 	static constexpr size_t M = 4096;
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
-		[id](uint64_t& block, std::vector<entry_1>& out) {
+		[id](uint64_t& block, std::vector<entry_1>& out, size_t&) {
 			out.resize(M * 16);
 			F1Calculator F1(id);
 			for(size_t i = 0; i < M; ++i) {
@@ -268,11 +267,15 @@ uint64_t compute_matches(	int R_index, int num_threads,
 							DS_L* L_sort, DS_R* R_sort,
 							Processor<std::vector<R>>* L_tmp_out)
 {
-	uint64_t num_found = 0;
-	uint64_t L_index[2] = {};
-	uint64_t L_offset[2] = {};
-	std::vector<T> L_bucket[2];
-	FxMatcher<T> Fx_matcher;
+	std::atomic<uint64_t> num_found {};
+	std::array<uint64_t, 2> L_index = {};
+	std::array<uint64_t, 2> L_offset = {};
+	std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
+	
+	struct match_input_t {
+		std::array<uint64_t, 2> L_offset = {};
+		std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
+	};
 	
 	Thread<std::vector<match_t<T>>> eval_thread(
 		[R_index, R_sort](std::vector<match_t<T>>& matches) {
@@ -286,8 +289,17 @@ uint64_t compute_matches(	int R_index, int num_threads,
 			}
 		}, "phase1/F" + std::to_string(R_index));
 	
-	Thread<std::vector<T>> match_thread(
-		[&num_found, &L_index, &L_offset, &L_bucket, &Fx_matcher, &eval_thread, L_tmp_out](std::vector<T>& input) {
+	ThreadPool<std::vector<match_input_t>, std::vector<match_t<T>>, FxMatcher<T>> match_pool(
+		[&num_found](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
+			for(const auto& pair : input) {
+				auto matches = Fx.find_matches(pair.L_offset[1], *pair.L_bucket[1], *pair.L_bucket[0]);
+				out.insert(out.end(), matches.begin(), matches.end());
+				num_found += matches.size();
+			}
+		}, &eval_thread, num_threads, "phase1/match");
+	
+	Thread<std::vector<T>> read_thread(
+		[&L_index, &L_offset, &L_bucket, &match_pool, L_tmp_out](std::vector<T>& input) {
 			if(L_tmp_out) {
 				std::vector<R> tmp(input.size());
 				for(size_t i = 0; i < tmp.size(); ++i) {
@@ -295,6 +307,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 				}
 				L_tmp_out->take(tmp);
 			}
+			std::vector<match_input_t> out;
 			for(const auto& entry : input) {
 				const uint64_t index = entry.y / kBC;
 //				std::cout << "x=" << entry.x << ", y=" << entry.y << ", index=" << index << std::endl;
@@ -303,26 +316,35 @@ uint64_t compute_matches(	int R_index, int num_threads,
 				}
 				if(index > L_index[0]) {
 					if(L_index[1] + 1 == L_index[0]) {
-						auto matches = Fx_matcher.find_matches(L_offset[1], L_bucket[1], L_bucket[0]);
-						num_found += matches.size();
-						eval_thread.take(matches);
+						match_input_t pair;
+						pair.L_offset = L_offset;
+						pair.L_bucket = L_bucket;
+						out.push_back(pair);
 					}
 					L_index[1] = L_index[0];
 					L_index[0] = index;
 					L_offset[1] = L_offset[0];
-					L_offset[0] += L_bucket[0].size();
-					L_bucket[1] = std::move(L_bucket[0]);
-					L_bucket[0].clear();
+					L_offset[0] += L_bucket[0]->size();
+					L_bucket[1] = L_bucket[0];
+					L_bucket[0] = nullptr;
 				}
-				L_bucket[0].push_back(entry);
+				if(!L_bucket[0]) {
+					L_bucket[0] = std::make_shared<std::vector<T>>();
+				}
+				L_bucket[0]->push_back(entry);
 			}
-		}, "phase1/match");
+//			std::cout << "block size = " << input.size() << ", number of buckets = " << out.size() << std::endl;
+			match_pool.take(out);
+		}, "phase1/slice");
 	
-	L_sort->read(&match_thread);
+	L_sort->read(&read_thread);
 	
-	match_thread.wait();
+	read_thread.wait();
+	match_pool.wait();
+	
 	if(L_index[1] + 1 == L_index[0]) {
-		auto matches = Fx_matcher.find_matches(L_offset[1], L_bucket[1], L_bucket[0]);
+		FxMatcher<T> Fx;
+		auto matches = Fx.find_matches(L_offset[1], *L_bucket[1], *L_bucket[0]);
 		num_found += matches.size();
 		eval_thread.take(matches);
 	}
