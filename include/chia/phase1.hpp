@@ -280,13 +280,14 @@ void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 	std::cout << "Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 }
 
-template<typename T, typename S, typename R, typename V, typename DS_L, typename DS_R>
+template<typename T, typename S, typename R, typename DS_L, typename DS_R>
 uint64_t compute_matches(	int R_index, int num_threads,
 							DS_L* L_sort, DS_R* R_sort,
 							Processor<std::vector<R>>* L_tmp_out,
-							Processor<std::vector<V>>* R_tmp_out)
+							Processor<std::vector<S>>* R_tmp_out)
 {
 	std::atomic<uint64_t> num_found {};
+	std::atomic<uint64_t> num_written {};
 	std::array<uint64_t, 2> L_index = {};
 	std::array<uint64_t, 2> L_offset = {};
 	std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
@@ -298,19 +299,16 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	};
 	
 	Thread<std::vector<S>> write_thread(
-		[R_sort, R_tmp_out](std::vector<S>& input) {
+		[&num_written, R_sort, R_tmp_out](std::vector<S>& input) {
 			if(R_sort) {
 				for(const auto& entry : input) {
 					R_sort->add(entry);
 				}
 			}
 			if(R_tmp_out) {
-				std::vector<V> tmp(input.size());
-				for(size_t i = 0; i < tmp.size(); ++i) {
-					tmp[i].assign(input[i]);
-				}
-				R_tmp_out->take(tmp);
+				R_tmp_out->take(input);
 			}
+			num_written += input.size();
 		}, "phase1/add");
 	
 	ThreadPool<std::vector<match_t<T>>, std::vector<S>> eval_pool(
@@ -396,10 +394,13 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	if(R_sort) {
 		R_sort->finish();
 	}
-	return num_found;
+	if(num_written < num_found) {
+		std::cout << "Lost " << num_found - num_written << " matches due to 32-bit position overflow." << std::endl;
+	}
+	return num_written;
 }
 
-template<typename T, typename S, typename R, typename V, typename DS_L, typename DS_R>
+template<typename T, typename S, typename R, typename DS_L, typename DS_R>
 uint64_t compute_table(	int R_index, int num_threads,
 						DS_L* L_sort, DS_R* R_sort, FILE* L_tmp, FILE* R_tmp = nullptr)
 {
@@ -410,8 +411,8 @@ uint64_t compute_table(	int R_index, int num_threads,
 			}
 		}, "phase1/write/L");
 	
-	Thread<std::vector<V>> R_write(
-		[R_tmp](std::vector<V>& input) {
+	Thread<std::vector<S>> R_write(
+		[R_tmp](std::vector<S>& input) {
 			for(const auto& entry : input) {
 				write_entry(R_tmp, entry);
 			}
@@ -419,7 +420,7 @@ uint64_t compute_table(	int R_index, int num_threads,
 	
 	const auto begin = get_wall_time_micros();
 	const auto num_matches =
-			phase1::compute_matches<T, S, R, V>(
+			phase1::compute_matches<T, S, R>(
 					R_index, num_threads, L_sort, R_sort,
 					L_tmp ? &L_write : nullptr,
 					R_tmp ? &R_write : nullptr);

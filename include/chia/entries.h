@@ -40,14 +40,14 @@ struct entry_1 {
 	}
 };
 
-struct entry_t {
+struct entry_x {
 	uint64_t y;			// 38 bit
 	uint32_t pos;		// 32 bit
 	uint16_t off;		// 10 bit
 };
 
 template<int N>
-struct entry_tx : entry_t {
+struct entry_xm : entry_x {
 	std::array<uint8_t, N * 4> meta;
 	
 	static constexpr size_t disk_size = 10 + N * 4;
@@ -72,16 +72,31 @@ struct entry_tx : entry_t {
 	}
 };
 
-typedef entry_tx<2> entry_2;
-typedef entry_tx<4> entry_3;
-typedef entry_tx<4> entry_4;
-typedef entry_tx<3> entry_5;
-typedef entry_tx<2> entry_6;
+typedef entry_xm<2> entry_2;
+typedef entry_xm<4> entry_3;
+typedef entry_xm<4> entry_4;
+typedef entry_xm<3> entry_5;
+typedef entry_xm<2> entry_6;
 
-struct entry_7 : entry_t {
-	static constexpr size_t disk_size = 0;
-	size_t read(const uint8_t* buf) { return 0; }
-	size_t write(uint8_t* buf) const { return 0; }
+struct entry_7 {
+	uint32_t y;			// 32 bit
+	uint32_t pos;		// 32 bit
+	uint16_t off;		// 10 bit
+	
+	static constexpr size_t disk_size = 10;
+	
+	size_t read(const uint8_t* buf) {
+		memcpy(&y, buf, 4);
+		memcpy(&pos, buf + 4, 4);
+		memcpy(&off, buf + 8, 2);
+		return disk_size;
+	}
+	size_t write(uint8_t* buf) const {
+		memcpy(buf, &y, 4);
+		memcpy(buf + 4, &pos, 4);
+		memcpy(buf + 8, &off, 2);
+		return disk_size;
+	}
 };
 
 struct tmp_entry_1 {
@@ -102,13 +117,13 @@ struct tmp_entry_1 {
 	}
 };
 
-struct tmp_entry_t {
+struct tmp_entry_x {
 	uint32_t pos;		// 32 bit
 	uint16_t off;		// 10 bit
 	
 	static constexpr size_t disk_size = 6;
 	
-	void assign(const entry_t& entry) {
+	void assign(const entry_x& entry) {
 		pos = entry.pos;
 		off = entry.off;
 	}
