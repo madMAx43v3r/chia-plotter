@@ -42,22 +42,7 @@ int main(int argc, char** argv)
 	typedef DiskSort<entry_7, get_y<entry_7>> DiskSort7;
 	
 	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t1");
-	{
-		Thread<std::vector<entry_1>> output(
-			[&sort_1](std::vector<entry_1>& input) {
-				for(const auto& entry : input) {
-					sort_1.add(entry);
-//					std::cout << "x=" << entry.x << ", y=" << entry.y << std::endl;
-				}
-			}, "Disk/add");
-		
-		const auto begin = get_wall_time_micros();
-		compute_f1(id, num_threads, &output);
-		output.wait();
-		sort_1.finish();
-		
-		std::cout << "Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
-	}
+	compute_f1(id, num_threads, &sort_1);
 	
 	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t2");
 	compute_table<entry_1, entry_2, tmp_entry_1, tmp_entry_t>(

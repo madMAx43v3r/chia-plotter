@@ -56,7 +56,7 @@ public:
 	 * x = [index * 16 .. index * 16 + 15]
 	 * block = entry_1[16]
 	 */
-	void compute_entry_1_block(const uint64_t index, entry_1* block)
+	void compute_block(const uint64_t index, entry_1* block)
 	{
 		uint8_t buf[64];
 		chacha8_get_keystream(&enc_ctx_, index, 1, buf);
@@ -243,24 +243,38 @@ private:
 /*
  * id = 32 bytes
  */
-inline void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector<entry_1>>* output)
+template<typename DS>
+void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 {
-	static constexpr size_t M = 4096;
+	static constexpr size_t M = 4096;	// F1 block size
+	
+	const auto begin = get_wall_time_micros();
+	
+	Thread<std::vector<entry_1>> output(
+			[T1_sort](std::vector<entry_1>& input) {
+				for(const auto& entry : input) {
+					T1_sort->add(entry);
+//					std::cout << "x=" << entry.x << ", y=" << entry.y << std::endl;
+				}
+			}, "Disk/add");
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
 		[id](uint64_t& block, std::vector<entry_1>& out, size_t&) {
 			out.resize(M * 16);
 			F1Calculator F1(id);
 			for(size_t i = 0; i < M; ++i) {
-				F1.compute_entry_1_block(block * M + i, &out[i * 16]);
+				F1.compute_block(block * M + i, &out[i * 16]);
 			}
-		}, output, num_threads, "phase1/F1");
+		}, &output, num_threads, "phase1/F1");
 	
-	// TODO: remove div
 	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M; ++k) {
 		pool.take_copy(k);
 	}
 	pool.wait();
+	output.wait();
+	T1_sort->finish();
+	
+	std::cout << "Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 }
 
 template<typename T, typename S, typename R, typename V, typename DS_L, typename DS_R>
