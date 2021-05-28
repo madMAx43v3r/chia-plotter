@@ -100,8 +100,8 @@ public:
         
         size_t L_meta_bytes = 0;
         size_t R_meta_bytes = 0;
-        get_metadata<T>{}(L, L_meta, &L_meta_bytes);
-        get_metadata<T>{}(R, R_meta, &R_meta_bytes);
+        get_meta<T>{}(L, L_meta, &L_meta_bytes);
+        get_meta<T>{}(R, R_meta, &R_meta_bytes);
         
         const Bits Y_1(L.y, k_ + kExtraBits);
         const Bits L_c(L_meta, L_meta_bytes, L_meta_bytes * 8);
@@ -215,23 +215,24 @@ public:
         return idx_count;
     }
     
-    std::vector<match_t<T>> find_matches(	const uint32_t& L_pos_begin,
-											const std::vector<T>& bucket_L,
-											const std::vector<T>& bucket_R)
+    int find_matches(	const uint32_t& L_pos_begin,
+						const std::vector<T>& bucket_L,
+						const std::vector<T>& bucket_R,
+						std::vector<match_t<T>>& out)
 	{
     	uint16_t idx_L[kBC];
 		uint16_t idx_R[kBC];
 		const int count = find_matches_ex(bucket_L, bucket_R, idx_L, idx_R);
 		
-		std::vector<match_t<T>> out(count);
 		for(int i = 0; i < count; ++i) {
-			auto& match = out[i];
+			match_t<T> match;
 			match.left = bucket_L[idx_L[i]];
 			match.right = bucket_R[idx_R[i]];
 			match.pos = L_pos_begin + idx_L[i];
 			match.off = idx_R[i] + (bucket_L.size() - idx_L[i]);
+			out.push_back(match);
 		}
-		return out;
+		return count;
 	}
 
 private:
@@ -253,7 +254,7 @@ inline void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector
 			for(size_t i = 0; i < M; ++i) {
 				F1.compute_entry_1_block(block * M + i, &out[i * 16]);
 			}
-		}, output, num_threads, "F1");
+		}, output, num_threads, "phase1/F1");
 	
 	// TODO: remove div
 	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M; ++k) {
@@ -271,6 +272,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	std::array<uint64_t, 2> L_index = {};
 	std::array<uint64_t, 2> L_offset = {};
 	std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
+	double avg_bucket_size = 0;
 	
 	struct match_input_t {
 		std::array<uint64_t, 2> L_offset = {};
@@ -286,6 +288,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	ThreadPool<std::vector<match_t<T>>, std::vector<S>> eval_pool(
 		[R_index](std::vector<match_t<T>>& matches, std::vector<S>& out, size_t&) {
+			out.reserve(matches.size());
 			FxCalculator<T, S> Fx(R_index);
 			for(const auto& match : matches) {
 				S entry;
@@ -298,15 +301,14 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	ThreadPool<std::vector<match_input_t>, std::vector<match_t<T>>, FxMatcher<T>> match_pool(
 		[&num_found](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
+			out.reserve(96 * 1024);
 			for(const auto& pair : input) {
-				auto matches = Fx.find_matches(pair.L_offset[1], *pair.L_bucket[1], *pair.L_bucket[0]);
-				out.insert(out.end(), matches.begin(), matches.end());
-				num_found += matches.size();
+				num_found += Fx.find_matches(pair.L_offset[1], *pair.L_bucket[1], *pair.L_bucket[0], out);
 			}
 		}, &eval_pool, num_threads, "phase1/match");
 	
 	Thread<std::vector<T>> read_thread(
-		[&L_index, &L_offset, &L_bucket, &match_pool, L_tmp_out](std::vector<T>& input) {
+		[&L_index, &L_offset, &L_bucket, &avg_bucket_size, &match_pool, L_tmp_out](std::vector<T>& input) {
 			if(L_tmp_out) {
 				std::vector<R> tmp(input.size());
 				for(size_t i = 0; i < tmp.size(); ++i) {
@@ -315,6 +317,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 				L_tmp_out->take(tmp);
 			}
 			std::vector<match_input_t> out;
+			out.reserve(1024);
 			for(const auto& entry : input) {
 				const uint64_t index = entry.y / kBC;
 //				std::cout << "x=" << entry.x << ", y=" << entry.y << ", index=" << index << std::endl;
@@ -331,16 +334,21 @@ uint64_t compute_matches(	int R_index, int num_threads,
 					L_index[1] = L_index[0];
 					L_index[0] = index;
 					L_offset[1] = L_offset[0];
-					L_offset[0] += L_bucket[0]->size();
+					if(auto bucket = L_bucket[0]) {
+						L_offset[0] += bucket->size();
+						avg_bucket_size = avg_bucket_size * 0.99 + bucket->size() * 0.01;
+					}
 					L_bucket[1] = L_bucket[0];
 					L_bucket[0] = nullptr;
 				}
 				if(!L_bucket[0]) {
 					L_bucket[0] = std::make_shared<std::vector<T>>();
+					L_bucket[0]->reserve(avg_bucket_size * 1.1);
 				}
 				L_bucket[0]->push_back(entry);
 			}
-//			std::cout << "block size = " << input.size() << ", number of buckets = " << out.size() << std::endl;
+//			std::cout << "block size = " << input.size() << ", number of buckets = " << out.size()
+//					<< ", avg. bucket size = " << avg_bucket_size << std::endl;
 			match_pool.take(out);
 		}, "phase1/slice");
 	
@@ -351,8 +359,8 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	if(L_index[1] + 1 == L_index[0]) {
 		FxMatcher<T> Fx;
-		auto matches = Fx.find_matches(L_offset[1], *L_bucket[1], *L_bucket[0]);
-		num_found += matches.size();
+		std::vector<match_t<T>> matches;
+		num_found += Fx.find_matches(L_offset[1], *L_bucket[1], *L_bucket[0], matches);
 		eval_pool.take(matches);
 	}
 	eval_pool.wait();

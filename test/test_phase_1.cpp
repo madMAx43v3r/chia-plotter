@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 					sort_1.add(entry);
 //					std::cout << "x=" << entry.x << ", y=" << entry.y << std::endl;
 				}
-			}, "DiskSort/add");
+			}, "Disk/add");
 		
 		const auto begin = get_wall_time_micros();
 		phase1::compute_f1(id, num_threads, &output);

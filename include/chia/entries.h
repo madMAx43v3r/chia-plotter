@@ -127,7 +127,7 @@ struct get_y {
 };
 
 template<typename T>
-struct get_metadata {
+struct get_meta {
 	void operator()(const T& entry, uint8_t* bytes, size_t* num_bytes) {
 		*num_bytes = sizeof(entry.meta);
 		memcpy(bytes, entry.meta.data(), sizeof(entry.meta));
@@ -135,7 +135,7 @@ struct get_metadata {
 };
 
 template<>
-struct get_metadata<entry_1> {
+struct get_meta<entry_1> {
 	void operator()(const entry_1& entry, uint8_t* bytes, size_t* num_bytes) {
 		*num_bytes = sizeof(uint32_t);
 		const uint32_t tmp = bswap_32(entry.x);

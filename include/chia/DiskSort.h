@@ -62,6 +62,7 @@ private:
 	const int num_threads = 0;
 	
 	bool is_finished = false;
+	double avg_block_size = 0;
 	std::vector<bucket_t> buckets;
 	
 };

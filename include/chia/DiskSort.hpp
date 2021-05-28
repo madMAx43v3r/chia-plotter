@@ -114,7 +114,12 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 		for(size_t k = 0; k < num_entries; ++k) {
 			T entry;
 			entry.read(buffer + k * T::disk_size);
-			table[Key{}(entry) >> key_shift].push_back(entry);
+			
+			auto& block = table[Key{}(entry) >> key_shift];
+			if(block.empty()) {
+				block.reserve(avg_block_size * 1.1);
+			}
+			block.push_back(entry);
 		}
 		i += num_entries;
 	}
@@ -127,8 +132,10 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 	
 	out.reserve(sorted.size());
 	for(auto& entry : sorted) {
+		avg_block_size = avg_block_size * 0.9 + entry.second.size() * 0.1;
 		out.emplace_back(std::move(entry.second));
 	}
+//	std::cout << "bucket " << index << ": avg block size = " << avg_block_size << std::endl;
 }
 
 template<typename T, typename Key>
