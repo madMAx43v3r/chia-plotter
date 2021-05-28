@@ -353,7 +353,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 				}
 				if(!L_bucket[0]) {
 					L_bucket[0] = std::make_shared<std::vector<T>>();
-					L_bucket[0]->reserve(avg_bucket_size * 1.1);
+					L_bucket[0]->reserve(avg_bucket_size * 1.2);
 				}
 				L_bucket[0]->push_back(entry);
 			}
@@ -376,7 +376,9 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	eval_pool.wait();
 	write_thread.wait();
 	
-	R_sort->finish();
+	if(R_sort) {
+		R_sort->finish();
+	}
 	return num_found;
 }
 
