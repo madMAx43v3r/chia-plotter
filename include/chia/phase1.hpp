@@ -120,7 +120,7 @@ public:
         blake3_hasher_update(&hasher, input_bytes, cdiv(input.GetSize(), 8));
         blake3_hasher_finalize(&hasher, hash_bytes, sizeof(hash_bytes));
 
-        entry.y = Util::EightBytesToInt(hash_bytes) >> (64 - (k_ + kExtraBits));
+        entry.y = Util::EightBytesToInt(hash_bytes) >> (64 - (k_ + (table_index_ < 7 ? kExtraBits : 0)));
 
         if (table_index_ < 4) {
             // c is already computed
@@ -137,7 +137,7 @@ public:
         }
         uint8_t C_bytes[16];
         C.ToBytes(C_bytes);
-        memcpy(entry.meta.data(), C_bytes, sizeof(entry.meta));
+        set_meta<S>{}(entry, C_bytes, C.GetSize() / 8);
     }
 
 private:
@@ -263,10 +263,11 @@ inline void compute_f1(const uint8_t* id, int num_threads, Processor<std::vector
 	pool.wait();
 }
 
-template<typename T, typename S, typename R, typename DS_L, typename DS_R>
+template<typename T, typename S, typename R, typename V, typename DS_L, typename DS_R>
 uint64_t compute_matches(	int R_index, int num_threads,
 							DS_L* L_sort, DS_R* R_sort,
-							Processor<std::vector<R>>* L_tmp_out)
+							Processor<std::vector<R>>* L_tmp_out,
+							Processor<std::vector<V>>* R_tmp_out)
 {
 	std::atomic<uint64_t> num_found {};
 	std::array<uint64_t, 2> L_index = {};
@@ -280,9 +281,18 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	};
 	
 	Thread<std::vector<S>> write_thread(
-		[R_sort](std::vector<S>& entries) {
-			for(const auto& entry : entries) {
-				R_sort->add(entry);
+		[R_sort, R_tmp_out](std::vector<S>& input) {
+			if(R_sort) {
+				for(const auto& entry : input) {
+					R_sort->add(entry);
+				}
+			}
+			if(R_tmp_out) {
+				std::vector<V> tmp(input.size());
+				for(size_t i = 0; i < tmp.size(); ++i) {
+					tmp[i].assign(input[i]);
+				}
+				R_tmp_out->take(tmp);
 			}
 		}, "phase1/add");
 	
@@ -368,6 +378,44 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	R_sort->finish();
 	return num_found;
+}
+
+template<typename T, typename S, typename R, typename V, typename DS_L, typename DS_R>
+uint64_t compute_table(	int R_index, int num_threads,
+						DS_L* L_sort, DS_R* R_sort, FILE* L_tmp, FILE* R_tmp = nullptr)
+{
+	Thread<std::vector<R>> L_write(
+		[L_tmp](std::vector<R>& input) {
+			for(const auto& entry : input) {
+				write_entry(L_tmp, entry);
+			}
+		}, "phase1/write/L");
+	
+	Thread<std::vector<V>> R_write(
+		[R_tmp](std::vector<V>& input) {
+			for(const auto& entry : input) {
+				write_entry(R_tmp, entry);
+			}
+		}, "phase1/write/R");
+	
+	const auto begin = get_wall_time_micros();
+	const auto num_matches =
+			phase1::compute_matches<T, S, R, V>(
+					R_index, num_threads, L_sort, R_sort,
+					L_tmp ? &L_write : nullptr,
+					R_tmp ? &R_write : nullptr);
+	
+	if(L_tmp) {
+		L_write.wait();
+		fflush(L_tmp);
+	}
+	if(R_tmp) {
+		R_write.wait();
+		fflush(R_tmp);
+	}
+	std::cout << "Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
+			<< ", found " << num_matches << " matches" << std::endl;
+	return num_matches;
 }
 
 

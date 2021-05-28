@@ -72,12 +72,17 @@ struct entry_tx : entry_t {
 	}
 };
 
-typedef entry_tx<1> entry_2;
-typedef entry_tx<2> entry_3;
+typedef entry_tx<2> entry_2;
+typedef entry_tx<4> entry_3;
 typedef entry_tx<4> entry_4;
-typedef entry_tx<4> entry_5;
-typedef entry_tx<3> entry_6;
-typedef entry_tx<2> entry_7;
+typedef entry_tx<3> entry_5;
+typedef entry_tx<2> entry_6;
+
+struct entry_7 : entry_t {
+	static constexpr size_t disk_size = 0;
+	size_t read(const uint8_t* buf) { return 0; }
+	size_t write(uint8_t* buf) const { return 0; }
+};
 
 struct tmp_entry_1 {
 	uint32_t x;			// 32 bit
@@ -140,6 +145,23 @@ struct get_meta<entry_1> {
 		*num_bytes = sizeof(uint32_t);
 		const uint32_t tmp = bswap_32(entry.x);
 		memcpy(bytes, &tmp, sizeof(uint32_t));
+	}
+};
+
+template<typename T>
+struct set_meta {
+	void operator()(T& entry, const uint8_t* bytes, const size_t num_bytes) {
+		if(num_bytes != sizeof(entry.meta)) {
+			throw std::logic_error("meta data size mismatch");
+		}
+		memcpy(entry.meta.data(), bytes, sizeof(entry.meta));
+	}
+};
+
+template<>
+struct set_meta<entry_7> {
+	void operator()(entry_7& entry, const uint8_t* bytes, const size_t num_bytes) {
+		// no meta data
 	}
 };
 
