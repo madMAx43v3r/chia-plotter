@@ -215,7 +215,7 @@ public:
         return idx_count;
     }
     
-    int find_matches(	const uint32_t& L_pos_begin,
+    int find_matches(	const uint64_t& L_pos_begin,
 						const std::vector<T>& bucket_L,
 						const std::vector<T>& bucket_R,
 						std::vector<match_t<T>>& out)
@@ -225,12 +225,15 @@ public:
 		const int count = find_matches_ex(bucket_L, bucket_R, idx_L, idx_R);
 		
 		for(int i = 0; i < count; ++i) {
-			match_t<T> match;
-			match.left = bucket_L[idx_L[i]];
-			match.right = bucket_R[idx_R[i]];
-			match.pos = L_pos_begin + idx_L[i];
-			match.off = idx_R[i] + (bucket_L.size() - idx_L[i]);
-			out.push_back(match);
+			const auto pos = L_pos_begin + idx_L[i];
+			if(pos < (uint64_t(1) << 32)) {
+				match_t<T> match;
+				match.left = bucket_L[idx_L[i]];
+				match.right = bucket_R[idx_R[i]];
+				match.pos = pos;
+				match.off = idx_R[i] + (bucket_L.size() - idx_L[i]);
+				out.push_back(match);
+			}
 		}
 		return count;
 	}
