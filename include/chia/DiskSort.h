@@ -21,7 +21,8 @@
 template<typename T, typename Key>
 class DiskSort {
 public:
-	DiskSort(int key_size, int log_num_buckets, int num_threads, std::string file_prefix);
+	DiskSort(	int key_size, int log_num_buckets, int num_threads,
+				std::string file_prefix, int num_threads_read = 2);
 	
 	~DiskSort() {
 		close();
@@ -60,6 +61,7 @@ private:
 	const int log_num_buckets = 0;
 	const int bucket_key_shift = 0;
 	const int num_threads = 0;
+	const int num_threads_read = 0;
 	
 	bool is_finished = false;
 	double avg_block_size = 0;

@@ -16,9 +16,8 @@ using namespace phase1;
 
 int main(int argc, char** argv)
 {
-	const size_t num_threads = 4;
-	const size_t num_threads_sort = 2;
-	const size_t log_num_buckets = argc > 1 ? atoi(argv[1]) : 8;
+	const size_t num_threads = argc > 1 ? atoi(argv[1]) : 4;
+	const size_t log_num_buckets = argc > 2 ? atoi(argv[2]) : 8;
 	
 	uint8_t id[32] = {};
 	for(size_t i = 0; i < sizeof(id); ++i) {
@@ -42,7 +41,7 @@ int main(int argc, char** argv)
 	typedef DiskSort<entry_6, get_y<entry_6>> DiskSort6;
 	typedef DiskSort<entry_7, get_y<entry_7>> DiskSort7;
 	
-	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t1");
+	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t1");
 	{
 		Thread<std::vector<entry_1>> output(
 			[&sort_1](std::vector<entry_1>& input) {
@@ -60,27 +59,27 @@ int main(int argc, char** argv)
 		std::cout << "Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 	}
 	
-	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t2");
+	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t2");
 	compute_table<entry_1, entry_2, tmp_entry_1, tmp_entry_t>(
 			2, num_threads, &sort_1, &sort_2, tmp_files[0]);
 	sort_1.close();
 	
-	DiskSort3 sort_3(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t3");
+	DiskSort3 sort_3(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t3");
 	compute_table<entry_2, entry_3, tmp_entry_t, tmp_entry_t>(
 			3, num_threads, &sort_2, &sort_3, tmp_files[1]);
 	sort_2.close();
 	
-	DiskSort4 sort_4(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t4");
+	DiskSort4 sort_4(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t4");
 	compute_table<entry_3, entry_4, tmp_entry_t, tmp_entry_t>(
 			4, num_threads, &sort_3, &sort_4, tmp_files[2]);
 	sort_3.close();
 	
-	DiskSort5 sort_5(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t5");
+	DiskSort5 sort_5(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t5");
 	compute_table<entry_4, entry_5, tmp_entry_t, tmp_entry_t>(
 			5, num_threads, &sort_4, &sort_5, tmp_files[3]);
 	sort_4.close();
 	
-	DiskSort6 sort_6(32 + kExtraBits, log_num_buckets, num_threads_sort, "test.p1.t6");
+	DiskSort6 sort_6(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t6");
 	compute_table<entry_5, entry_6, tmp_entry_t, tmp_entry_t>(
 			6, num_threads, &sort_5, &sort_6, tmp_files[4]);
 	sort_5.close();

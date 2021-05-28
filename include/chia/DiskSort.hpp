@@ -16,11 +16,13 @@
 
 
 template<typename T, typename Key>
-DiskSort<T, Key>::DiskSort(int key_size, int log_num_buckets, int num_threads, std::string file_prefix)
+DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets, int num_threads,
+							std::string file_prefix, int num_threads_read)
 	:	key_size(key_size),
 		log_num_buckets(log_num_buckets),
 		bucket_key_shift(key_size - log_num_buckets),
 		num_threads(num_threads),
+		num_threads_read(num_threads_read),
 		buckets(1 << log_num_buckets)
 {
 	for(size_t i = 0; i < buckets.size(); ++i) {
@@ -72,7 +74,7 @@ void DiskSort<T, Key>::read(Processor<std::vector<T>>* output)
 	
 	ThreadPool<size_t, std::vector<std::vector<T>>> read_pool(
 			std::bind(&DiskSort::read_bucket, this, std::placeholders::_1, std::placeholders::_2),
-			&sort_thread, num_threads, "Disk/read");
+			&sort_thread, num_threads_read, "Disk/read");
 	
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		read_pool.take_copy(i);
