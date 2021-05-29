@@ -28,6 +28,9 @@ public:
 		close();
 	}
 	
+	DiskSort(DiskSort&) = delete;
+	DiskSort& operator=(DiskSort&) = delete;
+	
 	void read(Processor<std::vector<T>>* output);
 	
 	void finish();

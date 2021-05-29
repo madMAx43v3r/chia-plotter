@@ -277,7 +277,7 @@ void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 	output.wait();
 	T1_sort->finish();
 	
-	std::cout << "Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
+	std::cout << "[P1] Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 }
 
 template<typename T, typename S, typename R, typename DS_L, typename DS_R>
@@ -395,7 +395,8 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		R_sort->finish();
 	}
 	if(num_written < num_found) {
-		std::cout << "Lost " << num_found - num_written << " matches due to 32-bit position overflow" << std::endl;
+		std::cout << "[P1] Lost " << num_found - num_written
+				<< " matches due to 32-bit position overflow" << std::endl;
 	}
 	return num_written;
 }
@@ -433,7 +434,7 @@ uint64_t compute_table(	int R_index, int num_threads,
 		R_write.wait();
 		fflush(R_tmp);
 	}
-	std::cout << "Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
+	std::cout << "[P1] Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
 			<< ", found " << num_matches << " matches" << std::endl;
 	return num_matches;
 }

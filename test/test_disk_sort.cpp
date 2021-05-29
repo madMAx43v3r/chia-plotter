@@ -5,7 +5,7 @@
  *      Author: mad
  */
 
-#include <chia/entries.h>
+#include <chia/phase1.h>
 #include <chia/DiskSort.hpp>
 
 #include <random>
