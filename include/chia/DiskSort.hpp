@@ -134,8 +134,10 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 	
 	out.reserve(sorted.size());
 	for(auto& entry : sorted) {
-		avg_block_size = avg_block_size * 0.9 + entry.second.size() * 0.1;
 		out.emplace_back(std::move(entry.second));
+	}
+	if(!sorted.empty()) {
+		avg_block_size = double(out.size()) / sorted.size();
 	}
 //	std::cout << "bucket " << index << ": avg block size = " << avg_block_size << std::endl;
 }
