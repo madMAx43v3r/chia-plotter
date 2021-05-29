@@ -47,14 +47,14 @@ private:
 		size_t offset = 0;
 		size_t num_entries = 0;
 		uint8_t buffer[262144];
+		
+		void open(const char* mode);
 		void flush();
+		void close();
+		void remove();
 	};
 	
 	void read_bucket(size_t& index, std::vector<std::vector<T>>& out);
-	
-	void sort_bucket(std::vector<std::vector<T>>& input, Processor<std::vector<T>>* sort);
-	
-	void sort_block(std::vector<T>& input, std::vector<T>& out);
 	
 private:
 	const int key_size = 0;
