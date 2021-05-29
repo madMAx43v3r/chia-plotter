@@ -64,7 +64,6 @@ private:
 	const int num_threads_read = 0;
 	
 	bool is_finished = false;
-	std::atomic<double> avg_block_size {};
 	std::vector<bucket_t> buckets;
 	
 };

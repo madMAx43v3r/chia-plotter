@@ -395,7 +395,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		R_sort->finish();
 	}
 	if(num_written < num_found) {
-		std::cout << "Lost " << num_found - num_written << " matches due to 32-bit position overflow." << std::endl;
+		std::cout << "Lost " << num_found - num_written << " matches due to 32-bit position overflow" << std::endl;
 	}
 	return num_written;
 }
