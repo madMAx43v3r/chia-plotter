@@ -79,7 +79,7 @@ struct entry_xm : entry_x {
 	}
 	size_t write(uint8_t* buf) const {
 		memcpy(buf, &y, 5);
-		buf[4] |= off << 6;
+		buf[4] = (off << 6) | (buf[4] & 0x3F);
 		buf[5] = off >> 2;
 		memcpy(buf + 6, &pos, 4);
 		memcpy(buf + 10, meta.data(), sizeof(meta));
