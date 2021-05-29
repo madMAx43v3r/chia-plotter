@@ -5,7 +5,6 @@
  *      Author: mad
  */
 
-#include <chia/entries.h>
 #include <chia/phase1.hpp>
 #include <chia/DiskSort.hpp>
 
@@ -16,8 +15,8 @@ using namespace phase1;
 
 int main(int argc, char** argv)
 {
-	const size_t num_threads = argc > 1 ? atoi(argv[1]) : 4;
-	const size_t log_num_buckets = argc > 2 ? atoi(argv[2]) : 8;
+	const int num_threads = argc > 1 ? atoi(argv[1]) : 4;
+	const int log_num_buckets = argc > 2 ? atoi(argv[2]) : 8;
 	
 	uint8_t id[32] = {};
 	for(size_t i = 0; i < sizeof(id); ++i) {

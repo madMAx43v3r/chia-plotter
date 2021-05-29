@@ -71,9 +71,9 @@ public:
 	}
 	
 private:
-	void read_block(std::pair<size_t, size_t>& param, std::vector<T>& out, local_t& local)
+	void read_block(std::pair<size_t, size_t>& param, std::vector<T>& out, local_t& local) const
 	{
-		if(int err = fseek(local.file, param.first, SEEK_SET)) {
+		if(int err = fseek(local.file, param.first * T::disk_size, SEEK_SET)) {
 			throw std::runtime_error("fseek() failed");
 		}
 		if(fread(local.buffer, T::disk_size, param.second, local.file) != param.second) {
@@ -86,8 +86,8 @@ private:
 	}
 	
 private:
-	const size_t num_entries;
 	const std::string file_name;
+	const size_t num_entries;
 	const int num_threads = 0;
 	
 };

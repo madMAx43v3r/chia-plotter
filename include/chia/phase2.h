@@ -9,7 +9,9 @@
 #define INCLUDE_CHIA_PHASE2_H_
 
 #include <chia/chia.h>
-#include <chia/entries.h>
+#include <chia/phase1.h>
+#include <chia/DiskSort.h>
+#include <chia/bitfield.hpp>
 
 #include <array>
 #include <vector>
@@ -19,10 +21,6 @@
 
 
 namespace phase2 {
-
-struct ouput_t {
-	std::vector<bool> bitfield_1;
-};
 
 struct entry_t {
 	uint32_t key;
@@ -45,13 +43,28 @@ struct entry_t {
 	}
 };
 
+typedef phase1::tmp_entry_1 entry_1;
+typedef phase1::entry_7 entry_7;
+
 template<typename T>
-struct get_pos {
+struct get_sort_key {
 	uint64_t operator()(const T& entry) {
-		return entry.pos;
+		return entry.key;
 	}
 };
 
+struct no_sort_key {
+	uint64_t operator()(const entry_7& entry) {
+		return 0;
+	}
+};
+
+typedef DiskSort<entry_t, get_sort_key<entry_t>> DiskSortT;
+typedef DiskSort<entry_7, no_sort_key> DiskSort7;		// dummy
+
+struct ouput_t {
+	std::shared_ptr<bitfield> bitfield_1;
+};
 
 
 } // phase2

@@ -80,12 +80,12 @@ public:
 	
 	// NOT thread-safe
 	L& get_local(size_t index) {
-		return threads[index].L;
+		return threads[index]->local;
 	}
 	
 	// NOT thread-safe
 	void set_local(size_t index, L&& value) {
-		threads[index].L = value;
+		threads[index]->local = value;
 	}
 	
 private:

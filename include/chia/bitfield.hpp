@@ -12,19 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef INCLUDE_CHIA_BITFIELD_H_
+#define INCLUDE_CHIA_BITFIELD_H_
 
 #include <memory>
+#include <atomic>
 
 struct bitfield
 {
     explicit bitfield(int64_t size)
-        : buffer_(new uint64_t[(size + 63) / 64])
+        : buffer_(new std::atomic<uint64_t>[(size + 63) / 64])
         , size_((size + 63) / 64)
     {
         clear();
     }
 
+    // thread-safe
     void set(int64_t const bit)
     {
         assert(bit / 64 < size_);
@@ -39,7 +42,9 @@ struct bitfield
 
     void clear()
     {
-        std::memset(buffer_.get(), 0, size_ * 8);
+    	for(int64_t i = 0; i < size_; ++i) {
+        	buffer_[i] = 0;
+        }
     }
 
     int64_t size() const { return size_ * 64; }
@@ -56,8 +61,9 @@ struct bitfield
         assert((start_bit % 64) == 0);
         assert(start_bit <= end_bit);
 
-        uint64_t const* start = buffer_.get() + start_bit / 64;
-        uint64_t const* end = buffer_.get() + end_bit / 64;
+        auto const* start = buffer_.get() + start_bit / 64;
+        auto const* end = buffer_.get() + end_bit / 64;
+        
         int64_t ret = 0;
         while (start != end) {
             ret += Util::PopCount(*start);
@@ -77,8 +83,10 @@ struct bitfield
         size_ = 0;
     }
 private:
-    std::unique_ptr<uint64_t[]> buffer_;
+    std::unique_ptr<std::atomic<uint64_t>[]> buffer_;
 
     // number of 64-bit words
     int64_t size_;
 };
+
+#endif // INCLUDE_CHIA_BITFIELD_H_

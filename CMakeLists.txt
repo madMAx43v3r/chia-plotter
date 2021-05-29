@@ -49,5 +49,7 @@ target_link_libraries(chia_plotter blake3)
 add_executable(test_disk_sort test/test_disk_sort.cpp)
 
 add_executable(test_phase_1 test/test_phase_1.cpp)
+add_executable(test_phase_2 test/test_phase_2.cpp)
 
 target_link_libraries(test_phase_1 chia_plotter)
+target_link_libraries(test_phase_2 chia_plotter)

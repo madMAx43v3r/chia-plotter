@@ -30,10 +30,6 @@ struct input_t {
 	std::array<uint8_t, 32> id = {};
 };
 
-struct ouput_t {
-	std::array<table_t, 7> table;
-};
-
 struct entry_1 {
 	uint64_t y;			// 38 bit
 	uint32_t x;			// 32 bit
@@ -201,6 +197,10 @@ struct match_t {
 	T right;
 	uint32_t pos = 0;
 	uint16_t off = 0;
+};
+
+struct ouput_t {
+	std::array<table_t, 7> table;
 };
 
 
