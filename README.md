@@ -1,7 +1,7 @@
 # chia-plotter (pipelined multi-threaded)
 
 This is a new implementation of a chia plotter which is desinged as a processing pipeline,
-similar to how GPUs work, only that in this case the "cores" are normal CPU threads.
+similar to how GPUs work, only in this case the "cores" are normal software CPU threads.
 
 As a result this plotter is able to fully max out any storage device's bandwidth,
 simply by increasing the number of "cores", ie. threads.
@@ -21,6 +21,7 @@ By default in phase 1, two read threads are used, 4 sort threads, 4 matching thr
 4 f(x)-evaluation threads and some in-between threads.
 
 You can test yourself by running `test_phase_1` in a directory that's on your SSD.
+Parameters are [number of threads, default = 4] [log number of sort buckets = 8], k is hardcoded to 32.
 
 ## Further Development
 
