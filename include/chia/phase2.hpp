@@ -95,7 +95,9 @@ void compute_table(	int R_index, int num_threads,
 		fflush(R_out);
 	}
 	std::cout << "[P2] Table " << R_index << " rewrite took "
-				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
+				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
+				<< ", dropped " << R_table.num_entries - num_written << " entries"
+				<< " (" << 100 * (1 - double(num_written) / R_table.num_entries) << " %)" << std::endl;
 }
 
 
