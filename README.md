@@ -8,8 +8,7 @@ simply by increasing the number of "cores", ie. threads.
 
 ## Phase 1
 
-As of now I have implemented phase 1 of the plotting algorithm,
-which is able to finish in less than 60 min on my i7-9750H (45W 6-core) with a regular SATA SSD.
+Phase 1 is able to finish in less than 60 min on my i7-9750H (45W 6-core) with a regular SATA SSD.
 
 I expect a full plot to finish in less than 3 hours on this particular machine,
 which is about 3x faster than with the official plotter.
@@ -22,6 +21,25 @@ By default in phase 1, two read threads are used, 4 sort threads, 4 matching thr
 
 You can test yourself by running `test_phase_1` in a directory that's on your SSD.
 Parameters are [number of threads, default = 4] [log number of sort buckets = 8], k is hardcoded to 32.
+
+## Phase 2
+
+Phase 2 is able to finish in about 25 min on my i7-9750H (45W 6-core) with a regular SATA SSD.
+
+Using 4 threads by default to mark used entries in the bitfield, as well as 4 threads to remap positions.
+
+When marking the bitfield the threads will show high CPU usage (`top -H`), however they are just waiting for
+the L3 cache to complete the atomic operations. So they are not actually buring electricity but they keep
+the cores busy, as such you shouldn't use more threads than you have physical cores, to let the other
+hyperthreads to other work.
+
+## Phase 3
+
+Is in development at the moment.
+
+## Phase 4
+
+TODO
 
 ## Further Development
 
