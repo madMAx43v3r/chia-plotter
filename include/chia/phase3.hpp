@@ -49,6 +49,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 				}
 				L_buffer.push_back(get_new_pos<T>{}(entry));
 			}
+//			std::cout << "L_read_1: L_buffer size = " << L_buffer.size() << std::endl;
 			lock.unlock();
 			signal.notify_all();
 		}, "phase3/buffer/L");
@@ -66,7 +67,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 			signal.notify_all();
 		}, "phase3/buffer/L");
 	
-	Thread<std::vector<entry_lp>> R_add(
+	Thread<std::vector<entry_lp>> L_add_2(
 		[L_sort_2, &R_num_write](std::vector<entry_lp>& input) {
 			for(const auto& entry : input) {
 				L_sort_2->add(entry);
@@ -75,7 +76,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 		}, "phase3/add/R");
 	
 	Thread<std::vector<S>> R_read(
-		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &R_add] (std::vector<S>& input) {
+		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &L_add_2](std::vector<S>& input) {
 			std::vector<entry_lp> out;
 			out.reserve(input.size());
 			std::unique_lock<std::mutex> lock(mutex);
@@ -96,6 +97,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 				}
 				while(L_buffer.size() <= pos[1] && !L_is_end) {
 					R_is_waiting = true;
+//					std::cout << "R_read: waiting for offset " << pos[1] << std::endl;
 					signal.notify_all();
 					signal.wait(lock);
 				}
@@ -119,7 +121,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 					lock.lock();
 				}
 			}
-			R_add.take(out);
+			L_add_2.take(out);
 		}, "phase3/lp_conv/R");
 	
 	std::thread R_sort_read(
@@ -141,8 +143,8 @@ uint64_t compute_table(	int L_index, int num_threads,
 	}
 	R_sort_read.join();
 	R_read.close();
-	R_add.close();
-	R_sort->finish();
+	L_add_2.close();
+	L_sort_2->finish();
 	
 	std::cout << "[P3] Table " << L_index + 1 << " line point rewrite took "
 				<< (get_wall_time_micros() - begin_1) / 1e6 << " sec"

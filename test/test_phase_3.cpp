@@ -38,12 +38,11 @@ int main(int argc, char** argv)
 	
 	phase2::DiskSortT R_sort_po_2(32, log_num_buckets, num_threads, "test.p2.t2", true);
 	DiskSortLP L_sort_lp_2(63, log_num_buckets, num_threads, "test.p3s1.t2");
+	DiskSortNP R_sort_np_2(63, log_num_buckets, num_threads, "test.p3s2.t2", false, 1);
 	
 	compute_table<	phase2::entry_1, phase2::entry_x,
 					DiskSortNP, phase2::DiskSortT, DiskSortLP, DiskSortNP>(
 			1, num_threads, nullptr, &R_sort_po_2, &L_sort_lp_2, nullptr, &L_table_1, &bitfield_1);
-	
-	R_sort_po_2.set_keep_files(true);
 	
 	// TODO
 	

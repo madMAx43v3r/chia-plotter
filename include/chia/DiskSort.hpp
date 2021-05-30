@@ -9,6 +9,7 @@
 #define INCLUDE_CHIA_DISKSORT_HPP_
 
 #include <chia/DiskSort.h>
+#include <chia/util.hpp>
 
 #include <map>
 #include <algorithm>
@@ -70,7 +71,9 @@ DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets, int num_threads,
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		auto& bucket = buckets[i];
 		bucket.file_name = file_prefix + ".sort_bucket_" + std::to_string(i) + ".tmp";
-		if(!read_only) {
+		if(read_only) {
+			bucket.num_entries = get_file_size(bucket.file_name.c_str()) / T::disk_size;
+		} else {
 			bucket.open("wb");
 		}
 	}
