@@ -69,6 +69,7 @@ public:
 	
 	// NOT thread-safe
 	void close() {
+		wait();
 		std::unique_lock<std::mutex> lock(mutex);
 		do_run = false;
 		if(thread.joinable()) {
