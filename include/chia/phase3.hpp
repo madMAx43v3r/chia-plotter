@@ -110,8 +110,9 @@ uint64_t compute_table(	int L_index, int num_threads,
 				tmp.key = get_sort_key<S>{}(entry);
 				out.push_back(tmp);
 				
-				if(pos[0] > M) {
+				if(pos[0] > M && L_buffer.size() > M) {
 					// delete old buffer data
+					L_offset += M;
 					L_buffer.erase(L_buffer.begin(), L_buffer.begin() + M);
 					lock.unlock();
 					signal.notify_all();
