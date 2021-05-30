@@ -86,7 +86,7 @@ struct bitfield
         size_ = 0;
     }
     
-    void write(FILE* file) {
+    void write(FILE* file) const {
     	if(fwrite(buffer_.get(), sizeof(uint64_t), size_, file) != size_t(size_)) {
     		throw std::runtime_error("fwrite() failed");
     	}

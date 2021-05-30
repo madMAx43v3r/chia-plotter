@@ -375,4 +375,10 @@ namespace Util {
     }
 }
 
+std::ifstream::pos_type get_file_size(const char* file_name)
+{
+	std::ifstream in(file_name, std::ifstream::ate | std::ifstream::binary);
+	return in.tellg(); 
+}
+
 #endif  // SRC_CPP_UTIL_HPP_

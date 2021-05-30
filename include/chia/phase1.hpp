@@ -257,9 +257,8 @@ void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 			[T1_sort](std::vector<entry_1>& input) {
 				for(const auto& entry : input) {
 					T1_sort->add(entry);
-//					std::cout << "x=" << entry.x << ", y=" << entry.y << std::endl;
 				}
-			}, "Disk/add");
+			}, "phase1/add");
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
 		[id](uint64_t& block, std::vector<entry_1>& out, size_t&) {

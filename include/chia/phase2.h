@@ -22,7 +22,7 @@
 
 namespace phase2 {
 
-struct entry_t {
+struct entry_x {
 	uint32_t key;
 	uint32_t pos;
 	uint16_t off;		// 10 bit
@@ -58,19 +58,6 @@ struct get_pos {
 };
 
 template<typename T>
-struct get_sort_key {
-	uint64_t operator()(const T& entry) {
-		return entry.key;
-	}
-};
-
-struct no_sort_key {
-	uint64_t operator()(const entry_7& entry) {
-		return 0;
-	}
-};
-
-template<typename T>
 struct set_sort_key {
 	void operator()(T& entry, uint32_t key) {
 		entry.key = key;
@@ -84,7 +71,7 @@ struct set_sort_key<entry_7> {
 	}
 };
 
-typedef DiskSort<entry_t, get_pos<entry_t>> DiskSortT;
+typedef DiskSort<entry_x, get_pos<entry_x>> DiskSortT;
 typedef DiskSort<entry_7, get_pos<entry_7>> DiskSort7;		// dummy
 
 struct ouput_t {
