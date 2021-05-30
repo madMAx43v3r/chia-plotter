@@ -37,7 +37,7 @@ void compute_table(	int R_index, int num_threads,
 		
 		L_used->clear();
 		R_input.read(&pool);
-		pool.wait();
+		pool.close();
 		
 		std::cout << "[P2] Table " << R_index << " scan took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;

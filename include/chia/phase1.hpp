@@ -273,8 +273,8 @@ void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 	for(uint64_t k = 0; k < (uint64_t(1) << 28) / M; ++k) {
 		pool.take_copy(k);
 	}
-	pool.wait();
-	output.wait();
+	pool.close();
+	output.close();
 	T1_sort->finish();
 	
 	std::cout << "[P1] Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
@@ -379,8 +379,8 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	L_sort->read(&read_thread);
 	
-	read_thread.wait();
-	match_pool.wait();
+	read_thread.close();
+	match_pool.close();
 	
 	if(L_index[1] + 1 == L_index[0]) {
 		FxMatcher<T> Fx;
@@ -388,8 +388,8 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		num_found += Fx.find_matches(L_offset[1], *L_bucket[1], *L_bucket[0], matches);
 		eval_pool.take(matches);
 	}
-	eval_pool.wait();
-	write_thread.wait();
+	eval_pool.close();
+	write_thread.close();
 	
 	if(R_sort) {
 		R_sort->finish();
@@ -427,11 +427,11 @@ uint64_t compute_table(	int R_index, int num_threads,
 					R_tmp ? &R_write : nullptr);
 	
 	if(L_tmp) {
-		L_write.wait();
+		L_write.close();
 		fflush(L_tmp);
 	}
 	if(R_tmp) {
-		R_write.wait();
+		R_write.close();
 		fflush(R_tmp);
 	}
 	std::cout << "[P1] Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
