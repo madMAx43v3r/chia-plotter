@@ -57,18 +57,21 @@ void DiskSort<T, Key>::bucket_t::remove()
 
 template<typename T, typename Key>
 DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets, int num_threads,
-							std::string file_prefix, int num_threads_read)
+							std::string file_prefix, bool read_only, int num_threads_read)
 	:	key_size(key_size),
 		log_num_buckets(log_num_buckets),
 		bucket_key_shift(key_size - log_num_buckets),
 		num_threads(num_threads),
 		num_threads_read(num_threads_read),
+		is_finished(read_only),
 		buckets(1 << log_num_buckets)
 {
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		auto& bucket = buckets[i];
 		bucket.file_name = file_prefix + ".sort_bucket_" + std::to_string(i) + ".tmp";
-		bucket.open("wb");
+		if(!read_only) {
+			bucket.open("wb");
+		}
 	}
 }
 

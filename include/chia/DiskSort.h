@@ -22,7 +22,7 @@ template<typename T, typename Key>
 class DiskSort {
 public:
 	DiskSort(	int key_size, int log_num_buckets, int num_threads,
-				std::string file_prefix, int num_threads_read = 2);
+				std::string file_prefix, bool read_only = false, int num_threads_read = 2);
 	
 	~DiskSort() {
 		close();
