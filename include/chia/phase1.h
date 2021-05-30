@@ -10,6 +10,7 @@
 
 #include <chia/chia.h>
 #include <chia/entries.h>
+#include <chia/DiskSort.h>
 #include <chia/util.hpp>
 
 #include <array>

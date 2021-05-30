@@ -30,7 +30,7 @@ void compute_table(	int R_index, int num_threads,
 		const auto begin = get_wall_time_micros();
 		
 		ThreadPool<std::pair<std::vector<T>, size_t>, size_t> pool(
-			[L_used](std::pair<std::vector<T>, size_t>& input) {
+			[L_used](std::pair<std::vector<T>, size_t>& input, size_t&, size_t&) {
 				for(const auto& entry : input.first) {
 					L_used->set(entry.pos);
 					L_used->set(size_t(entry.pos) + entry.off);
