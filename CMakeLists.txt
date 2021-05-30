@@ -5,46 +5,53 @@ project(chia-plotter C CXX ASM)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fopenmp -Wall -Wno-unused-function")
 
 include_directories(
+	lib
 	include
-	src
 )
 
 IF (WIN32)
 set(BLAKE3_SRC
-    src/b3/blake3.c
-    src/b3/blake3_portable.c
-    src/b3/blake3_dispatch.c
-    src/b3/blake3_avx2.c
-    src/b3/blake3_avx512.c
-    src/b3/blake3_sse41.c
+    lib/b3/blake3.c
+    lib/b3/blake3_portable.c
+    lib/b3/blake3_dispatch.c
+    lib/b3/blake3_avx2.c
+    lib/b3/blake3_avx512.c
+    lib/b3/blake3_sse41.c
 )
 ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
 set(BLAKE3_SRC
-    src/b3/blake3.c
-    src/b3/blake3_portable.c
-    src/b3/blake3_dispatch.c
+    lib/b3/blake3.c
+    lib/b3/blake3_portable.c
+    lib/b3/blake3_dispatch.c
 )
 ELSE()
 set(BLAKE3_SRC
-    src/b3/blake3.c
-    src/b3/blake3_portable.c
-    src/b3/blake3_dispatch.c
-    src/b3/blake3_avx2_x86-64_unix.S
-    src/b3/blake3_avx512_x86-64_unix.S
-    src/b3/blake3_sse41_x86-64_unix.S
+    lib/b3/blake3.c
+    lib/b3/blake3_portable.c
+    lib/b3/blake3_dispatch.c
+    lib/b3/blake3_avx2_x86-64_unix.S
+    lib/b3/blake3_avx512_x86-64_unix.S
+    lib/b3/blake3_sse41_x86-64_unix.S
 )
 ENDIF()
 
-add_library(blake3 STATIC
-	${BLAKE3_SRC}
+set(FSE_LIB lib/FSE/lib)
+set(FSE_FILES
+    ${FSE_LIB}/fse_compress.c
+    ${FSE_LIB}/fse_decompress.c
+    ${FSE_LIB}/entropy_common.c
+    ${FSE_LIB}/hist.c
 )
 
-add_library(chia_plotter SHARED
-	src/chacha8.c
-	src/phase1.cpp
+add_library(blake3 STATIC ${BLAKE3_SRC})
+
+add_library(fse STATIC ${FSE_FILES})
+
+add_library(chia_plotter STATIC
+	lib/chacha8.c
 )
 
-target_link_libraries(chia_plotter blake3)
+target_link_libraries(chia_plotter blake3 fse)
 
 add_executable(test_disk_sort test/test_disk_sort.cpp)
 
