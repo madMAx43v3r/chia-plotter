@@ -27,17 +27,17 @@ void compute_table(	int R_index, int num_threads,
 	{
 		const auto begin = get_wall_time_micros();
 		
-		ThreadPool<std::vector<T>, size_t> pool(
-			[L_used](std::vector<T>& input, size_t&, size_t&) {
+		Thread<std::vector<T>> thread(
+			[L_used](std::vector<T>& input) {
 				for(const auto& entry : input) {
 					L_used->set(entry.pos);
 					L_used->set(size_t(entry.pos) + entry.off);
 				}
-			}, nullptr, num_threads, "phase2/mark");
+			}, "phase2/mark");
 		
 		L_used->clear();
-		R_input.read(&pool);
-		pool.close();
+		R_input.read(&thread);
+		thread.close();
 		
 		std::cout << "[P2] Table " << R_index << " scan took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
