@@ -202,6 +202,14 @@ struct match_t {
 	uint16_t off = 0;
 };
 
+typedef DiskSort<entry_1, get_y<entry_1>> DiskSort1;
+typedef DiskSort<entry_2, get_y<entry_2>> DiskSort2;
+typedef DiskSort<entry_3, get_y<entry_3>> DiskSort3;
+typedef DiskSort<entry_4, get_y<entry_4>> DiskSort4;
+typedef DiskSort<entry_5, get_y<entry_5>> DiskSort5;
+typedef DiskSort<entry_6, get_y<entry_6>> DiskSort6;
+typedef DiskSort<entry_7, get_y<entry_7>> DiskSort7;
+
 struct ouput_t {
 	std::array<table_t, 7> table;
 };

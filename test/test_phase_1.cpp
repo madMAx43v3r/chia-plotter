@@ -32,14 +32,6 @@ int main(int argc, char** argv)
 		tmp_files[i] = fopen(("test.p1.table" + std::to_string(i + 1) + ".tmp").c_str(), "wb");
 	}
 	
-	typedef DiskSort<entry_1, get_y<entry_1>> DiskSort1;
-	typedef DiskSort<entry_2, get_y<entry_2>> DiskSort2;
-	typedef DiskSort<entry_3, get_y<entry_3>> DiskSort3;
-	typedef DiskSort<entry_4, get_y<entry_4>> DiskSort4;
-	typedef DiskSort<entry_5, get_y<entry_5>> DiskSort5;
-	typedef DiskSort<entry_6, get_y<entry_6>> DiskSort6;
-	typedef DiskSort<entry_7, get_y<entry_7>> DiskSort7;
-	
 	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t1");
 	compute_f1(id, num_threads, &sort_1);
 	
