@@ -63,6 +63,7 @@ DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets, int num_threads,
 		bucket_key_shift(key_size - log_num_buckets),
 		num_threads(num_threads),
 		num_threads_read(num_threads_read),
+		keep_files(read_only),
 		is_finished(read_only),
 		buckets(1 << log_num_buckets)
 {
@@ -158,7 +159,9 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 		}
 		i += num_entries;
 	}
-	bucket.remove();
+	if(!keep_files) {
+		bucket.remove();
+	}
 	
 	std::map<size_t, std::vector<T>> sorted;
 	for(auto& entry : table) {
