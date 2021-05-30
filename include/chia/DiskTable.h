@@ -32,9 +32,10 @@ public:
 	DiskTable(DiskTable&) = delete;
 	DiskTable& operator=(DiskTable&) = delete;
 	
-	void read(Processor<std::vector<T>>* output, const size_t block_size = 65536) const
+	void read(	Processor<std::pair<std::vector<T>, size_t>>* output,
+				const size_t block_size = 65536) const
 	{
-		ThreadPool<std::pair<size_t, size_t>, std::vector<T>, local_t> pool(
+		ThreadPool<std::pair<size_t, size_t>, std::pair<std::vector<T>, size_t>, local_t> pool(
 			std::bind(&DiskTable::read_block, this,
 					std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 			output, num_threads, "Table/read");
@@ -71,7 +72,8 @@ public:
 	}
 	
 private:
-	void read_block(std::pair<size_t, size_t>& param, std::vector<T>& out, local_t& local) const
+	void read_block(std::pair<size_t, size_t>& param,
+					std::pair<std::vector<T>, size_t>& out, local_t& local) const
 	{
 		if(int err = fseek(local.file, param.first * T::disk_size, SEEK_SET)) {
 			throw std::runtime_error("fseek() failed");
@@ -79,10 +81,12 @@ private:
 		if(fread(local.buffer, T::disk_size, param.second, local.file) != param.second) {
 			throw std::runtime_error("fread() failed");
 		}
-		out.resize(param.second);
+		auto& entries = out.first;
+		entries.resize(param.second);
 		for(size_t k = 0; k < param.second; ++k) {
-			out[k].read(local.buffer + k * T::disk_size);
+			entries[k].read(local.buffer + k * T::disk_size);
 		}
+		out.second = param.first;
 	}
 	
 private:

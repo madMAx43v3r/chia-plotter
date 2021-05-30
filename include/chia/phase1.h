@@ -96,6 +96,9 @@ struct entry_7 {
 	
 	static constexpr size_t disk_size = 10;
 	
+	void assign(const entry_7& entry) {
+		*this = entry;
+	}
 	size_t read(const uint8_t* buf) {
 		memcpy(&y, buf, 4);
 		memcpy(&pos, buf + 4, 4);

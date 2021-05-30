@@ -29,6 +29,10 @@ struct entry_t {
 	
 	static constexpr size_t disk_size = 10;
 	
+	void assign(const phase1::tmp_entry_x& entry) {
+		pos = entry.pos;
+		off = entry.off;
+	}
 	size_t read(const uint8_t* buf) {
 		memcpy(&key, buf, 4);
 		memcpy(&pos, buf + 4, 4);
@@ -47,6 +51,13 @@ typedef phase1::tmp_entry_1 entry_1;
 typedef phase1::entry_7 entry_7;
 
 template<typename T>
+struct get_pos {
+	uint64_t operator()(const T& entry) {
+		return entry.pos;
+	}
+};
+
+template<typename T>
 struct get_sort_key {
 	uint64_t operator()(const T& entry) {
 		return entry.key;
@@ -59,8 +70,22 @@ struct no_sort_key {
 	}
 };
 
-typedef DiskSort<entry_t, get_sort_key<entry_t>> DiskSortT;
-typedef DiskSort<entry_7, no_sort_key> DiskSort7;		// dummy
+template<typename T>
+struct set_sort_key {
+	void operator()(T& entry, uint32_t key) {
+		entry.key = key;
+	}
+};
+
+template<>
+struct set_sort_key<entry_7> {
+	void operator()(entry_7& entry, uint32_t key) {
+		// no sort key
+	}
+};
+
+typedef DiskSort<entry_t, get_pos<entry_t>> DiskSortT;
+typedef DiskSort<entry_7, get_pos<entry_7>> DiskSort7;		// dummy
 
 struct ouput_t {
 	std::shared_ptr<bitfield> bitfield_1;

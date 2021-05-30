@@ -12,6 +12,8 @@
 #include <chia/DiskTable.h>
 #include <chia/ThreadPool.h>
 
+#include <chia/bitfield_index.hpp>
+
 
 namespace phase2 {
 
@@ -27,9 +29,9 @@ void compute_table(	int R_index, int num_threads,
 	{
 		const auto begin = get_wall_time_micros();
 		
-		Thread<std::vector<T>> thread(
-			[L_used](std::vector<T>& input) {
-				for(const auto& entry : input) {
+		Thread<std::pair<std::vector<T>, size_t>> thread(
+			[L_used](std::pair<std::vector<T>, size_t>& input) {
+				for(const auto& entry : input.first) {
 					L_used->set(entry.pos);
 					L_used->set(size_t(entry.pos) + entry.off);
 				}
@@ -42,12 +44,58 @@ void compute_table(	int R_index, int num_threads,
 		std::cout << "[P2] Table " << R_index << " scan took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 	}
+//	{
+//		const auto num_used = L_used->count(0, L_table.num_entries);
+//		std::cout << num_used << " used entries ("
+//				<< (double(num_used) / L_table.num_entries) * 100 << " %)" << std::endl;
+//	}
+	const auto begin = get_wall_time_micros();
 	
-	const auto num_used = L_used->count(0, L_table.num_entries);
-	std::cout << num_used << " used entries ("
-			<< (double(num_used) / L_table.num_entries) * 100 << " %)" << std::endl;
+	uint64_t num_written = 0;
+	const bitfield_index index(*L_used);
 	
-	// TODO
+	Thread<std::vector<S>> output(
+		[R_sort, R_out, &num_written](std::vector<S>& input) {
+			for(auto& entry : input) {
+				set_sort_key<S>{}(entry, num_written++);
+				if(R_sort) {
+					R_sort->add(entry);
+				}
+				if(R_out) {
+					write_entry(R_out, entry);
+				}
+			}
+		}, "phase2/add");
+	
+	ThreadPool<std::pair<std::vector<T>, size_t>, std::vector<S>> map_pool(
+		[&index, R_used](std::pair<std::vector<T>, size_t>& input, std::vector<S>& out, size_t&) {
+			out.reserve(input.first.size());
+			size_t offset = 0;
+			for(const auto& entry : input.first) {
+				if(R_used && !R_used->get(input.second + (offset++))) {
+					continue;	// drop it
+				}
+				S tmp;
+				tmp.assign(entry);
+				const auto pos_off = index.lookup(entry.pos, entry.off);
+				tmp.pos = pos_off.first;
+				tmp.off = pos_off.second;
+				out.push_back(tmp);
+			}
+		}, &output, num_threads, "phase2/remap");
+	
+	R_input.read(&map_pool);
+	map_pool.close();
+	output.close();
+	
+	if(R_sort) {
+		R_sort->finish();
+	}
+	if(R_out) {
+		fflush(R_out);
+	}
+	std::cout << "[P2] Table " << R_index << " rewrite took "
+				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 }
 
 
