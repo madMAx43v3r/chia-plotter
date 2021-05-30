@@ -22,7 +22,7 @@ template<	typename T, typename S,
 			typename DS_L, typename DS_R, typename DS_L2, typename DS_R2>
 uint64_t compute_table(	int L_index, int num_threads,
 						DS_L* L_sort, DS_R* R_sort, DS_L2* L_sort_2, DS_R2* R_sort_2,
-						DiskTable<T>* L_table, bitfield const* L_used)
+						DiskTable<T>* L_table = nullptr, bitfield const* L_used = nullptr)
 {
 	const auto begin_1 = get_wall_time_micros();
 	
@@ -49,10 +49,9 @@ uint64_t compute_table(	int L_index, int num_threads,
 				}
 				L_buffer.push_back(get_new_pos<T>{}(entry));
 			}
-//			std::cout << "L_read_1: L_buffer size = " << L_buffer.size() << std::endl;
 			lock.unlock();
 			signal.notify_all();
-		}, "phase3/buffer/L");
+		}, "phase3/buffer");
 	
 	Thread<std::vector<entry_np>> L_read(
 		[&mutex, &signal, &L_buffer, &R_is_waiting](std::vector<entry_np>& input) {
@@ -65,7 +64,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 			}
 			lock.unlock();
 			signal.notify_all();
-		}, "phase3/buffer/L");
+		}, "phase3/buffer");
 	
 	Thread<std::vector<entry_lp>> L_add_2(
 		[L_sort_2, &R_num_write](std::vector<entry_lp>& input) {
@@ -73,7 +72,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 				L_sort_2->add(entry);
 			}
 			R_num_write += input.size();
-		}, "phase3/add/R");
+		}, "phase3/add");
 	
 	Thread<std::vector<S>> R_read(
 		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &L_add_2](std::vector<S>& input) {
@@ -97,7 +96,6 @@ uint64_t compute_table(	int L_index, int num_threads,
 				}
 				while(L_buffer.size() <= pos[1] && !L_is_end) {
 					R_is_waiting = true;
-//					std::cout << "R_read: waiting for offset " << pos[1] << std::endl;
 					signal.notify_all();
 					signal.wait(lock);
 				}
@@ -105,8 +103,9 @@ uint64_t compute_table(	int L_index, int num_threads,
 				if(pos[1] >= L_buffer.size()) {
 					continue;	// skip out of bounds
 				}
-				const uint128_t line_point = Encoding::SquareToLinePoint(
-						L_buffer[pos[0]], L_buffer[pos[1]]);
+				const uint128_t line_point =
+						Encoding::SquareToLinePoint(L_buffer[pos[0]], L_buffer[pos[1]]);
+				
 				entry_lp tmp;
 				tmp.point = line_point;
 				tmp.key = get_sort_key<S>{}(entry);
@@ -122,7 +121,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 				}
 			}
 			L_add_2.take(out);
-		}, "phase3/lp_conv/R");
+		}, "phase3/lp_conv");
 	
 	std::thread R_sort_read(
 		[R_sort, &R_read]() {
@@ -148,7 +147,7 @@ uint64_t compute_table(	int L_index, int num_threads,
 	
 	std::cout << "[P3] Table " << L_index + 1 << " line point rewrite took "
 				<< (get_wall_time_micros() - begin_1) / 1e6 << " sec"
-				<< ", wrote " << R_num_write << " entries";
+				<< ", wrote " << R_num_write << " entries" << std::endl;
 	
 	// TODO
 	
