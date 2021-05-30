@@ -182,7 +182,10 @@ template<typename T, typename Key>
 void DiskSort<T, Key>::close()
 {
 	for(auto& bucket : buckets) {
-		bucket.remove();
+		bucket.close();
+		if(!keep_files) {
+			bucket.remove();
+		}
 	}
 	buckets.clear();
 }

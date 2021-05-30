@@ -15,8 +15,11 @@
 #ifndef INCLUDE_CHIA_BITFIELD_H_
 #define INCLUDE_CHIA_BITFIELD_H_
 
+#include <chia/util.hpp>
+
 #include <memory>
 #include <atomic>
+#include <cstdio>
 
 struct bitfield
 {
@@ -82,6 +85,19 @@ struct bitfield
         buffer_.reset();
         size_ = 0;
     }
+    
+    void write(FILE* file) {
+    	if(fwrite(buffer_.get(), sizeof(uint64_t), size_, file) != size_t(size_)) {
+    		throw std::runtime_error("fwrite() failed");
+    	}
+    }
+    
+    void read(FILE* file) {
+    	if(fread(buffer_.get(), sizeof(uint64_t), size_, file) != size_t(size_)) {
+    		throw std::runtime_error("fread() failed");
+    	}
+    }
+    
 private:
     std::unique_ptr<std::atomic<uint64_t>[]> buffer_;
 

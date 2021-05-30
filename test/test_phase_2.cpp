@@ -59,6 +59,7 @@ int main(int argc, char** argv)
 	compute_table<entry_7, entry_7, DiskSort7>(
 			7, num_threads, nullptr, table_7, input[5], input[6], &next_bitfield, nullptr);
 	
+	fclose(table_7);
 	curr_bitfield.swap(next_bitfield);
 	
 	DiskSortT sort_6(32, log_num_buckets, num_threads, "test.p2.t6");
@@ -89,7 +90,15 @@ int main(int argc, char** argv)
 	compute_table<phase1::tmp_entry_x, entry_t, DiskSortT>(
 			2, num_threads, &sort_2, nullptr, input[0], input[1], &next_bitfield, &curr_bitfield);
 	
-	fclose(table_7);
+	if(FILE* file = fopen("test.p2.bitfield1.tmp", "wb")) {
+		next_bitfield.write(file);
+		fclose(file);
+	}
+	sort_2.set_keep_files(true);
+	sort_3.set_keep_files(true);
+	sort_4.set_keep_files(true);
+	sort_5.set_keep_files(true);
+	sort_6.set_keep_files(true);
 	
 	std::cout << "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
 }

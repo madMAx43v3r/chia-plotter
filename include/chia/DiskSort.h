@@ -43,6 +43,10 @@ public:
 		return buckets.size();
 	}
 	
+	void set_keep_files(bool enable) {
+		keep_files = enable;
+	}
+	
 private:
 	struct bucket_t {
 		FILE* file = nullptr;
@@ -66,6 +70,7 @@ private:
 	const int num_threads = 0;
 	const int num_threads_read = 0;
 	
+	bool keep_files = false;
 	bool is_finished = false;
 	std::vector<bucket_t> buckets;
 	
