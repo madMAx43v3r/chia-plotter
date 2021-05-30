@@ -300,6 +300,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	Thread<std::vector<S>> write_thread(
 		[&num_written, R_sort, R_tmp_out](std::vector<S>& input) {
+			num_written += input.size();
 			if(R_sort) {
 				for(const auto& entry : input) {
 					R_sort->add(entry);
@@ -308,7 +309,6 @@ uint64_t compute_matches(	int R_index, int num_threads,
 			if(R_tmp_out) {
 				R_tmp_out->take(input);
 			}
-			num_written += input.size();
 		}, "phase1/add");
 	
 	ThreadPool<std::vector<match_t<T>>, std::vector<S>> eval_pool(
