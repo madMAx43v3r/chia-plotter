@@ -21,7 +21,7 @@
 struct bitfield
 {
     explicit bitfield(int64_t size)
-        : buffer_(new uint64_t[(size + 63) / 64])
+        : buffer_(new std::atomic<uint64_t>[(size + 63) / 64])
         , size_((size + 63) / 64)
     {
         clear();
@@ -83,7 +83,7 @@ struct bitfield
         size_ = 0;
     }
 private:
-    std::unique_ptr<uint64_t[]> buffer_;
+    std::unique_ptr<std::atomic<uint64_t>[]> buffer_;
 
     // number of 64-bit words
     int64_t size_;
