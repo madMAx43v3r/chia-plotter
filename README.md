@@ -14,7 +14,7 @@ I expect a full plot to finish in less than 3 hours on this particular machine,
 which is about 3x faster than with the official plotter.
 
 Phase 1 requires the most CPU load, first and foremost the BLAKE3 hashing of the y values,
-after that comes the matching algorithm and only then sorting. RAM usage is about ~2 GB, using jemalloc.
+after that comes the matching algorithm and only then sorting. RAM usage is about ~2 GB, using `jemalloc`.
 
 By default in phase 1, two read threads are used, 4 sort threads, 4 matching threads,
 4 f(x)-evaluation threads and some in-between threads.
@@ -29,9 +29,9 @@ Phase 2 is able to finish in about 25 min on my i7-9750H (45W 6-core) with a reg
 Using 4 threads by default to mark used entries in the bitfield, as well as 4 threads to remap positions.
 
 When marking the bitfield the threads will show high CPU usage (`top -H`), however they are just waiting for
-the L3 cache to complete the atomic operations. So they are not actually buring electricity but they keep
+the L3 cache to complete the atomic operations. So they are not actually burning electricity but they keep
 the cores busy, as such you shouldn't use more threads than you have physical cores, to let the other
-hyperthreads to other work.
+hyper-threads do other work.
 
 ## Phase 3
 
