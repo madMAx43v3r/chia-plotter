@@ -29,11 +29,11 @@ int main(int argc, char** argv)
 		id[i] = i + 1;
 	}
 	
-	phase1::table_t table_1;
+	table_t table_1;
 	table_1.file_name = "test.p1.table1.tmp";
 	table_1.num_entries = get_file_size(table_1.file_name.c_str()) / phase2::entry_1::disk_size;
 	
-	phase1::table_t table_7;
+	table_t table_7;
 	table_7.file_name = "test.p2.table7.tmp";
 	table_7.num_entries = get_file_size(table_7.file_name.c_str()) / phase2::entry_7::disk_size;
 	
@@ -105,11 +105,14 @@ int main(int argc, char** argv)
 	
 	L_sort_np = std::make_shared<DiskSortNP>(32, log_num_buckets, num_threads, "test.p3s2.t7");
 	
-	num_written_final += compute_stage2(
+	const auto num_written_final_7 = compute_stage2(
 			6, R_sort_lp.get(), L_sort_np.get(),
 			plot_file, final_pointers[6], &final_pointers[7]);
+	num_written_final += num_written_final_7;
 	
 	// TODO: write final pointers
+	
+	// TODO: store header_size + num_written_final_7 for phase 4
 	
 	fclose(plot_file);
 	

@@ -22,11 +22,6 @@
 
 namespace phase1 {
 
-struct table_t {
-	std::string file_name;
-	size_t num_entries = 0;
-};
-
 struct input_t {
 	std::array<uint8_t, 32> id = {};
 };

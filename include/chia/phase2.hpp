@@ -20,8 +20,8 @@ namespace phase2 {
 template<typename T, typename S, typename DS>
 void compute_table(	int R_index, int num_threads,
 					DS* R_sort, FILE* R_out,
-					const phase1::table_t& L_table,
-					const phase1::table_t& R_table,
+					const table_t& L_table,
+					const table_t& R_table,
 					bitfield* L_used,
 					const bitfield* R_used)
 {

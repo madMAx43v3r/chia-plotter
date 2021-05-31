@@ -70,6 +70,11 @@ static constexpr double kC3R = 1.0;
 static const std::string kFormatDescription = "v1.0";
 
 
+struct table_t {
+	std::string file_name;
+	size_t num_entries = 0;
+};
+
 int64_t get_wall_time_micros() {
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
