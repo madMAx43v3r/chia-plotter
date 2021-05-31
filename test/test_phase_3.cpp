@@ -47,11 +47,11 @@ int main(int argc, char** argv)
 		fclose(file);
 	}
 	
-	FILE* final = fopen("test.plot.tmp", "wb");
-	if(!final) {
+	FILE* plot_file = fopen("test.plot.tmp", "wb");
+	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}
-	const uint32_t header_size = WriteHeader(final, 32, id, nullptr, 0);
+	const uint32_t header_size = WriteHeader(plot_file, 32, id, nullptr, 0);
 	
 	std::vector<uint64_t> final_pointers(12, 0);
 	final_pointers[1] = header_size;
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 	
 	num_written_final += compute_stage2(
 			1, R_sort_lp.get(), L_sort_np.get(),
-			final, final_pointers[1], &final_pointers[2]);
+			plot_file, final_pointers[1], &final_pointers[2]);
 	
 	for(int L_index = 2; L_index < 6; ++L_index)
 	{
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 		
 		num_written_final += compute_stage2(
 				L_index, R_sort_lp.get(), L_sort_np.get(),
-				final, final_pointers[L_index], &final_pointers[L_index + 1]);
+				plot_file, final_pointers[L_index], &final_pointers[L_index + 1]);
 	}
 	
 	DiskTable<phase2::entry_7> R_table_7(table_7.file_name, table_7.num_entries);
@@ -107,11 +107,11 @@ int main(int argc, char** argv)
 	
 	num_written_final += compute_stage2(
 			6, R_sort_lp.get(), L_sort_np.get(),
-			final, final_pointers[6], &final_pointers[7]);
+			plot_file, final_pointers[6], &final_pointers[7]);
 	
 	// TODO: write final pointers
 	
-	fclose(final);
+	fclose(plot_file);
 	
 	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
 			", wrote " << num_written_final << " entries total" << std::endl;

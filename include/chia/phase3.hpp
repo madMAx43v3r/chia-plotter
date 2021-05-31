@@ -303,7 +303,7 @@ void WriteParkToFile(
 inline
 uint64_t compute_stage2(int L_index,
 						DiskSortLP* R_sort, DiskSortNP* L_sort,
-						FILE* final, uint64_t L_final_begin, uint64_t* R_final_begin)
+						FILE* plot_file, uint64_t L_final_begin, uint64_t* R_final_begin)
 {
 	const auto begin = get_wall_time_micros();
 	
@@ -336,7 +336,7 @@ uint64_t compute_stage2(int L_index,
 	
 	Thread<std::vector<entry_lp>> R_read(
 		[L_index, &last_point, &check_point, &park_buffer, &park_index, &park_deltas, &park_stubs,
-		 &R_num_read, &L_add, final, L_final_begin, park_size_bytes, &num_written_final]
+		 &R_num_read, &L_add, plot_file, L_final_begin, park_size_bytes, &num_written_final]
 		 (std::vector<entry_lp>& input) {
 			std::vector<entry_np> out;
 			out.reserve(input.size());
@@ -353,7 +353,7 @@ uint64_t compute_stage2(int L_index,
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0 && index != 0) {
 					WriteParkToFile(
-							final,
+							plot_file,
 							L_final_begin,
 							park_index,
 							park_size_bytes,
@@ -393,7 +393,7 @@ uint64_t compute_stage2(int L_index,
 	if(park_deltas.size() > 0) {
 		// Since we don't have a perfect multiple of EPP entries, this writes the last ones
 		WriteParkToFile(
-			final,
+			plot_file,
 			L_final_begin,
 			park_index,
 			park_size_bytes,
