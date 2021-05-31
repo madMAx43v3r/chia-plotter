@@ -156,23 +156,175 @@ void compute_stage1(int L_index,
 	
 	std::cout << "[P3-1] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
-				<< ", wrote " << R_num_write << " entries" << std::endl;
+				<< ", wrote " << R_num_write << " right entries" << std::endl;
+}
+
+static uint32_t CalculateLinePointSize(uint8_t k) {
+	return Util::ByteAlign(2 * k) / 8;
+}
+
+static uint32_t CalculateStubsSize(uint32_t k) {
+	return Util::ByteAlign((kEntriesPerPark - 1) * (k - kStubMinusBits)) / 8;
+}
+
+// This is the full size of the deltas section in a park. However, it will not be fully filled
+static uint32_t CalculateMaxDeltasSize(uint8_t k, uint8_t table_index)
+{
+	if (table_index == 1) {
+		return Util::ByteAlign((kEntriesPerPark - 1) * kMaxAverageDeltaTable1) / 8;
+	}
+	return Util::ByteAlign((kEntriesPerPark - 1) * kMaxAverageDelta) / 8;
+}
+
+static uint32_t CalculateParkSize(uint8_t k, uint8_t table_index)
+{
+	return CalculateLinePointSize(k) + CalculateStubsSize(k) +
+		   CalculateMaxDeltasSize(k, table_index);
+}
+
+// Writes the plot file header to a file
+uint32_t WriteHeader(
+	FILE* file,
+	uint8_t k,
+	const uint8_t* id,
+	const uint8_t* memo,
+	uint32_t memo_len)
+{
+	// 19 bytes  - "Proof of Space Plot" (utf-8)
+	// 32 bytes  - unique plot id
+	// 1 byte    - k
+	// 2 bytes   - format description length
+	// x bytes   - format description
+	// 2 bytes   - memo length
+	// x bytes   - memo
+
+	const std::string header_text = "Proof of Space Plot";
+	
+	size_t num_bytes = 0;
+	num_bytes += fwrite(header_text.c_str(), 1, header_text.size(), file);
+	num_bytes += fwrite((id), 1, kIdLen, file);
+
+	uint8_t k_buffer[1] = {k};
+	num_bytes += fwrite((k_buffer), 1, 1, file);
+
+	uint8_t size_buffer[2];
+	Util::IntToTwoBytes(size_buffer, kFormatDescription.size());
+	num_bytes += fwrite((size_buffer), 1, 2, file);
+	num_bytes += fwrite(kFormatDescription.c_str(), 1, kFormatDescription.size(), file);
+
+	Util::IntToTwoBytes(size_buffer, memo_len);
+	num_bytes += fwrite((size_buffer), 1, 2, file);
+	num_bytes += fwrite((memo), 1, memo_len, file);
+
+	uint8_t pointers[10 * 8] = {};
+	num_bytes += fwrite((pointers), 8, 10, file);
+
+	fflush(file);
+	std::cout << "Wrote plot header with " << num_bytes << " bytes" << std::endl;
+	return num_bytes;
+}
+
+// This writes a number of entries into a file, in the final, optimized format. The park
+// contains a checkpoint value (which is a 2k bits line point), as well as EPP (entries per
+// park) entries. These entries are each divided into stub and delta section. The stub bits are
+// encoded as is, but the delta bits are optimized into a variable encoding scheme. Since we
+// have many entries in each park, we can approximate how much space each park with take. Format
+// is: [2k bits of first_line_point]  [EPP-1 stubs] [Deltas size] [EPP-1 deltas]....
+// [first_line_point] ...
+inline
+void WriteParkToFile(
+    FILE* final_disk,
+    uint64_t table_start,
+    uint64_t park_index,
+    uint32_t park_size_bytes,
+    uint128_t first_line_point,
+    const std::vector<uint8_t>& park_deltas,
+    const std::vector<uint64_t>& park_stubs,
+    uint8_t table_index,
+    uint8_t* park_buffer,
+    const uint64_t park_buffer_size)
+{
+    static constexpr uint8_t k = 32;
+    
+	// Parks are fixed size, so we know where to start writing. The deltas will not go over
+    // into the next park.
+    uint8_t* index = park_buffer;
+
+    first_line_point <<= 128 - 2 * k;
+    Util::IntTo16Bytes(index, first_line_point);
+    index += CalculateLinePointSize(k);
+
+    // We use ParkBits instead of Bits since it allows storing more data
+    ParkBits park_stubs_bits;
+    for (uint64_t stub : park_stubs) {
+        park_stubs_bits.AppendValue(stub, (k - kStubMinusBits));
+    }
+    uint32_t stubs_size = CalculateStubsSize(k);
+    uint32_t stubs_valid_size = cdiv(park_stubs_bits.GetSize(), 8);
+    park_stubs_bits.ToBytes(index);
+    memset(index + stubs_valid_size, 0, stubs_size - stubs_valid_size);
+    index += stubs_size;
+
+    // The stubs are random so they don't need encoding. But deltas are more likely to
+    // be small, so we can compress them
+    const double R = kRValues[table_index - 1];
+    uint8_t* deltas_start = index + 2;
+    size_t deltas_size = Encoding::ANSEncodeDeltas(park_deltas, R, deltas_start);
+
+    if (!deltas_size) {
+        // Uncompressed
+        deltas_size = park_deltas.size();
+        Util::IntToTwoBytesLE(index, deltas_size | 0x8000);
+        memcpy(deltas_start, park_deltas.data(), deltas_size);
+    } else {
+        // Compressed
+        Util::IntToTwoBytesLE(index, deltas_size);
+    }
+
+    index += 2 + deltas_size;
+
+    if ((uint64_t)(index - park_buffer) > park_buffer_size) {
+        throw std::logic_error(
+            "Overflowed park buffer, writing " + std::to_string(index - park_buffer) +
+            " bytes. Space: " + std::to_string(park_buffer_size));
+    }
+    memset(index, 0x00, park_size_bytes - (index - park_buffer));
+
+    if(final_disk) {
+		if(fseek(final_disk, table_start + park_index * park_size_bytes, SEEK_SET)) {
+			throw std::runtime_error("fseek() failed");
+		}
+		if(fwrite(park_buffer, 1, park_size_bytes, final_disk) != park_size_bytes) {
+			throw std::runtime_error("fwrite() failed");
+		}
+    }
 }
 
 inline
-void compute_stage2(int L_index,
-					DiskSortLP* R_sort, DiskSortNP* L_sort)
+uint64_t compute_stage2(int L_index,
+						DiskSortLP* R_sort, DiskSortNP* L_sort,
+						FILE* final, uint64_t L_final_begin, uint64_t* R_final_begin)
 {
 	const auto begin = get_wall_time_micros();
 	
 	uint64_t R_num_read = 0;
 	uint64_t L_num_write = 0;
+	uint64_t num_written_final = 0;
+	
 	uint64_t last_point = 0;
 	uint64_t check_point = 0;
 	uint64_t park_index = 0;
 	
+	std::vector<uint8_t> park_buffer;
 	std::vector<uint8_t> park_deltas;
 	std::vector<uint64_t> park_stubs;
+	
+	park_buffer.resize(
+			CalculateLinePointSize(32)
+			+ CalculateStubsSize(32) + 2
+			+ CalculateMaxDeltasSize(32, L_index));
+	
+	const auto park_size_bytes = CalculateParkSize(32, L_index);
 	
 	Thread<std::vector<entry_np>> L_add(
 		[L_sort, &L_num_write](std::vector<entry_np>& input) {
@@ -183,7 +335,8 @@ void compute_stage2(int L_index,
 		}, "phase3/add");
 	
 	Thread<std::vector<entry_lp>> R_read(
-		[&last_point, &check_point, &park_index, &park_deltas, &park_stubs, &R_num_read, &L_add]
+		[L_index, &last_point, &check_point, &park_buffer, &park_index, &park_deltas, &park_stubs,
+		 &R_num_read, &L_add, final, L_final_begin, park_size_bytes, &num_written_final]
 		 (std::vector<entry_lp>& input) {
 			std::vector<entry_np> out;
 			out.reserve(input.size());
@@ -199,7 +352,19 @@ void compute_stage2(int L_index,
 				
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0 && index != 0) {
-					// TODO
+					WriteParkToFile(
+							final,
+							L_final_begin,
+							park_index,
+							park_size_bytes,
+							check_point,
+							park_deltas,
+							park_stubs,
+							L_index,
+							park_buffer.data(),
+							park_buffer.size());
+					park_index += 1;
+					num_written_final += (park_stubs.size() + 1);
 					park_deltas.clear();
 					park_stubs.clear();
 					check_point = entry.point;
@@ -225,9 +390,30 @@ void compute_stage2(int L_index,
 	L_add.close();
 	L_sort->finish();
 	
+	if(park_deltas.size() > 0) {
+		// Since we don't have a perfect multiple of EPP entries, this writes the last ones
+		WriteParkToFile(
+			final,
+			L_final_begin,
+			park_index,
+			park_size_bytes,
+			check_point,
+			park_deltas,
+			park_stubs,
+			L_index,
+			park_buffer.data(),
+			park_buffer.size());
+		num_written_final += (park_stubs.size() + 1);
+	}
+	if(R_final_begin) {
+		*R_final_begin = L_final_begin + (park_index + 1) * park_size_bytes;
+	}
+	
 	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
-				<< ", wrote " << L_num_write << " entries" << std::endl;
+				<< ", wrote " << L_num_write << " left entries"
+				<< ", " << num_written_final << " final" << std::endl;
+	return num_written_final;
 }
 
 

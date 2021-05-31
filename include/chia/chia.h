@@ -13,6 +13,9 @@
 #include <string>
 
 
+// Unique plot id which will be used as a ChaCha8 key, and determines the PoSpace.
+const uint32_t kIdLen = 32;
+
 // Extra bits of output from the f functions. Instead of being a function from k -> k bits,
 // it's a function from k -> k + kExtraBits bits. This allows less collisions in matches.
 // Refer to the paper for mathematical motivations.
@@ -52,6 +55,11 @@ static constexpr uint32_t kCheckpoint2Interval = 10000;
 
 // C3 entries contain deltas for f7 values, the max average size is the following
 static constexpr double kC3BitsPerEntry = 2.4;
+
+// The ANS encoding R values for the 7 final plot tables
+// Tweaking the R values might allow lowering of the max average deltas, and reducing final
+// plot size
+static const double kRValues[7] = {4.7, 2.75, 2.75, 2.7, 2.6, 2.45};
 
 // The ANS encoding R value for the C3 checkpoint table
 static constexpr double kC3R = 1.0;
