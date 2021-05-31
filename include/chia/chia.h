@@ -10,6 +10,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <string>
 
 
 // Extra bits of output from the f functions. Instead of being a function from k -> k bits,
@@ -19,6 +20,9 @@ static constexpr uint8_t kExtraBits = 6;
 
 // Convenience variable
 static constexpr uint8_t kExtraBitsPow = 1 << kExtraBits;
+
+// Distance between matching entries is stored in the offset
+static constexpr uint32_t kOffsetSize = 10;
 
 // B and C groups which constitute a bucket, or BC group. These groups determine how
 // elements match with each other. Two elements must be in adjacent buckets to match.
@@ -30,6 +34,32 @@ static constexpr uint16_t kBC = kB * kC;
 // for a table 4 entry, we must keep 4k additional bits for each entry, which is used to
 // compute f5.
 static const uint8_t kVectorLens[] = {0, 0, 1, 2, 4, 4, 3, 2};
+
+// The number of bits in the stub is k minus this value
+static constexpr uint8_t kStubMinusBits = 3;
+
+// EPP for the final file, the higher this is, the less variability, and lower delta
+// Note: if this is increased, ParkVector size must increase
+static constexpr uint32_t kEntriesPerPark = 2048;
+
+// To store deltas for EPP entries, the average delta must be less than this number of bits
+static constexpr double kMaxAverageDeltaTable1 = 5.6;
+static constexpr double kMaxAverageDelta = 3.5;
+
+// How many f7s per C1 entry, and how many C1 entries per C2 entry
+static constexpr uint32_t kCheckpoint1Interval = 10000;
+static constexpr uint32_t kCheckpoint2Interval = 10000;
+
+// C3 entries contain deltas for f7 values, the max average size is the following
+static constexpr double kC3BitsPerEntry = 2.4;
+
+// The ANS encoding R value for the C3 checkpoint table
+static constexpr double kC3R = 1.0;
+
+// Plot format (no compatibility guarantees with other formats). If any of the
+// above contants are changed, or file format is changed, the version should
+// be incremented.
+static const std::string kFormatDescription = "v1.0";
 
 
 int64_t get_wall_time_micros() {
