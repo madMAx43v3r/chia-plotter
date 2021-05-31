@@ -19,7 +19,7 @@
 namespace phase3 {
 
 template<typename T, typename S, typename DS_L, typename DS_R>
-void compute_stage1(int L_index, int num_threads,
+void compute_stage1(int L_index,
 					DS_L* L_sort, DS_R* R_sort, DiskSortLP* R_sort_2,
 					DiskTable<T>* L_table = nullptr, bitfield const* L_used = nullptr,
 					DiskTable<S>* R_table = nullptr)
@@ -154,13 +154,13 @@ void compute_stage1(int L_index, int num_threads,
 	R_add_2.close();
 	R_sort_2->finish();
 	
-	std::cout << "[P3/1] Table " << L_index + 1 << " took "
+	std::cout << "[P3-1] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", wrote " << R_num_write << " entries" << std::endl;
 }
 
 inline
-void compute_stage2(int L_index, int num_threads,
+void compute_stage2(int L_index,
 					DiskSortLP* R_sort, DiskSortNP* L_sort)
 {
 	const auto begin = get_wall_time_micros();
@@ -225,7 +225,7 @@ void compute_stage2(int L_index, int num_threads,
 	L_add.close();
 	L_sort->finish();
 	
-	std::cout << "[P3/2] Table " << L_index + 1 << " took "
+	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", wrote " << L_num_write << " entries" << std::endl;
 }
