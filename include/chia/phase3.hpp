@@ -312,12 +312,14 @@ uint64_t compute_stage2(int L_index,
 	uint64_t num_written_final = 0;
 	
 	uint64_t last_point = 0;
-	uint64_t check_point = 0;
 	uint64_t park_index = 0;
-	
 	std::vector<uint8_t> park_buffer;
-	std::vector<uint8_t> park_deltas;
-	std::vector<uint64_t> park_stubs;
+	
+	struct park_data_t {
+		uint64_t check_point = 0;
+		std::vector<uint8_t> deltas;
+		std::vector<uint64_t> stubs;
+	} park;
 	
 	park_buffer.resize(
 			CalculateLinePointSize(32)
@@ -334,9 +336,26 @@ uint64_t compute_stage2(int L_index,
 			L_num_write += input.size();
 		}, "phase3/add");
 	
+	Thread<park_data_t> park_thread(
+		[L_index, &park_buffer, &park_index, plot_file, L_final_begin, park_size_bytes, &num_written_final]
+		 (park_data_t& input) {
+			WriteParkToFile(
+				plot_file,
+				L_final_begin,
+				park_index,
+				park_size_bytes,
+				input.check_point,
+				input.deltas,
+				input.stubs,
+				L_index,
+				park_buffer.data(),
+				park_buffer.size());
+			park_index += 1;
+			num_written_final += (input.stubs.size() + 1);
+		}, "phase3/park");
+	
 	Thread<std::vector<entry_lp>> R_read(
-		[L_index, &last_point, &check_point, &park_buffer, &park_index, &park_deltas, &park_stubs,
-		 &R_num_read, &L_add, plot_file, L_final_begin, park_size_bytes, &num_written_final]
+		[&last_point, &R_num_read, &L_add, &park, &park_thread]
 		 (std::vector<entry_lp>& input) {
 			std::vector<entry_np> out;
 			out.reserve(input.size());
@@ -352,22 +371,10 @@ uint64_t compute_stage2(int L_index,
 				
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0 && index != 0) {
-					WriteParkToFile(
-							plot_file,
-							L_final_begin,
-							park_index,
-							park_size_bytes,
-							check_point,
-							park_deltas,
-							park_stubs,
-							L_index,
-							park_buffer.data(),
-							park_buffer.size());
-					park_index += 1;
-					num_written_final += (park_stubs.size() + 1);
-					park_deltas.clear();
-					park_stubs.clear();
-					check_point = entry.point;
+					park_thread.take(park);
+					park.deltas.clear();
+					park.stubs.clear();
+					park.check_point = entry.point;
 				}
 				const auto big_delta = entry.point - last_point;
 				const auto stub = big_delta & ((1ull << (32 - kStubMinusBits)) - 1);
@@ -377,8 +384,8 @@ uint64_t compute_stage2(int L_index,
 					throw std::logic_error("small_delta >= 256");
 				}
 				if(index % kEntriesPerPark) {
-					park_deltas.push_back(small_delta);
-					park_stubs.push_back(stub);
+					park.deltas.push_back(small_delta);
+					park.stubs.push_back(stub);
 				}
 				last_point = entry.point;
 			}
@@ -386,24 +393,26 @@ uint64_t compute_stage2(int L_index,
 		}, "phase3/lp_delta");
 	
 	R_sort->read(&R_read);
+	
 	R_read.close();
+	park_thread.close();
 	L_add.close();
 	L_sort->finish();
 	
-	if(park_deltas.size() > 0) {
+	if(park.deltas.size() > 0) {
 		// Since we don't have a perfect multiple of EPP entries, this writes the last ones
 		WriteParkToFile(
 			plot_file,
 			L_final_begin,
 			park_index,
 			park_size_bytes,
-			check_point,
-			park_deltas,
-			park_stubs,
+			park.check_point,
+			park.deltas,
+			park.stubs,
 			L_index,
 			park_buffer.data(),
 			park_buffer.size());
-		num_written_final += (park_stubs.size() + 1);
+		num_written_final += (park.stubs.size() + 1);
 	}
 	if(R_final_begin) {
 		*R_final_begin = L_final_begin + (park_index + 1) * park_size_bytes;
