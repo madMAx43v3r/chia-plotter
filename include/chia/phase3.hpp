@@ -287,7 +287,7 @@ void WritePark(
 }
 
 inline
-uint64_t compute_stage2(int L_index,
+uint64_t compute_stage2(int L_index, int num_threads,
 						DiskSortLP* R_sort, DiskSortNP* L_sort,
 						FILE* plot_file, uint64_t L_final_begin, uint64_t* R_final_begin)
 {
@@ -330,10 +330,9 @@ uint64_t compute_stage2(int L_index,
 			}
 		}, "phase3/write");
 	
-	Thread<park_data_t> park_thread(
-		[L_index, L_final_begin, park_size_bytes, &park_write]
-		 (park_data_t& input) {
-			park_out_t out;
+	ThreadPool<park_data_t, park_out_t> park_threads(
+		[L_index, L_final_begin, park_size_bytes]
+		 (park_data_t& input, park_out_t& out, size_t&) {
 			out.offset = L_final_begin + input.index * park_size_bytes;
 			out.buffer.resize(park_size_bytes);
 			WritePark(
@@ -343,11 +342,10 @@ uint64_t compute_stage2(int L_index,
 				L_index,
 				out.buffer.data(),
 				out.buffer.size());
-			park_write.take(out);
-		}, "phase3/park");
+		}, &park_write, std::max(num_threads / 2, 1), "phase3/park");
 	
 	Thread<std::vector<entry_lp>> R_read(
-		[&last_point, &R_num_read, &L_add, &park, &park_thread, &num_written_final]
+		[&last_point, &R_num_read, &L_add, &park, &park_threads, &num_written_final]
 		 (std::vector<entry_lp>& input) {
 			std::vector<entry_np> out;
 			out.reserve(input.size());
@@ -365,7 +363,7 @@ uint64_t compute_stage2(int L_index,
 				if(index % kEntriesPerPark == 0) {
 					if(index != 0) {
 						num_written_final += (park.deltas.size() + 1);
-						park_thread.take(park);
+						park_threads.take(park);
 						park.index += 1;
 					}
 					park.deltas.clear();
@@ -394,10 +392,10 @@ uint64_t compute_stage2(int L_index,
 	// Since we don't have a perfect multiple of EPP entries, this writes the last ones
 	if(park.deltas.size() > 0) {
 		num_written_final += (park.deltas.size() + 1);
-		park_thread.take(park);
+		park_threads.take(park);
 		// TODO: why not increment park.index here ?
 	}
-	park_thread.close();
+	park_threads.close();
 	park_write.close();
 	
 	L_add.close();

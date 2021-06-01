@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 			32, log_num_buckets, num_threads / 2, "test.p3s2.t2", false, 1);
 	
 	num_written_final += compute_stage2(
-			1, R_sort_lp.get(), L_sort_np.get(),
+			1, num_threads, R_sort_lp.get(), L_sort_np.get(),
 			plot_file, final_pointers[1], &final_pointers[2]);
 	
 	for(int L_index = 2; L_index < 6; ++L_index)
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 				32, log_num_buckets, num_threads / (L_index < 5 ? 2 : 1), "test.p3s2." + R_t, false, 1);
 		
 		num_written_final += compute_stage2(
-				L_index, R_sort_lp.get(), L_sort_np.get(),
+				L_index, num_threads, R_sort_lp.get(), L_sort_np.get(),
 				plot_file, final_pointers[L_index], &final_pointers[L_index + 1]);
 	}
 	
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 	L_sort_np = std::make_shared<DiskSortNP>(32, log_num_buckets, num_threads, "test.p3s2.t7");
 	
 	const auto num_written_final_7 = compute_stage2(
-			6, R_sort_lp.get(), L_sort_np.get(),
+			6, num_threads, R_sort_lp.get(), L_sort_np.get(),
 			plot_file, final_pointers[6], &final_pointers[7]);
 	num_written_final += num_written_final_7;
 	
