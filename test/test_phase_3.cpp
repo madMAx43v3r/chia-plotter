@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	}
 	const uint32_t header_size = WriteHeader(plot_file, 32, id, nullptr, 0);
 	
-	std::vector<uint64_t> final_pointers(12, 0);
+	std::vector<uint64_t> final_pointers(10, 0);
 	final_pointers[1] = header_size;
 	
 	uint64_t num_written_final = 0;
@@ -110,11 +110,25 @@ int main(int argc, char** argv)
 			plot_file, final_pointers[6], &final_pointers[7]);
 	num_written_final += num_written_final_7;
 	
-	// TODO: write final pointers
-	
-	// TODO: store header_size + num_written_final_7 for phase 4
-	
+	fseek(plot_file, header_size - 10 * 8, SEEK_SET);
+	for(size_t i = 0; i < final_pointers.size(); ++i) {
+		uint8_t tmp[8] = {};
+		Util::IntToEightBytes(tmp, final_pointers[i]);
+		fwrite(tmp, 1, sizeof(tmp), plot_file);
+	}
 	fclose(plot_file);
+	{
+		std::ofstream out("test.p3.header_size", std::ios_base::out);
+		out << header_size << std::endl;
+	}
+	{
+		std::ofstream out("test.p3.final_pointer_7", std::ios_base::out);
+		out << final_pointers[7] << std::endl;
+	}
+	{
+		std::ofstream out("test.p3.num_written_final_7", std::ios_base::out);
+		out << num_written_final_7 << std::endl;
+	}
 	
 	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
 			", wrote " << num_written_final << " entries total" << std::endl;

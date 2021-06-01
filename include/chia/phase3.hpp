@@ -232,11 +232,7 @@ uint32_t WriteHeader(
 // is: [2k bits of first_line_point]  [EPP-1 stubs] [Deltas size] [EPP-1 deltas]....
 // [first_line_point] ...
 inline
-void WriteParkToFile(
-    FILE* final_disk,
-    uint64_t table_start,
-    uint64_t park_index,
-    uint32_t park_size_bytes,
+void WritePark(
     uint128_t first_line_point,
     const std::vector<uint8_t>& park_deltas,
     const std::vector<uint64_t>& park_stubs,
@@ -280,7 +276,6 @@ void WriteParkToFile(
         // Compressed
         Util::IntToTwoBytesLE(index, deltas_size);
     }
-
     index += 2 + deltas_size;
 
     if ((uint64_t)(index - park_buffer) > park_buffer_size) {
@@ -288,16 +283,7 @@ void WriteParkToFile(
             "Overflowed park buffer, writing " + std::to_string(index - park_buffer) +
             " bytes. Space: " + std::to_string(park_buffer_size));
     }
-    memset(index, 0x00, park_size_bytes - (index - park_buffer));
-
-    if(final_disk) {
-		if(fseek(final_disk, table_start + park_index * park_size_bytes, SEEK_SET)) {
-			throw std::runtime_error("fseek() failed");
-		}
-		if(fwrite(park_buffer, 1, park_size_bytes, final_disk) != park_size_bytes) {
-			throw std::runtime_error("fwrite() failed");
-		}
-    }
+    memset(index, 0x00, park_buffer_size - (index - park_buffer));
 }
 
 inline
@@ -309,22 +295,20 @@ uint64_t compute_stage2(int L_index,
 	
 	uint64_t R_num_read = 0;
 	uint64_t L_num_write = 0;
+	uint64_t last_point = 0;
 	uint64_t num_written_final = 0;
 	
-	uint64_t last_point = 0;
-	uint64_t park_index = 0;
-	std::vector<uint8_t> park_buffer;
-	
 	struct park_data_t {
+		uint64_t index = 0;
 		uint64_t check_point = 0;
 		std::vector<uint8_t> deltas;
 		std::vector<uint64_t> stubs;
 	} park;
 	
-	park_buffer.resize(
-			CalculateLinePointSize(32)
-			+ CalculateStubsSize(32) + 2
-			+ CalculateMaxDeltasSize(32, L_index));
+	struct park_out_t {
+		uint64_t offset = 0;
+		std::vector<uint8_t> buffer;
+	};
 	
 	const auto park_size_bytes = CalculateParkSize(32, L_index);
 	
@@ -336,26 +320,34 @@ uint64_t compute_stage2(int L_index,
 			L_num_write += input.size();
 		}, "phase3/add");
 	
+	Thread<park_out_t> park_write(
+		[plot_file](park_out_t& park) {
+			if(fseek(plot_file, park.offset, SEEK_SET)) {
+				throw std::runtime_error("fseek() failed");
+			}
+			if(fwrite(park.buffer.data(), 1, park.buffer.size(), plot_file) != park.buffer.size()) {
+				throw std::runtime_error("fwrite() failed");
+			}
+		}, "phase3/write");
+	
 	Thread<park_data_t> park_thread(
-		[L_index, &park_buffer, &park_index, plot_file, L_final_begin, park_size_bytes, &num_written_final]
+		[L_index, L_final_begin, park_size_bytes, &park_write]
 		 (park_data_t& input) {
-			WriteParkToFile(
-				plot_file,
-				L_final_begin,
-				park_index,
-				park_size_bytes,
+			park_out_t out;
+			out.offset = L_final_begin + input.index * park_size_bytes;
+			out.buffer.resize(park_size_bytes);
+			WritePark(
 				input.check_point,
 				input.deltas,
 				input.stubs,
 				L_index,
-				park_buffer.data(),
-				park_buffer.size());
-			park_index += 1;
-			num_written_final += (input.stubs.size() + 1);
+				out.buffer.data(),
+				out.buffer.size());
+			park_write.take(out);
 		}, "phase3/park");
 	
 	Thread<std::vector<entry_lp>> R_read(
-		[&last_point, &R_num_read, &L_add, &park, &park_thread]
+		[&last_point, &R_num_read, &L_add, &park, &park_thread, &num_written_final]
 		 (std::vector<entry_lp>& input) {
 			std::vector<entry_np> out;
 			out.reserve(input.size());
@@ -370,8 +362,12 @@ uint64_t compute_stage2(int L_index,
 				out.push_back(tmp);
 				
 				// Every EPP entries, writes a park
-				if(index % kEntriesPerPark == 0 && index != 0) {
-					park_thread.take(park);
+				if(index % kEntriesPerPark == 0) {
+					if(index != 0) {
+						num_written_final += (park.deltas.size() + 1);
+						park_thread.take(park);
+						park.index += 1;
+					}
 					park.deltas.clear();
 					park.stubs.clear();
 					park.check_point = entry.point;
@@ -393,30 +389,24 @@ uint64_t compute_stage2(int L_index,
 		}, "phase3/lp_delta");
 	
 	R_sort->read(&R_read);
-	
 	R_read.close();
+	
+	// Since we don't have a perfect multiple of EPP entries, this writes the last ones
+	if(park.deltas.size() > 0) {
+		num_written_final += (park.deltas.size() + 1);
+		park_thread.take(park);
+		// TODO: why not increment park.index here ?
+	}
 	park_thread.close();
+	park_write.close();
+	
 	L_add.close();
 	L_sort->finish();
 	
-	if(park.deltas.size() > 0) {
-		// Since we don't have a perfect multiple of EPP entries, this writes the last ones
-		WriteParkToFile(
-			plot_file,
-			L_final_begin,
-			park_index,
-			park_size_bytes,
-			park.check_point,
-			park.deltas,
-			park.stubs,
-			L_index,
-			park_buffer.data(),
-			park_buffer.size());
-		num_written_final += (park.stubs.size() + 1);
-	}
 	if(R_final_begin) {
-		*R_final_begin = L_final_begin + (park_index + 1) * park_size_bytes;
+		*R_final_begin = L_final_begin + (park.index + 1) * park_size_bytes;
 	}
+	Encoding::ANSFree(kRValues[L_index - 1]);
 	
 	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
