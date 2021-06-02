@@ -390,7 +390,7 @@ std::ifstream::pos_type get_file_size(const char* file_name)
 inline
 void fseek_set(FILE* file, uint64_t offset) {
 	if(fseek(file, offset, SEEK_SET)) {
-		throw std::runtime_error("fseek(SEEK_SET) failed");
+		throw std::runtime_error("fseek() failed");
 	}
 }
 
@@ -405,9 +405,7 @@ size_t fwrite_ex(FILE* file, const void* buf, size_t length) {
 inline
 size_t fwrite_at(FILE* file, uint64_t offset, const void* buf, size_t length) {
 	fseek_set(file, offset);
-	if(fwrite(buf, 1, length, file) != length) {
-		throw std::runtime_error("fwrite() failed");
-	}
+	fwrite_ex(file, buf, length);
 	return length;
 }
 

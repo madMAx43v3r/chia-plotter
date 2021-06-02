@@ -111,11 +111,11 @@ int main(int argc, char** argv)
 			plot_file, final_pointers[6], &final_pointers[7]);
 	num_written_final += num_written_final_7;
 	
-	fseek(plot_file, header_size - 10 * 8, SEEK_SET);
+	fseek_set(plot_file, header_size - 10 * 8);
 	for(size_t i = 1; i < final_pointers.size(); ++i) {
 		uint8_t tmp[8] = {};
 		Util::IntToEightBytes(tmp, final_pointers[i]);
-		fwrite(tmp, 1, sizeof(tmp), plot_file);
+		fwrite_ex(plot_file, tmp, sizeof(tmp));
 	}
 	fclose(plot_file);
 	{

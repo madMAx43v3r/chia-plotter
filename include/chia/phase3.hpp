@@ -217,7 +217,7 @@ uint32_t WriteHeader(
 	num_bytes += fwrite((memo), 1, memo_len, file);
 
 	uint8_t pointers[10 * 8] = {};
-	num_bytes += fwrite((pointers), 8, 10, file);
+	num_bytes += fwrite((pointers), 8, 10, file) * 8;
 
 	fflush(file);
 	std::cout << "Wrote plot header with " << num_bytes << " bytes" << std::endl;
@@ -322,12 +322,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	
 	Thread<park_out_t> park_write(
 		[plot_file](park_out_t& park) {
-			if(fseek(plot_file, park.offset, SEEK_SET)) {
-				throw std::runtime_error("fseek() failed");
-			}
-			if(fwrite(park.buffer.data(), 1, park.buffer.size(), plot_file) != park.buffer.size()) {
-				throw std::runtime_error("fwrite() failed");
-			}
+			fwrite_at(plot_file, park.offset, park.buffer.data(), park.buffer.size());
 		}, "phase3/write");
 	
 	ThreadPool<park_data_t, park_out_t> park_threads(
