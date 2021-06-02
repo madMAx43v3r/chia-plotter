@@ -119,15 +119,15 @@ int main(int argc, char** argv)
 	}
 	fclose(plot_file);
 	{
-		std::ofstream out("test.p3.header_size", std::ios_base::out);
+		std::ofstream out("test.p3.header_size");
 		out << header_size << std::endl;
 	}
 	{
-		std::ofstream out("test.p3.final_pointer_7", std::ios_base::out);
+		std::ofstream out("test.p3.final_pointer_7");
 		out << final_pointers[7] << std::endl;
 	}
 	{
-		std::ofstream out("test.p3.num_written_final_7", std::ios_base::out);
+		std::ofstream out("test.p3.num_written_final_7");
 		out << num_written_final_7 << std::endl;
 	}
 	
