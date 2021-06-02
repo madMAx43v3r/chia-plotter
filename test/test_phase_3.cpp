@@ -104,6 +104,7 @@ int main(int argc, char** argv)
 			6, L_sort_np.get(), nullptr, R_sort_lp.get(), nullptr, nullptr, &R_table_7);
 	
 	L_sort_np = std::make_shared<DiskSortNP>(32, log_num_buckets, num_threads, "test.p3s2.t7");
+	L_sort_np->set_keep_files(true);
 	
 	const auto num_written_final_7 = compute_stage2(
 			6, num_threads, R_sort_lp.get(), L_sort_np.get(),
