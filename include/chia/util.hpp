@@ -375,10 +375,40 @@ namespace Util {
     }
 }
 
+inline
+int64_t get_wall_time_micros() {
+	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+inline
 std::ifstream::pos_type get_file_size(const char* file_name)
 {
 	std::ifstream in(file_name, std::ifstream::ate | std::ifstream::binary);
 	return in.tellg(); 
+}
+
+inline
+void fseek_set(FILE* file, uint64_t offset) {
+	if(fseek(file, offset, SEEK_SET)) {
+		throw std::runtime_error("fseek(SEEK_SET) failed");
+	}
+}
+
+inline
+size_t fwrite_ex(FILE* file, const void* buf, size_t length) {
+	if(fwrite(buf, 1, length, file) != length) {
+		throw std::runtime_error("fwrite() failed");
+	}
+	return length;
+}
+
+inline
+size_t fwrite_at(FILE* file, uint64_t offset, const void* buf, size_t length) {
+	fseek_set(file, offset);
+	if(fwrite(buf, 1, length, file) != length) {
+		throw std::runtime_error("fwrite() failed");
+	}
+	return length;
 }
 
 #endif  // SRC_CPP_UTIL_HPP_

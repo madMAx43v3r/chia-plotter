@@ -13,10 +13,10 @@
 
 namespace phase4 {
 
-void compute(	FILE* plot_file, const int header_size,
-				phase3::DiskSortNP* L_sort_7,
-				const uint64_t final_pointer_7,
-				const uint64_t final_entries_written);
+uint64_t compute(	FILE* plot_file, const int header_size,
+					phase3::DiskSortNP* L_sort_7,
+					const uint64_t final_pointer_7,
+					const uint64_t final_entries_written);
 
 
 } // phase4

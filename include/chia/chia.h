@@ -75,9 +75,5 @@ struct table_t {
 	size_t num_entries = 0;
 };
 
-int64_t get_wall_time_micros() {
-	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-}
-
 
 #endif /* INCLUDE_CHIA_CHIA_H_ */

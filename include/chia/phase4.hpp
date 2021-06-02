@@ -1,11 +1,12 @@
 /*
- * phase4.cpp
+ * phase4.hpp
  *
  *  Created on: Jun 3, 2021
  *      Author: mad
  */
 
 #include <chia/phase4.h>
+#include <chia/DiskSort.hpp>
 
 #include <chia/encoding.hpp>
 #include <chia/util.hpp>
@@ -41,37 +42,36 @@ static uint32_t CalculateC3Size(uint8_t k)
 // C1 (checkpoint values)
 // C2 (checkpoint values into)
 // C3 (deltas of f7s between C1 checkpoints)
-void compute(	FILE* plot_file, const int header_size,
-				phase3::DiskSortNP* L_sort_7,
-				const uint64_t final_pointer_7,
-				const uint64_t final_entries_written)
+uint64_t compute(	FILE* plot_file, const int header_size,
+					phase3::DiskSortNP* L_sort_7,
+					const uint64_t final_pointer_7,
+					const uint64_t final_entries_written)
 {
     static constexpr uint8_t k = 32;
 	
-	uint32_t P7_park_size = Util::ByteAlign((k + 1) * kEntriesPerPark) / 8;
-    uint64_t number_of_p7_parks =
+	const uint32_t P7_park_size = Util::ByteAlign((k + 1) * kEntriesPerPark) / 8;
+    const uint64_t number_of_p7_parks =
         ((final_entries_written == 0 ? 0 : final_entries_written - 1) / kEntriesPerPark) +
         1;
     
     std::array<uint64_t, 12> final_table_begin_pointers = {};
     final_table_begin_pointers[7] = final_pointer_7;
 
-    uint64_t begin_byte_C1 = final_table_begin_pointers[7] + number_of_p7_parks * P7_park_size;
+    const uint64_t begin_byte_C1 = final_table_begin_pointers[7] + number_of_p7_parks * P7_park_size;
 
-    uint64_t total_C1_entries = cdiv(final_entries_written, kCheckpoint1Interval);
-    uint64_t begin_byte_C2 = begin_byte_C1 + (total_C1_entries + 1) * (Util::ByteAlign(k) / 8);
-    uint64_t total_C2_entries = cdiv(total_C1_entries, kCheckpoint2Interval);
-    uint64_t begin_byte_C3 = begin_byte_C2 + (total_C2_entries + 1) * (Util::ByteAlign(k) / 8);
+    const uint64_t total_C1_entries = cdiv(final_entries_written, kCheckpoint1Interval);
+    const uint64_t begin_byte_C2 = begin_byte_C1 + (total_C1_entries + 1) * (Util::ByteAlign(k) / 8);
+    const uint64_t total_C2_entries = cdiv(total_C1_entries, kCheckpoint2Interval);
+    const uint64_t begin_byte_C3 = begin_byte_C2 + (total_C2_entries + 1) * (Util::ByteAlign(k) / 8);
 
-    uint32_t size_C3 = CalculateC3Size(k);
-    uint64_t end_byte = begin_byte_C3 + (total_C1_entries)*size_C3;
+    const uint32_t size_C3 = CalculateC3Size(k);
+    const uint64_t end_byte = begin_byte_C3 + (total_C1_entries)*size_C3;
 
     final_table_begin_pointers[8] = begin_byte_C1;
     final_table_begin_pointers[9] = begin_byte_C2;
     final_table_begin_pointers[10] = begin_byte_C3;
     final_table_begin_pointers[11] = end_byte;
 
-    uint64_t plot_file_reader = 0;
     uint64_t final_file_writer_1 = begin_byte_C1;
     uint64_t final_file_writer_2 = begin_byte_C3;
     uint64_t final_file_writer_3 = final_table_begin_pointers[7];
@@ -93,7 +93,9 @@ void compute(	FILE* plot_file, const int header_size,
     // We read each table7 entry, which is sorted by f7, but we don't need f7 anymore. Instead,
 	// we will just store pos6, and the deltas in table C3, and checkpoints in tables C1 and C2.
     Thread<std::vector<phase3::entry_np>> thread(
-	[&f7_position, &to_write_p7, &final_file_writer_1, &final_file_writer_2, &final_file_writer_3]
+	[plot_file, P7_park_size, P7_entry_buf, C1_entry_buf, C3_entry_buf, &f7_position, &to_write_p7,
+	 begin_byte_C3, size_C3, &deltas_to_write, &prev_y, &C2,
+	 &num_C1_entries, &final_file_writer_1, &final_file_writer_2, &final_file_writer_3]
 	 (std::vector<phase3::entry_np>& input) {
 		for(const auto& entry : input) {
 			const uint64_t entry_y = entry.key;
@@ -199,6 +201,7 @@ void compute(	FILE* plot_file, const int header_size,
         final_file_writer_1 +=
         		fwrite_at(plot_file, final_file_writer_1, table_pointer_bytes, 8);
     }
+    return end_byte;
 }
 
 
