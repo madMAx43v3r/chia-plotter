@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	}
 	const uint32_t header_size = WriteHeader(plot_file, 32, id, nullptr, 0);
 	
-	std::vector<uint64_t> final_pointers(10, 0);
+	std::vector<uint64_t> final_pointers(8, 0);
 	final_pointers[1] = header_size;
 	
 	uint64_t num_written_final = 0;
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 	num_written_final += num_written_final_7;
 	
 	fseek(plot_file, header_size - 10 * 8, SEEK_SET);
-	for(size_t i = 0; i < final_pointers.size(); ++i) {
+	for(size_t i = 1; i < final_pointers.size(); ++i) {
 		uint8_t tmp[8] = {};
 		Util::IntToEightBytes(tmp, final_pointers[i]);
 		fwrite(tmp, 1, sizeof(tmp), plot_file);
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
 	}
 	
 	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
-			", wrote " << num_written_final << " entries total" << std::endl;
+			", wrote " << num_written_final << " entries to final plot" << std::endl;
 }
 
 
