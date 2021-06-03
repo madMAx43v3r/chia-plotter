@@ -249,17 +249,16 @@ private:
 template<typename DS>
 void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 {
-	static constexpr size_t N = 4096;	// write cache size
 	static constexpr size_t M = 4096;	// F1 block size
 	
 	const auto begin = get_wall_time_micros();
 	
-	typedef typename DS::template WriteCache<N> WriteCache;
+	typedef typename DS::WriteCache WriteCache;
 	
 	ThreadPool<std::vector<entry_1>, size_t, std::shared_ptr<WriteCache>> output(
 		[T1_sort](std::vector<entry_1>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
 			if(!cache) {
-				cache = T1_sort->template add_cache<N>();
+				cache = T1_sort->add_cache();
 			}
 			for(auto& entry : input) {
 				cache->add(entry);
@@ -303,13 +302,12 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
 	};
 	
-	static constexpr size_t N = 4096;	// write cache size
-	typedef typename DS_R::template WriteCache<N> WriteCache;
+	typedef typename DS_R::WriteCache WriteCache;
 	
 	ThreadPool<std::vector<S>, size_t, std::shared_ptr<WriteCache>> R_add(
 		[R_sort](std::vector<S>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
 			if(!cache) {
-				cache = R_sort->template add_cache<N>();
+				cache = R_sort->add_cache();
 			}
 			for(auto& entry : input) {
 				cache->add(entry);

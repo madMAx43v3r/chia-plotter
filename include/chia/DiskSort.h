@@ -25,6 +25,7 @@ private:
 	struct buffer_t {
 		size_t count = 0;
 		uint8_t buffer[N * T::disk_size];
+		static constexpr size_t max_count = N;
 	};
 	
 	struct bucket_t {
@@ -40,7 +41,6 @@ private:
 	};
 	
 public:
-	template<size_t N = 4096>
 	class WriteCache {
 	public:
 		WriteCache(DiskSort* disk, int key_shift, int num_buckets);
@@ -50,7 +50,7 @@ public:
 	private:
 		DiskSort* disk = nullptr;
 		const int key_shift = 0;
-		std::vector<buffer_t<N>> buckets;
+		std::vector<buffer_t<4096>> buckets;
 	};
 	
 	DiskSort(	int key_size, int log_num_buckets,
@@ -74,8 +74,7 @@ public:
 	// thread safe
 	void write(size_t index, const void* data, size_t count);
 	
-	template<size_t N>
-	std::shared_ptr<WriteCache<N>> add_cache();
+	std::shared_ptr<WriteCache> add_cache();
 	
 	size_t num_buckets() const {
 		return buckets.size();
@@ -96,7 +95,7 @@ private:
 	bool keep_files = false;
 	bool is_finished = false;
 	
-	WriteCache<4096> cache;
+	WriteCache cache;
 	std::vector<bucket_t> buckets;
 	
 };

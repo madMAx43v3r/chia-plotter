@@ -53,8 +53,7 @@ void compute_table(	int R_index, int num_threads,
 	uint64_t num_written = 0;
 	const bitfield_index index(*L_used);
 	
-	static constexpr size_t N = 4096;	// write cache size
-	typedef typename DS::template WriteCache<N> WriteCache;
+	typedef typename DS::WriteCache WriteCache;
 	
 	Thread<std::vector<S>> R_write(
 		[R_file](std::vector<S>& input) {
@@ -66,7 +65,7 @@ void compute_table(	int R_index, int num_threads,
 	ThreadPool<std::vector<S>, size_t, std::shared_ptr<WriteCache>> R_add(
 		[R_sort](std::vector<S>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
 			if(!cache) {
-				cache = R_sort->template add_cache<N>();
+				cache = R_sort->add_cache();
 			}
 			for(auto& entry : input) {
 				cache->add(entry);

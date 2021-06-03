@@ -57,22 +57,20 @@ void DiskSort<T, Key>::bucket_t::remove()
 }
 
 template<typename T, typename Key>
-template<size_t N>
-DiskSort<T, Key>::WriteCache<N>::WriteCache(DiskSort* disk, int key_shift, int num_buckets)
+DiskSort<T, Key>::WriteCache::WriteCache(DiskSort* disk, int key_shift, int num_buckets)
 	:	disk(disk), key_shift(key_shift), buckets(num_buckets)
 {
 }
 
 template<typename T, typename Key>
-template<size_t N>
-void DiskSort<T, Key>::WriteCache<N>::add(const T& entry)
+void DiskSort<T, Key>::WriteCache::add(const T& entry)
 {
 	const size_t index = Key{}(entry) >> key_shift;
 	if(index >= buckets.size()) {
 		throw std::logic_error("index out of range");
 	}
 	auto& bucket = buckets[index];
-	if(bucket.count >= N) {
+	if(bucket.count >= bucket.max_count) {
 		disk->write(index, bucket.buffer, bucket.count);
 		bucket.count = 0;
 	}
@@ -81,8 +79,7 @@ void DiskSort<T, Key>::WriteCache<N>::add(const T& entry)
 }
 
 template<typename T, typename Key>
-template<size_t N>
-void DiskSort<T, Key>::WriteCache<N>::flush()
+void DiskSort<T, Key>::WriteCache::flush()
 {
 	for(size_t index = 0; index < buckets.size(); ++index) {
 		auto& bucket = buckets[index];
@@ -138,10 +135,9 @@ void DiskSort<T, Key>::write(size_t index, const void* data, size_t count)
 }
 
 template<typename T, typename Key>
-template<size_t N>
-std::shared_ptr<typename DiskSort<T, Key>::template WriteCache<N>> DiskSort<T, Key>::add_cache()
+std::shared_ptr<typename DiskSort<T, Key>::WriteCache> DiskSort<T, Key>::add_cache()
 {
-	return std::make_shared<WriteCache<N>>(this, bucket_key_shift, buckets.size());
+	return std::make_shared<WriteCache>(this, bucket_key_shift, buckets.size());
 }
 
 template<typename T, typename Key>
