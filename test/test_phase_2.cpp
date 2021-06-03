@@ -16,7 +16,7 @@ using namespace phase2;
 int main(int argc, char** argv)
 {
 	const int num_threads = argc > 1 ? atoi(argv[1]) : 4;
-	const int log_num_buckets = argc > 2 ? atoi(argv[2]) : 8;
+	const int log_num_buckets = argc > 2 ? atoi(argv[2]) : 7;
 	
 	const auto total_begin = get_wall_time_micros();
 	
