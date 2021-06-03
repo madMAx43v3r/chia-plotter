@@ -130,6 +130,7 @@ int main(int argc, char** argv)
 	
 	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
 			", wrote " << num_written_final << " entries to final plot" << std::endl;
+	return 0;
 }
 
 

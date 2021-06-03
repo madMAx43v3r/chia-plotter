@@ -52,6 +52,7 @@ int main(int argc, char** argv)
 	
 	std::cout << "Phase 4 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
 			", final plot size is " << total_plot_size << " bytes" << std::endl;
+	return 0;
 }
 
 

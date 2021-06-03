@@ -92,6 +92,7 @@ int main(int argc, char** argv)
 	sort_6.set_keep_files(true);
 	
 	std::cout << "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+	return 0;
 }
 
 
