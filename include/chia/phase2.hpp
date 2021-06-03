@@ -73,7 +73,7 @@ void compute_table(	int R_index, int num_threads,
 		}, nullptr, std::max(num_threads / 2, 1), "phase2/add");
 	
 	Processor<std::vector<S>>* R_out = &R_add;
-	if(R_out) {
+	if(R_file) {
 		R_out = &R_write;
 	}
 	
