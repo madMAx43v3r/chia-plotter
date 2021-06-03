@@ -264,7 +264,7 @@ void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 			for(auto& entry : input) {
 				cache->add(entry);
 			}
-		}, nullptr, std::max(num_threads / 2, 1), "phase1/add");
+		}, nullptr, num_threads, "phase1/add");
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
 		[id](uint64_t& block, std::vector<entry_1>& out, size_t&) {
@@ -303,18 +303,30 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
 	};
 	
-	Thread<std::vector<S>> write_thread(
-		[&num_written, R_sort, R_tmp_out](std::vector<S>& input) {
+	Thread<std::vector<S>> R_write(
+		[&num_written, R_tmp_out](std::vector<S>& input) {
 			num_written += input.size();
-			if(R_sort) {
-				for(const auto& entry : input) {
-					R_sort->add(entry);
-				}
+			R_tmp_out->take(input);
+		}, "phase1/write/R");
+	
+	static constexpr size_t N = 4096;	// write cache size
+	typedef typename DS_R::template WriteCache<N> WriteCache;
+	
+	ThreadPool<std::vector<S>, size_t, std::shared_ptr<WriteCache>> R_add(
+		[&num_written, R_sort](std::vector<S>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+			num_written += input.size();
+			if(!cache) {
+				cache = R_sort->template add_cache<N>();
 			}
-			if(R_tmp_out) {
-				R_tmp_out->take(input);
+			for(auto& entry : input) {
+				cache->add(entry);
 			}
-		}, "phase1/add");
+		}, nullptr, num_threads, "phase1/add");
+	
+	Processor<std::vector<S>>* R_out = &R_add;
+	if(R_tmp_out) {
+		R_out = &R_write;
+	}
 	
 	ThreadPool<std::vector<match_t<T>>, std::vector<S>> eval_pool(
 		[R_index](std::vector<match_t<T>>& matches, std::vector<S>& out, size_t&) {
@@ -327,7 +339,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 				Fx.evaluate(match.left, match.right, entry);
 				out.push_back(entry);
 			}
-		}, &write_thread, num_threads, "phase1/eval");
+		}, R_out, num_threads, "phase1/eval");
 	
 	ThreadPool<std::vector<match_input_t>, std::vector<match_t<T>>, FxMatcher<T>> match_pool(
 		[&num_found](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
@@ -394,7 +406,8 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		eval_pool.take(matches);
 	}
 	eval_pool.close();
-	write_thread.close();
+	R_write.close();
+	R_add.close();
 	
 	if(R_sort) {
 		R_sort->finish();
