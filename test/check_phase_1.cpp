@@ -74,23 +74,23 @@ int main()
 		table[i].file_name = file_name;
 		table[i].num_entries = get_file_size(file_name.c_str()) / size;
 		
-		file[i] = fopen(table[i].file_name.c_str(), "r");
+		file[i] = fopen(table[i].file_name.c_str(), "rb");
 		
 		std::cout << "Table " << (i + 1) << ": "
 				<< table[i].num_entries << " entries" << std::endl;
 	}
 	
-	for(int index = 0; index < 1; ++index)
+	for(int index = 0; index < 100; ++index)
 	{
-		std::cout << std::endl;
+//		std::cout << std::endl;
 		std::vector<uint32_t> proof;
-		const auto y = gather_7(index, proof);
+		const auto y = gather_7(1000000000 + index, proof);
 		
-		std::cout << y << " :";
-		for(auto x : proof) {
-			std::cout << " " << x;
-		}
-		std::cout << " (" << proof.size() << " x 32-bit)" << std::endl;
+//		std::cout << y << " :";
+//		for(auto x : proof) {
+//			std::cout << " " << x;
+//		}
+//		std::cout << " (" << proof.size() << " x 32-bit)" << std::endl;
 		
 		uint8_t challenge[32] = {};
 		chia::Bits(y, 32).ToBytes(challenge);
@@ -104,7 +104,7 @@ int main()
 		}
 		{
 			chia::LargeBits bits(proof_bytes, sizeof(proof_bytes), sizeof(proof_bytes) * 8);
-			std::cout << "proof = " << bits.ToString() << std::endl;
+//			std::cout << "proof = " << bits.ToString() << std::endl;
 		}
 		
 		chia::Verifier verify;
