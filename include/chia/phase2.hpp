@@ -19,7 +19,7 @@ namespace phase2 {
 
 template<typename T, typename S, typename DS>
 void compute_table(	int R_index, int num_threads,
-					DS* R_sort, FILE* R_out,
+					DS* R_sort, FILE* R_file,
 					const table_t& L_table,
 					const table_t& R_table,
 					bitfield* L_used,
@@ -48,28 +48,43 @@ void compute_table(	int R_index, int num_threads,
 		std::cout << "[P2] Table " << R_index << " scan took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 	}
-//	{
-//		const auto num_used = L_used->count(0, L_table.num_entries);
-//		std::cout << num_used << " used entries ("
-//				<< (double(num_used) / L_table.num_entries) * 100 << " %)" << std::endl;
-//	}
 	const auto begin = get_wall_time_micros();
 	
 	uint64_t num_written = 0;
 	const bitfield_index index(*L_used);
 	
-	Thread<std::vector<S>> output(
-		[R_sort, R_out, &num_written](std::vector<S>& input) {
+	static constexpr size_t N = 4096;	// write cache size
+	typedef typename DS::template WriteCache<N> WriteCache;
+	
+	Thread<std::vector<S>> R_write(
+		[R_file](std::vector<S>& input) {
+			for(auto& entry : input) {
+				write_entry(R_file, entry);
+			}
+		}, "phase2/write");
+	
+	ThreadPool<std::vector<S>, size_t, std::shared_ptr<WriteCache>> R_add(
+		[R_sort](std::vector<S>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+			if(!cache) {
+				cache = R_sort->template add_cache<N>();
+			}
+			for(auto& entry : input) {
+				cache->add(entry);
+			}
+		}, nullptr, std::max(num_threads / 2, 1), "phase2/add");
+	
+	Processor<std::vector<S>>* R_out = &R_add;
+	if(R_out) {
+		R_out = &R_write;
+	}
+	
+	Thread<std::vector<S>> R_count(
+		[R_out, &num_written](std::vector<S>& input) {
 			for(auto& entry : input) {
 				set_sort_key<S>{}(entry, num_written++);
-				if(R_sort) {
-					R_sort->add(entry);
-				}
-				if(R_out) {
-					write_entry(R_out, entry);
-				}
 			}
-		}, "phase2/add");
+			R_out->take(input);
+		}, "phase2/count");
 	
 	ThreadPool<std::pair<std::vector<T>, size_t>, std::vector<S>> map_pool(
 		[&index, R_used](std::pair<std::vector<T>, size_t>& input, std::vector<S>& out, size_t&) {
@@ -86,17 +101,20 @@ void compute_table(	int R_index, int num_threads,
 				tmp.off = pos_off.second;
 				out.push_back(tmp);
 			}
-		}, &output, num_threads, "phase2/remap");
+		}, &R_count, num_threads, "phase2/remap");
 	
 	R_input.read(&map_pool);
+	
 	map_pool.close();
-	output.close();
+	R_count.close();
+	R_write.close();
+	R_add.close();
 	
 	if(R_sort) {
 		R_sort->finish();
 	}
-	if(R_out) {
-		fflush(R_out);
+	if(R_file) {
+		fflush(R_file);
 	}
 	std::cout << "[P2] Table " << R_index << " rewrite took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
