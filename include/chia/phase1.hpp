@@ -63,11 +63,10 @@ public:
 		
 		for(uint64_t i = 0; i < 16; ++i)
 		{
-			uint64_t y = 0;
-			memcpy(&y, buf + i * 4, 4);
 			const uint64_t x = index * 16 + i;
-			block[i].y = (y << kExtraBits) | (x >> (32 - kExtraBits));
+			const uint64_t y = Util::SliceInt64FromBytes(buf, i * 32, 32);
 			block[i].x = x;
+			block[i].y = (y << kExtraBits) | (x >> (32 - kExtraBits));
 		}
 	}
 
