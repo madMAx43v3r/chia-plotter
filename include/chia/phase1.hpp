@@ -264,7 +264,7 @@ void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 			for(auto& entry : input) {
 				cache->add(entry);
 			}
-		}, nullptr, num_threads, "phase1/add");
+		}, nullptr, std::max(num_threads / 2, 1), "phase1/add");
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
 		[id](uint64_t& block, std::vector<entry_1>& out, size_t&) {
@@ -321,7 +321,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 			for(auto& entry : input) {
 				cache->add(entry);
 			}
-		}, nullptr, num_threads, "phase1/add");
+		}, nullptr, std::max(num_threads / 2, 1), "phase1/add");
 	
 	Processor<std::vector<S>>* R_out = &R_add;
 	if(R_tmp_out) {
