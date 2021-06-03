@@ -58,6 +58,10 @@ int main(int argc, char** argv)
 	compute_table<entry_6, entry_7, tmp_entry_x, DiskSort6, DiskSort7>(
 			7, num_threads, &sort_6, nullptr, tmp_files[5], tmp_files[6]);
 	
+	for(auto file : tmp_files) {
+		fclose(file);
+	}
+	
 	std::cout << "Phase 1 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
 }
 
