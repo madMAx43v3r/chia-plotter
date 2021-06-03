@@ -44,6 +44,7 @@ public:
 	class WriteCache {
 	public:
 		WriteCache(DiskSort* disk, int key_shift, int num_buckets);
+		~WriteCache() { flush(); }
 		void add(const T& entry);
 		void flush();
 	private:
@@ -72,6 +73,9 @@ public:
 	
 	// thread safe
 	void write(size_t index, const void* data, size_t count);
+	
+	template<size_t N>
+	std::shared_ptr<WriteCache<N>> add_cache();
 	
 	size_t num_buckets() const {
 		return buckets.size();

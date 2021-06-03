@@ -249,16 +249,22 @@ private:
 template<typename DS>
 void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 {
+	static constexpr size_t N = 65536;	// write cache size
 	static constexpr size_t M = 4096;	// F1 block size
 	
 	const auto begin = get_wall_time_micros();
 	
-	Thread<std::vector<entry_1>> output(
-			[T1_sort](std::vector<entry_1>& input) {
-				for(const auto& entry : input) {
-					T1_sort->add(entry);
-				}
-			}, "phase1/add");
+	typedef typename DS::template WriteCache<N> WriteCache;
+	
+	ThreadPool<std::vector<entry_1>, size_t, std::shared_ptr<WriteCache>> output(
+		[T1_sort](std::vector<entry_1>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+			if(!cache) {
+				cache = T1_sort->template add_cache<N>();
+			}
+			for(auto& entry : input) {
+				cache->add(entry);
+			}
+		}, nullptr, std::max(num_threads / 2, 1), "phase1/add");
 	
 	ThreadPool<uint64_t, std::vector<entry_1>> pool(
 		[id](uint64_t& block, std::vector<entry_1>& out, size_t&) {

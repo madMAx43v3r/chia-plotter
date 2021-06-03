@@ -138,6 +138,13 @@ void DiskSort<T, Key>::write(size_t index, const void* data, size_t count)
 }
 
 template<typename T, typename Key>
+template<size_t N>
+std::shared_ptr<typename DiskSort<T, Key>::template WriteCache<N>> DiskSort<T, Key>::add_cache()
+{
+	return std::make_shared<WriteCache<N>>(this, bucket_key_shift, buckets.size());
+}
+
+template<typename T, typename Key>
 void DiskSort<T, Key>::read(Processor<std::vector<T>>* output,
 							int num_threads, int num_threads_read)
 {

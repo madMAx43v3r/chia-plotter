@@ -72,6 +72,7 @@ public:
 		for(auto state : threads) {
 			state->thread->close();
 		}
+		threads.clear();
 	}
 	
 	size_t num_threads() const {
