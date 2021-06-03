@@ -19,9 +19,6 @@ int main(int argc, char** argv)
 	const int num_threads = argc > 1 ? atoi(argv[1]) : 4;
 	const int log_num_buckets = argc > 2 ? atoi(argv[2]) : 8;
 	
-	if(num_threads < 2) {
-		throw std::logic_error("num_threads < 2");
-	}
 	const auto total_begin = get_wall_time_micros();
 	
 	uint8_t id[32] = {};

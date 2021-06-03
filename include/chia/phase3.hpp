@@ -33,8 +33,8 @@ void compute_stage1(int L_index, int num_threads,
 	bool L_is_end = false;
 	bool R_is_waiting = false;
 	uint64_t L_offset = 0;
-	uint64_t R_num_write = 0;
 	std::vector<uint32_t> L_buffer;
+	std::atomic<uint64_t> R_num_write {0};
 	
 	Thread<std::vector<entry_np>> L_read(
 		[&mutex, &signal, &L_buffer, &R_is_waiting](std::vector<entry_np>& input) {
@@ -65,13 +65,18 @@ void compute_stage1(int L_index, int num_threads,
 			L_read.take(out);
 		}, "phase3/filter_1");
 	
-	Thread<std::vector<entry_lp>> R_add_2(
-		[R_sort_2, &R_num_write](std::vector<entry_lp>& input) {
-			for(const auto& entry : input) {
-				R_sort_2->add(entry);
+	typedef DiskSortLP::WriteCache WriteCache;
+	
+	ThreadPool<std::vector<entry_lp>, size_t, std::shared_ptr<WriteCache>> R_add_2(
+		[R_sort_2, &R_num_write](std::vector<entry_lp>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+			if(!cache) {
+				cache = R_sort_2->add_cache();
+			}
+			for(auto& entry : input) {
+				cache->add(entry);
 			}
 			R_num_write += input.size();
-		}, "phase3/add");
+		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
 	Thread<std::vector<S>> R_read(
 		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2](std::vector<S>& input) {
@@ -125,7 +130,7 @@ void compute_stage1(int L_index, int num_threads,
 	Thread<std::pair<std::vector<S>, size_t>> R_read_7(
 		[&R_read](std::pair<std::vector<S>, size_t>& input) {
 			R_read.take(input.first);
-		}, "phase3/buffer");
+		}, "phase3/misc");
 	
 	std::thread R_sort_read(
 		[num_threads, L_table, R_sort, R_table, &R_read, &R_read_7]() {
@@ -135,7 +140,6 @@ void compute_stage1(int L_index, int num_threads,
 			} else {
 				const int div = L_table ? 1 : 2;
 				R_sort->read(&R_read, std::max(num_threads / div, 1), 2 / div);
-				R_read.close();
 			}
 		});
 	
@@ -145,15 +149,17 @@ void compute_stage1(int L_index, int num_threads,
 	} else {
 		const int div = R_table ? 1 : 2;
 		L_sort->read(&L_read, std::max(num_threads / div, 1), 2 / div);
-		L_read.close();
 	}
+	L_read.close();
 	{
 		std::lock_guard<std::mutex> lock(mutex);
 		L_is_end = true;
 		signal.notify_all();
 	}
 	R_sort_read.join();
+	R_read.close();
 	R_add_2.close();
+	
 	R_sort_2->finish();
 	
 	std::cout << "[P3-1] Table " << L_index + 1 << " took "
