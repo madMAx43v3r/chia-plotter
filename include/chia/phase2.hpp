@@ -19,8 +19,7 @@ namespace phase2 {
 
 template<typename T, typename S, typename DS>
 void compute_table(	int R_index, int num_threads,
-					DS* R_sort, FILE* R_file,
-					const table_t& L_table,
+					DS* R_sort, DiskTable<S>* R_file,
 					const table_t& R_table,
 					bitfield* L_used,
 					const bitfield* R_used)
@@ -58,7 +57,7 @@ void compute_table(	int R_index, int num_threads,
 	Thread<std::vector<S>> R_write(
 		[R_file](std::vector<S>& input) {
 			for(auto& entry : input) {
-				write_entry(R_file, entry);
+				R_file->write(entry);
 			}
 		}, "phase2/write");
 	
@@ -113,7 +112,7 @@ void compute_table(	int R_index, int num_threads,
 		R_sort->finish();
 	}
 	if(R_file) {
-		fflush(R_file);
+		R_file->flush();
 	}
 	std::cout << "[P2] Table " << R_index << " rewrite took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"

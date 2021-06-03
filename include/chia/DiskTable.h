@@ -22,10 +22,17 @@ private:
 	};
 	
 public:
-	DiskTable(std::string file_name, size_t num_entries)
+	DiskTable(std::string file_name, size_t num_entries = 0)
 		:	file_name(file_name),
 			num_entries(num_entries)
 	{
+		if(!num_entries) {
+			file_out = fopen(file_name.c_str(), "wb");
+		}
+	}
+	
+	~DiskTable() {
+		close();
 	}
 	
 	DiskTable(DiskTable&) = delete;
@@ -70,6 +77,32 @@ public:
 		}
 	}
 	
+	// NOT thread-safe
+	void write(const T& entry) {
+		if(cache_count >= N) {
+			flush();
+		}
+		entry.write(cache + cache_count * T::disk_size);
+		cache_count++;
+	}
+	
+	void flush() {
+		if(cache_count) {
+			if(fwrite(cache, T::disk_size, cache_count, file_out) != cache_count) {
+				throw std::runtime_error("fwrite() failed");
+			}
+			cache_count = 0;
+		}
+	}
+	
+	void close() {
+		if(file_out) {
+			flush();
+			fclose(file_out);
+			file_out = nullptr;
+		}
+	}
+	
 private:
 	void read_block(std::pair<size_t, size_t>& param,
 					std::pair<std::vector<T>, size_t>& out, local_t& local) const
@@ -89,8 +122,13 @@ private:
 	}
 	
 private:
-	const std::string file_name;
-	const size_t num_entries;
+	std::string file_name;
+	size_t num_entries;
+	
+	static constexpr size_t N = 4096;
+	uint8_t cache[N * T::disk_size];
+	size_t cache_count = 0;
+	FILE* file_out = nullptr;
 	
 };
 
