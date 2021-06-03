@@ -302,9 +302,9 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	const auto begin = get_wall_time_micros();
 	
 	uint64_t R_num_read = 0;
-	uint64_t L_num_write = 0;
 	uint64_t last_point = 0;
 	uint64_t num_written_final = 0;
+	std::atomic<uint64_t> L_num_write {0};
 	
 	struct park_data_t {
 		uint64_t index = 0;
@@ -320,13 +320,18 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	
 	const auto park_size_bytes = CalculateParkSize(32, L_index);
 	
-	Thread<std::vector<entry_np>> L_add(
-		[L_sort, &L_num_write](std::vector<entry_np>& input) {
-			for(const auto& entry : input) {
-				L_sort->add(entry);
+	typedef DiskSortNP::WriteCache WriteCache;
+	
+	ThreadPool<std::vector<entry_np>, size_t, std::shared_ptr<WriteCache>> L_add(
+		[L_sort, &L_num_write](std::vector<entry_np>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+			if(!cache) {
+				cache = L_sort->add_cache();
+			}
+			for(auto& entry : input) {
+				cache->add(entry);
 			}
 			L_num_write += input.size();
-		}, "phase3/add");
+		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
 	Thread<park_out_t> park_write(
 		[plot_file](park_out_t& park) {
@@ -400,8 +405,8 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	}
 	park_threads.close();
 	park_write.close();
-	
 	L_add.close();
+	
 	L_sort->finish();
 	
 	if(R_final_begin) {
