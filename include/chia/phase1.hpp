@@ -303,18 +303,11 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		std::array<std::shared_ptr<std::vector<T>>, 2> L_bucket;
 	};
 	
-	Thread<std::vector<S>> R_write(
-		[&num_written, R_tmp_out](std::vector<S>& input) {
-			num_written += input.size();
-			R_tmp_out->take(input);
-		}, "phase1/write/R");
-	
 	static constexpr size_t N = 4096;	// write cache size
 	typedef typename DS_R::template WriteCache<N> WriteCache;
 	
 	ThreadPool<std::vector<S>, size_t, std::shared_ptr<WriteCache>> R_add(
-		[&num_written, R_sort](std::vector<S>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
-			num_written += input.size();
+		[R_sort](std::vector<S>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
 			if(!cache) {
 				cache = R_sort->template add_cache<N>();
 			}
@@ -325,7 +318,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	Processor<std::vector<S>>* R_out = &R_add;
 	if(R_tmp_out) {
-		R_out = &R_write;
+		R_out = R_tmp_out;
 	}
 	
 	ThreadPool<std::vector<match_t<T>>, std::vector<S>> eval_pool(
@@ -342,11 +335,12 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		}, R_out, num_threads, "phase1/eval");
 	
 	ThreadPool<std::vector<match_input_t>, std::vector<match_t<T>>, FxMatcher<T>> match_pool(
-		[&num_found](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
+		[&num_found, &num_written](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
 			out.reserve(96 * 1024);
 			for(const auto& pair : input) {
 				num_found += Fx.find_matches(pair.L_offset[1], *pair.L_bucket[1], *pair.L_bucket[0], out);
 			}
+			num_written += out.size();
 		}, &eval_pool, num_threads, "phase1/match");
 	
 	Thread<std::vector<T>> read_thread(
@@ -406,7 +400,6 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		eval_pool.take(matches);
 	}
 	eval_pool.close();
-	R_write.close();
 	R_add.close();
 	
 	if(R_sort) {
@@ -444,12 +437,13 @@ uint64_t compute_table(	int R_index, int num_threads,
 					L_tmp ? &L_write : nullptr,
 					R_tmp ? &R_write : nullptr);
 	
+	L_write.close();
+	R_write.close();
+	
 	if(L_tmp) {
-		L_write.close();
 		fflush(L_tmp);
 	}
 	if(R_tmp) {
-		R_write.close();
 		fflush(R_tmp);
 	}
 	std::cout << "[P1] Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
