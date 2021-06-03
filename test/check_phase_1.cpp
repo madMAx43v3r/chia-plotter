@@ -80,11 +80,11 @@ int main()
 				<< table[i].num_entries << " entries" << std::endl;
 	}
 	
-	for(int i = 0; i < 1; ++i)
+	for(int index = 0; index < 1; ++index)
 	{
 		std::cout << std::endl;
 		std::vector<uint32_t> proof;
-		const auto y = gather_7(i, proof);
+		const auto y = gather_7(index, proof);
 		
 		std::cout << y << " :";
 		for(auto x : proof) {
