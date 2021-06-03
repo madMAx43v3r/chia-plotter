@@ -30,13 +30,13 @@ void compute_table(	int R_index, int num_threads,
 		
 		ThreadPool<std::pair<std::vector<T>, size_t>, size_t> pool(
 			[L_used, R_used](std::pair<std::vector<T>, size_t>& input, size_t&, size_t&) {
-				size_t offset = 0;
+				uint64_t offset = 0;
 				for(const auto& entry : input.first) {
 					if(R_used && !R_used->get(input.second + (offset++))) {
 						continue;	// drop it
 					}
 					L_used->set(entry.pos);
-					L_used->set(size_t(entry.pos) + entry.off);
+					L_used->set(uint64_t(entry.pos) + entry.off);
 				}
 			}, nullptr, num_threads, "phase2/mark");
 		
@@ -87,7 +87,7 @@ void compute_table(	int R_index, int num_threads,
 	ThreadPool<std::pair<std::vector<T>, size_t>, std::vector<S>> map_pool(
 		[&index, R_used](std::pair<std::vector<T>, size_t>& input, std::vector<S>& out, size_t&) {
 			out.reserve(input.first.size());
-			size_t offset = 0;
+			uint64_t offset = 0;
 			for(const auto& entry : input.first) {
 				if(R_used && !R_used->get(input.second + (offset++))) {
 					continue;	// drop it
