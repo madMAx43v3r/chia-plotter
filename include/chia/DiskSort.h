@@ -53,7 +53,7 @@ private:
 		std::string file_name;
 		size_t offset = 0;
 		size_t num_entries = 0;
-		uint8_t buffer[262144];
+		uint8_t buffer[16384];
 		
 		void open(const char* mode);
 		void flush();
