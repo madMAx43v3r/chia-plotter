@@ -21,8 +21,8 @@
 template<typename T, typename Key>
 class DiskSort {
 public:
-	DiskSort(	int key_size, int log_num_buckets, int num_threads,
-				std::string file_prefix, bool read_only = false, int num_threads_read = 2);
+	DiskSort(	int key_size, int log_num_buckets,
+				std::string file_prefix, bool read_only = false);
 	
 	~DiskSort() {
 		close();
@@ -31,7 +31,7 @@ public:
 	DiskSort(DiskSort&) = delete;
 	DiskSort& operator=(DiskSort&) = delete;
 	
-	void read(Processor<std::vector<T>>* output);
+	void read(Processor<std::vector<T>>* output, int num_threads, int num_threads_read = 2);
 	
 	void finish();
 	
@@ -67,8 +67,6 @@ private:
 	const int key_size = 0;
 	const int log_num_buckets = 0;
 	const int bucket_key_shift = 0;
-	const int num_threads = 0;
-	const int num_threads_read = 0;
 	
 	bool keep_files = false;
 	bool is_finished = false;

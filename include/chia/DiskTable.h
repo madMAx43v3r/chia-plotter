@@ -22,10 +22,9 @@ private:
 	};
 	
 public:
-	DiskTable(std::string file_name, size_t num_entries, int num_threads = 2)
+	DiskTable(std::string file_name, size_t num_entries)
 		:	file_name(file_name),
-			num_entries(num_entries),
-			num_threads(num_threads)
+			num_entries(num_entries)
 	{
 	}
 	
@@ -33,12 +32,12 @@ public:
 	DiskTable& operator=(DiskTable&) = delete;
 	
 	void read(	Processor<std::pair<std::vector<T>, size_t>>* output,
-				const size_t block_size = 65536) const
+				int num_threads_read = 2, const size_t block_size = 65536) const
 	{
 		ThreadPool<std::pair<size_t, size_t>, std::pair<std::vector<T>, size_t>, local_t> pool(
 			std::bind(&DiskTable::read_block, this,
 					std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-			output, num_threads, "Table/read");
+			output, num_threads_read, "Table/read");
 		
 		for(size_t i = 0; i < pool.num_threads(); ++i)
 		{
@@ -92,7 +91,6 @@ private:
 private:
 	const std::string file_name;
 	const size_t num_entries;
-	const int num_threads = 0;
 	
 };
 

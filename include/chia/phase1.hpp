@@ -376,7 +376,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 			match_pool.take(out);
 		}, "phase1/slice");
 	
-	L_sort->read(&read_thread);
+	L_sort->read(&read_thread, num_threads);
 	
 	read_thread.close();
 	match_pool.close();

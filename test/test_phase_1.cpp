@@ -32,26 +32,26 @@ int main(int argc, char** argv)
 		tmp_files[i] = fopen(("test.p1.table" + std::to_string(i + 1) + ".tmp").c_str(), "wb");
 	}
 	
-	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t1");
+	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, "test.p1.t1");
 	compute_f1(id, num_threads, &sort_1);
 	
-	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t2");
+	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, "test.p1.t2");
 	compute_table<entry_1, entry_2, tmp_entry_1>(
 			2, num_threads, &sort_1, &sort_2, tmp_files[0]);
 	
-	DiskSort3 sort_3(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t3");
+	DiskSort3 sort_3(32 + kExtraBits, log_num_buckets, "test.p1.t3");
 	compute_table<entry_2, entry_3, tmp_entry_x>(
 			3, num_threads, &sort_2, &sort_3, tmp_files[1]);
 	
-	DiskSort4 sort_4(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t4");
+	DiskSort4 sort_4(32 + kExtraBits, log_num_buckets, "test.p1.t4");
 	compute_table<entry_3, entry_4, tmp_entry_x>(
 			4, num_threads, &sort_3, &sort_4, tmp_files[2]);
 	
-	DiskSort5 sort_5(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t5");
+	DiskSort5 sort_5(32 + kExtraBits, log_num_buckets, "test.p1.t5");
 	compute_table<entry_4, entry_5, tmp_entry_x>(
 			5, num_threads, &sort_4, &sort_5, tmp_files[3]);
 	
-	DiskSort6 sort_6(32 + kExtraBits, log_num_buckets, num_threads, "test.p1.t6");
+	DiskSort6 sort_6(32 + kExtraBits, log_num_buckets, "test.p1.t6");
 	compute_table<entry_5, entry_6, tmp_entry_x>(
 			6, num_threads, &sort_5, &sort_6, tmp_files[4]);
 	

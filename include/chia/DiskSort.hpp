@@ -57,13 +57,11 @@ void DiskSort<T, Key>::bucket_t::remove()
 }
 
 template<typename T, typename Key>
-DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets, int num_threads,
-							std::string file_prefix, bool read_only, int num_threads_read)
+DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets,
+							std::string file_prefix, bool read_only)
 	:	key_size(key_size),
 		log_num_buckets(log_num_buckets),
 		bucket_key_shift(key_size - log_num_buckets),
-		num_threads(num_threads),
-		num_threads_read(num_threads_read),
 		keep_files(read_only),
 		is_finished(read_only),
 		buckets(1 << log_num_buckets)
@@ -98,7 +96,8 @@ void DiskSort<T, Key>::add(const T& entry)
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read(Processor<std::vector<T>>* output)
+void DiskSort<T, Key>::read(Processor<std::vector<T>>* output,
+							int num_threads, int num_threads_read)
 {
 	ThreadPool<std::vector<T>, std::vector<T>> sort_pool(
 		[](std::vector<T>& input, std::vector<T>& out, size_t&) {

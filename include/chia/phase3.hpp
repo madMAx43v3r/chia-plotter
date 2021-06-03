@@ -19,7 +19,7 @@
 namespace phase3 {
 
 template<typename T, typename S, typename DS_L, typename DS_R>
-void compute_stage1(int L_index,
+void compute_stage1(int L_index, int num_threads,
 					DS_L* L_sort, DS_R* R_sort, DiskSortLP* R_sort_2,
 					DiskTable<T>* L_table = nullptr, bitfield const* L_used = nullptr,
 					DiskTable<S>* R_table = nullptr)
@@ -128,12 +128,13 @@ void compute_stage1(int L_index,
 		}, "phase3/buffer");
 	
 	std::thread R_sort_read(
-		[R_sort, R_table, &R_read, &R_read_7]() {
+		[num_threads, L_table, R_sort, R_table, &R_read, &R_read_7]() {
 			if(R_table) {
 				R_table->read(&R_read_7);
 				R_read_7.close();
 			} else {
-				R_sort->read(&R_read);
+				const int div = L_table ? 1 : 2;
+				R_sort->read(&R_read, std::max(num_threads / div, 1), 2 / div);
 				R_read.close();
 			}
 		});
@@ -142,7 +143,8 @@ void compute_stage1(int L_index,
 		L_table->read(&L_read_1);
 		L_read_1.close();
 	} else {
-		L_sort->read(&L_read);
+		const int div = R_table ? 1 : 2;
+		L_sort->read(&L_read, std::max(num_threads / div, 1), 2 / div);
 		L_read.close();
 	}
 	{
@@ -381,7 +383,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 			L_add.take(out);
 		}, "phase3/lp_delta");
 	
-	R_sort->read(&R_read);
+	R_sort->read(&R_read, num_threads);
 	R_read.close();
 	
 	// Since we don't have a perfect multiple of EPP entries, this writes the last ones

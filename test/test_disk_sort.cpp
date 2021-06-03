@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 		
 		typedef DiskSort<phase1::entry_1, phase1::get_y<phase1::entry_1>> DiskSort1;
 		
-		DiskSort1 sort(test_bits, log_num_buckets, num_threads, "test");
+		DiskSort1 sort(test_bits, log_num_buckets, "test");
 		
 		const auto add_begin = get_wall_time_micros();
 		for(size_t i = 0; i < test_size; ++i) {
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 			}, "test_output");
 		
 		const auto sort_begin = get_wall_time_micros();
-		sort.read(&thread);
+		sort.read(&thread, num_threads);
 		fclose(out);
 		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000. << " ms" << std::endl;
 	}
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 		
 		typedef DiskSort<phase1::entry_4, phase1::get_y<phase1::entry_4>> DiskSort4;
 		
-		DiskSort4 sort(test_bits, log_num_buckets, num_threads, "test");
+		DiskSort4 sort(test_bits, log_num_buckets, "test");
 		
 		const auto add_begin = get_wall_time_micros();
 		for(size_t i = 0; i < test_size; ++i) {
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 			}, "test_output");
 		
 		const auto sort_begin = get_wall_time_micros();
-		sort.read(&thread);
+		sort.read(&thread, num_threads);
 		fclose(out);
 		std::cout << "sort() took " << (get_wall_time_micros() - sort_begin) / 1000. << " ms" << std::endl;
 	}

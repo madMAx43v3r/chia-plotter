@@ -43,7 +43,7 @@ static uint32_t CalculateC3Size(uint8_t k)
 // C2 (checkpoint values into)
 // C3 (deltas of f7s between C1 checkpoints)
 uint64_t compute(	FILE* plot_file, const int header_size,
-					phase3::DiskSortNP* L_sort_7,
+					phase3::DiskSortNP* L_sort_7, int num_threads,
 					const uint64_t final_pointer_7,
 					const uint64_t final_entries_written)
 {
@@ -146,7 +146,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 		}
 	}, "phase4/final");
     
-    L_sort_7->read(&thread);
+    L_sort_7->read(&thread, num_threads);
     thread.close();
     
     Encoding::ANSFree(kC3R);

@@ -43,10 +43,10 @@ int main(int argc, char** argv)
 	std::cout << "[P4] final_pointer_7 = " << final_pointer_7 << std::endl;
 	std::cout << "[P4] num_written_final_7 = " << num_written_final_7 << std::endl;
 	
-	phase3::DiskSortNP L_sort_7(32, log_num_buckets, num_threads, "test.p3s2.t7", true);
+	phase3::DiskSortNP L_sort_7(32, log_num_buckets, "test.p3s2.t7", true);
 	
 	const uint64_t total_plot_size =
-			compute(plot_file, header_size, &L_sort_7, final_pointer_7, num_written_final_7);
+			compute(plot_file, header_size, &L_sort_7, num_threads, final_pointer_7, num_written_final_7);
 	
 	fclose(plot_file);
 	
