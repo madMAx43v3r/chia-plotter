@@ -29,21 +29,21 @@ void DiskSort<T, Key>::bucket_t::open(const char* mode)
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::bucket_t::flush()
+void DiskSort<T, Key>::bucket_t::write(const void* data, size_t count)
 {
+	std::lock_guard lock(mutex);
 	if(file) {
-		if(fwrite(buffer, 1, offset, file) != offset) {
+		if(fwrite(data, T::disk_size, count, file) != count) {
 			throw std::runtime_error("fwrite() failed");
 		}
+		num_entries += count;
 	}
-	offset = 0;
 }
 
 template<typename T, typename Key>
 void DiskSort<T, Key>::bucket_t::close()
 {
 	if(file) {
-		flush();
 		fclose(file);
 		file = nullptr;
 	}
@@ -57,6 +57,43 @@ void DiskSort<T, Key>::bucket_t::remove()
 }
 
 template<typename T, typename Key>
+template<size_t N>
+DiskSort<T, Key>::WriteCache<N>::WriteCache(DiskSort* disk, int key_shift, int num_buckets)
+	:	disk(disk), key_shift(key_shift), buckets(num_buckets)
+{
+}
+
+template<typename T, typename Key>
+template<size_t N>
+void DiskSort<T, Key>::WriteCache<N>::add(const T& entry)
+{
+	const size_t index = Key{}(entry) >> key_shift;
+	if(index >= buckets.size()) {
+		throw std::logic_error("index out of range");
+	}
+	auto& bucket = buckets[index];
+	if(bucket.count >= N) {
+		disk->write(index, bucket.buffer, bucket.count);
+		bucket.count = 0;
+	}
+	entry.write(bucket.buffer + bucket.count * T::disk_size);
+	bucket.count++;
+}
+
+template<typename T, typename Key>
+template<size_t N>
+void DiskSort<T, Key>::WriteCache<N>::flush()
+{
+	for(size_t index = 0; index < buckets.size(); ++index) {
+		auto& bucket = buckets[index];
+		if(bucket.count) {
+			disk->write(index, bucket.buffer, bucket.count);
+			bucket.count = 0;
+		}
+	}
+}
+
+template<typename T, typename Key>
 DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets,
 							std::string file_prefix, bool read_only)
 	:	key_size(key_size),
@@ -64,6 +101,7 @@ DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets,
 		bucket_key_shift(key_size - log_num_buckets),
 		keep_files(read_only),
 		is_finished(read_only),
+		cache(this, key_size - log_num_buckets, 1 << log_num_buckets),
 		buckets(1 << log_num_buckets)
 {
 	for(size_t i = 0; i < buckets.size(); ++i) {
@@ -80,19 +118,23 @@ DiskSort<T, Key>::DiskSort(	int key_size, int log_num_buckets,
 template<typename T, typename Key>
 void DiskSort<T, Key>::add(const T& entry)
 {
+	cache.add(entry);
+}
+
+template<typename T, typename Key>
+void DiskSort<T, Key>::write(size_t index, const void* data, size_t count)
+{
 	if(is_finished) {
 		throw std::logic_error("read only");
 	}
-	const size_t index = Key{}(entry) >> bucket_key_shift;
 	if(index >= buckets.size()) {
 		throw std::logic_error("index out of range");
 	}
 	auto& bucket = buckets[index];
-	if(bucket.offset + T::disk_size > sizeof(bucket.buffer)) {
-		bucket.flush();
+	if(fwrite(data, T::disk_size, count, bucket.file) != count) {
+		throw std::runtime_error("fwrite() failed");
 	}
-	bucket.offset += entry.write(bucket.buffer + bucket.offset);
-	bucket.num_entries++;
+	bucket.num_entries += count;
 }
 
 template<typename T, typename Key>
@@ -180,6 +222,7 @@ void DiskSort<T, Key>::read_bucket(size_t& index, std::vector<std::vector<T>>& o
 template<typename T, typename Key>
 void DiskSort<T, Key>::finish()
 {
+	cache.flush();
 	for(auto& bucket : buckets) {
 		bucket.close();
 	}

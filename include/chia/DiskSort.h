@@ -20,7 +20,38 @@
 
 template<typename T, typename Key>
 class DiskSort {
+private:
+	template<size_t N>
+	struct buffer_t {
+		size_t count = 0;
+		uint8_t buffer[N * T::disk_size];
+	};
+	
+	struct bucket_t {
+		FILE* file = nullptr;
+		std::mutex mutex;
+		std::string file_name;
+		size_t num_entries = 0;
+		
+		void open(const char* mode);
+		void write(const void* data, size_t count);
+		void close();
+		void remove();
+	};
+	
 public:
+	template<size_t N = 65536>
+	class WriteCache {
+	public:
+		WriteCache(DiskSort* disk, int key_shift, int num_buckets);
+		void add(const T& entry);
+		void flush();
+	private:
+		DiskSort* disk = nullptr;
+		const int key_shift = 0;
+		std::vector<buffer_t<N>> buckets;
+	};
+	
 	DiskSort(	int key_size, int log_num_buckets,
 				std::string file_prefix, bool read_only = false);
 	
@@ -39,6 +70,9 @@ public:
 	
 	void add(const T& entry);
 	
+	// thread safe
+	void write(size_t index, const void* data, size_t count);
+	
 	size_t num_buckets() const {
 		return buckets.size();
 	}
@@ -48,19 +82,6 @@ public:
 	}
 	
 private:
-	struct bucket_t {
-		FILE* file = nullptr;
-		std::string file_name;
-		size_t offset = 0;
-		size_t num_entries = 0;
-		uint8_t buffer[16384];
-		
-		void open(const char* mode);
-		void flush();
-		void close();
-		void remove();
-	};
-	
 	void read_bucket(size_t& index, std::vector<std::vector<T>>& out);
 	
 private:
@@ -70,6 +91,8 @@ private:
 	
 	bool keep_files = false;
 	bool is_finished = false;
+	
+	WriteCache<65536> cache;
 	std::vector<bucket_t> buckets;
 	
 };
