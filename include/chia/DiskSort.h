@@ -40,7 +40,7 @@ private:
 	};
 	
 public:
-	template<size_t N = 65536>
+	template<size_t N = 4096>
 	class WriteCache {
 	public:
 		WriteCache(DiskSort* disk, int key_shift, int num_buckets);
@@ -96,7 +96,7 @@ private:
 	bool keep_files = false;
 	bool is_finished = false;
 	
-	WriteCache<65536> cache;
+	WriteCache<4096> cache;
 	std::vector<bucket_t> buckets;
 	
 };

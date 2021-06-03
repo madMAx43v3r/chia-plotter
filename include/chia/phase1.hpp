@@ -249,7 +249,7 @@ private:
 template<typename DS>
 void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 {
-	static constexpr size_t N = 65536;	// write cache size
+	static constexpr size_t N = 4096;	// write cache size
 	static constexpr size_t M = 4096;	// F1 block size
 	
 	const auto begin = get_wall_time_micros();
