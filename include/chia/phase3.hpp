@@ -68,7 +68,8 @@ void compute_stage1(int L_index, int num_threads,
 	typedef DiskSortLP::WriteCache WriteCache;
 	
 	ThreadPool<std::vector<entry_lp>, size_t, std::shared_ptr<WriteCache>> R_add_2(
-		[R_sort_2, &R_num_write](std::vector<entry_lp>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+		[R_sort_2, &R_num_write]
+		 (std::vector<entry_lp>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
 			if(!cache) {
 				cache = R_sort_2->add_cache();
 			}
@@ -79,7 +80,8 @@ void compute_stage1(int L_index, int num_threads,
 		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
 	Thread<std::vector<S>> R_read(
-		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2](std::vector<S>& input) {
+		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2]
+		 (std::vector<S>& input) {
 			std::vector<entry_lp> out;
 			out.reserve(input.size());
 			std::unique_lock<std::mutex> lock(mutex);
@@ -323,7 +325,8 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	typedef DiskSortNP::WriteCache WriteCache;
 	
 	ThreadPool<std::vector<entry_np>, size_t, std::shared_ptr<WriteCache>> L_add(
-		[L_sort, &L_num_write](std::vector<entry_np>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+		[L_sort, &L_num_write]
+		 (std::vector<entry_np>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
 			if(!cache) {
 				cache = L_sort->add_cache();
 			}
