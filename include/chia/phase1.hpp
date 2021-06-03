@@ -336,7 +336,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 	
 	ThreadPool<std::vector<match_input_t>, std::vector<match_t<T>>, FxMatcher<T>> match_pool(
 		[&num_found, &num_written](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
-			out.reserve(96 * 1024);
+			out.reserve(64 * 1024);
 			for(const auto& pair : input) {
 				num_found += Fx.find_matches(pair.L_offset[1], *pair.L_bucket[1], *pair.L_bucket[0], out);
 			}
@@ -397,6 +397,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		FxMatcher<T> Fx;
 		std::vector<match_t<T>> matches;
 		num_found += Fx.find_matches(L_offset[1], *L_bucket[1], *L_bucket[0], matches);
+		num_written += matches.size();
 		eval_pool.take(matches);
 	}
 	eval_pool.close();
