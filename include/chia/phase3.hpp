@@ -28,19 +28,25 @@ void compute_stage1(int L_index, int num_threads,
 	
 	std::mutex mutex;
 	std::condition_variable signal;
-	static constexpr size_t M = 65536;
 	
 	bool L_is_end = false;
 	bool R_is_waiting = false;
-	uint64_t L_offset = 0;
-	std::vector<uint32_t> L_buffer;
+	uint64_t L_offset = 0;				// position offset at L_buffer[0]
+	uint64_t L_buffer_pos = 0;			// lowest buffer position needed
+	std::vector<uint32_t> L_buffer;		// new_pos buffer
 	std::atomic<uint64_t> R_num_write {0};
 	
 	Thread<std::vector<entry_np>> L_read(
-		[&mutex, &signal, &L_buffer, &R_is_waiting](std::vector<entry_np>& input) {
+		[&mutex, &signal, &L_buffer, &L_offset, &L_buffer_pos, &R_is_waiting]
+		 (std::vector<entry_np>& input) {
 			std::unique_lock<std::mutex> lock(mutex);
-			while(L_buffer.size() > M && !R_is_waiting) {
+			while(!R_is_waiting) {
 				signal.wait(lock);
+			}
+			if(L_buffer_pos) {
+				// delete old data
+				L_offset += L_buffer_pos;
+				L_buffer.erase(L_buffer.begin(), L_buffer.begin() + L_buffer_pos);
 			}
 			for(const auto& entry : input) {
 				L_buffer.push_back(entry.pos);
@@ -83,7 +89,7 @@ void compute_stage1(int L_index, int num_threads,
 		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
 	Thread<std::vector<S>> R_read(
-		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2]
+		[&mutex, &signal, &L_offset, &L_buffer_pos, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2]
 		 (std::vector<S>& input) {
 			std::vector<entry_kpp> out;
 			out.reserve(input.size());
@@ -92,23 +98,18 @@ void compute_stage1(int L_index, int num_threads,
 				uint64_t pos[2];
 				pos[0] = entry.pos;
 				pos[1] = uint64_t(entry.pos) + entry.off;
-				if(pos[1] >= uint64_t(1) << 32) {
-					continue;	// skip 32-bit overflow
-				}
 				if(pos[0] < L_offset) {
 					continue;	// skip underflow (should never happen)
 				}
 				pos[0] -= L_offset;
 				pos[1] -= L_offset;
-				if(pos[1] >= (1 << 24)) {
-					throw std::logic_error("buffer offset overflow");
-				}
 				while(L_buffer.size() <= pos[1] && !L_is_end) {
 					R_is_waiting = true;
+					L_buffer_pos = pos[0];
 					signal.notify_all();
 					signal.wait(lock);
+					R_is_waiting = false;
 				}
-				R_is_waiting = false;
 				if(pos[1] >= L_buffer.size()) {
 					continue;	// skip out of bounds
 				}
@@ -117,15 +118,6 @@ void compute_stage1(int L_index, int num_threads,
 				tmp.pos[0] = L_buffer[pos[0]];
 				tmp.pos[1] = L_buffer[pos[1]];
 				out.push_back(tmp);
-				
-				if(pos[0] > M && L_buffer.size() > M) {
-					// delete old buffer data
-					L_offset += M;
-					L_buffer.erase(L_buffer.begin(), L_buffer.begin() + M);
-					lock.unlock();
-					signal.notify_all();
-					lock.lock();
-				}
 			}
 			R_add_2.take(out);
 		}, "phase3/merge");
