@@ -32,7 +32,7 @@ void compute_stage1(int L_index, int num_threads,
 	bool L_is_end = false;
 	bool R_is_waiting = false;
 	uint64_t L_offset = 0;				// position offset at L_buffer[0]
-	uint64_t L_buffer_pos = 0;			// lowest buffer position needed
+	size_t L_buffer_pos = 0;			// lowest buffer position needed
 	std::vector<uint32_t> L_buffer;		// new_pos buffer
 	std::atomic<uint64_t> R_num_write {0};
 	
@@ -43,7 +43,7 @@ void compute_stage1(int L_index, int num_threads,
 			while(!R_is_waiting) {
 				signal.wait(lock);
 			}
-			if(L_buffer_pos) {
+			if(L_buffer_pos < L_buffer.size()) {
 				// delete old data
 				L_offset += L_buffer_pos;
 				L_buffer.erase(L_buffer.begin(), L_buffer.begin() + L_buffer_pos);
