@@ -80,7 +80,7 @@ void compute_stage1(int L_index, int num_threads,
 				cache->add(tmp);
 			}
 			R_num_write += input.size();
-		}, nullptr, std::max(num_threads / 2, 1), "phase3/lp_conv");
+		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
 	Thread<std::vector<S>> R_read(
 		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2]
