@@ -10,6 +10,7 @@
 
 #include <chia/phase1.h>
 #include <chia/ThreadPool.h>
+#include <chia/DiskTable.h>
 #include <chia/bits.hpp>
 
 #include "b3/blake3.h"
@@ -412,19 +413,20 @@ uint64_t compute_matches(	int R_index, int num_threads,
 
 template<typename T, typename S, typename R, typename DS_L, typename DS_R>
 uint64_t compute_table(	int R_index, int num_threads,
-						DS_L* L_sort, DS_R* R_sort, FILE* L_tmp, FILE* R_tmp = nullptr)
+						DS_L* L_sort, DS_R* R_sort,
+						DiskTable<R>* L_tmp, DiskTable<S>* R_tmp = nullptr)
 {
 	Thread<std::vector<R>> L_write(
 		[L_tmp](std::vector<R>& input) {
 			for(const auto& entry : input) {
-				write_entry(L_tmp, entry);
+				L_tmp->write(entry);
 			}
 		}, "phase1/write/L");
 	
 	Thread<std::vector<S>> R_write(
 		[R_tmp](std::vector<S>& input) {
 			for(const auto& entry : input) {
-				write_entry(R_tmp, entry);
+				R_tmp->write(entry);
 			}
 		}, "phase1/write/R");
 	
@@ -439,10 +441,10 @@ uint64_t compute_table(	int R_index, int num_threads,
 	R_write.close();
 	
 	if(L_tmp) {
-		fflush(L_tmp);
+		L_tmp->close();
 	}
 	if(R_tmp) {
-		fflush(R_tmp);
+		R_tmp->close();
 	}
 	std::cout << "[P1] Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
 			<< ", found " << num_matches << " matches" << std::endl;
