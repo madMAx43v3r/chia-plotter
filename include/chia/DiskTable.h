@@ -87,12 +87,11 @@ public:
 	}
 	
 	void flush() {
-		if(cache_count) {
-			if(fwrite(cache, T::disk_size, cache_count, file_out) != cache_count) {
-				throw std::runtime_error("fwrite() failed");
-			}
-			cache_count = 0;
+		if(fwrite(cache, T::disk_size, cache_count, file_out) != cache_count) {
+			throw std::runtime_error("fwrite() failed");
 		}
+		num_entries += cache_count;
+		cache_count = 0;
 	}
 	
 	void close() {
