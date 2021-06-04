@@ -14,13 +14,13 @@
 namespace phase3 {
 
 struct entry_kpp {
-	uint32_t pos[2];		// 2x 32-bit position
-	uint32_t key = 0;		// 32-bit (sort_key)
+	uint32_t pos[2];	// 2x 32-bit position
+	uint32_t key;		// 32-bit (sort_key)
 };
 
 struct entry_lp {
-	uint64_t point = 0;		// 63-bit (line_point)
-	uint32_t key = 0;		// 32-bit (sort_key)
+	uint64_t point;		// 63-bit (line_point)
+	uint32_t key;		// 32-bit (sort_key)
 	
 	static constexpr size_t disk_size = 12;
 	
@@ -37,8 +37,8 @@ struct entry_lp {
 };
 
 struct entry_np {
-	uint32_t key = 0;		// 32-bit (sort_key)
-	uint32_t pos = 0;		// 32-bit (new_pos)
+	uint32_t key;		// 32-bit (sort_key)
+	uint32_t pos;		// 32-bit (new_pos)
 	
 	static constexpr size_t disk_size = 8;
 	
