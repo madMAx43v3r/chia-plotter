@@ -97,7 +97,7 @@ private:
 		S out;
 		execute(input, out, state->local);
 		
-		auto prev = threads[(index - 1) % threads.size()];
+		auto prev = threads[((index + threads.size()) - 1) % threads.size()];
 		{
 			std::unique_lock<std::mutex> lock(prev->mutex);
 			while(prev->job < state->job) {
