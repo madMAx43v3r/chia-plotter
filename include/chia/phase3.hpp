@@ -363,14 +363,12 @@ uint64_t compute_stage2(int L_index, int num_threads,
 			out.reserve(input.size());
 			for(const auto& entry : input) {
 				const auto index = R_num_read++;
-				if(index >= uint64_t(1) << 32) {
-					continue;		// skip 32-bit position overflow
+				if(index < uint64_t(1) << 32) {
+					entry_np tmp;
+					tmp.key = entry.key;
+					tmp.pos = index;
+					out.push_back(tmp);
 				}
-				entry_np tmp;
-				tmp.key = entry.key;
-				tmp.pos = index;
-				out.push_back(tmp);
-				
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0) {
 					if(index != 0) {
@@ -382,12 +380,15 @@ uint64_t compute_stage2(int L_index, int num_threads,
 					park.stubs.clear();
 					park.check_point = entry.point;
 				}
+				if(entry.point < last_point) {
+					throw std::logic_error("input not sorted");
+				}
 				const auto big_delta = entry.point - last_point;
 				const auto stub = big_delta & ((1ull << (32 - kStubMinusBits)) - 1);
 				const auto small_delta = big_delta >> (32 - kStubMinusBits);
 				
 				if(small_delta >= 256) {
-					throw std::logic_error("small_delta >= 256");
+					throw std::logic_error("small_delta >= 256 (" + std::to_string(small_delta) + ")");
 				}
 				if(index % kEntriesPerPark) {
 					park.deltas.push_back(small_delta);
