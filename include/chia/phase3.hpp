@@ -67,22 +67,25 @@ void compute_stage1(int L_index, int num_threads,
 	
 	typedef DiskSortLP::WriteCache WriteCache;
 	
-	ThreadPool<std::vector<entry_lp>, size_t, std::shared_ptr<WriteCache>> R_add_2(
+	ThreadPool<std::vector<entry_kpp>, size_t, std::shared_ptr<WriteCache>> R_add_2(
 		[R_sort_2, &R_num_write]
-		 (std::vector<entry_lp>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
+		 (std::vector<entry_kpp>& input, size_t&, std::shared_ptr<WriteCache>& cache) {
 			if(!cache) {
 				cache = R_sort_2->add_cache();
 			}
 			for(auto& entry : input) {
-				cache->add(entry);
+				entry_lp tmp;
+				tmp.key = entry.key;
+				tmp.point = Encoding::SquareToLinePoint(entry.pos[0], entry.pos[1]);
+				cache->add(tmp);
 			}
 			R_num_write += input.size();
-		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
+		}, nullptr, std::max(num_threads / 2, 1), "phase3/lp_conv");
 	
 	Thread<std::vector<S>> R_read(
 		[&mutex, &signal, &L_offset, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2]
 		 (std::vector<S>& input) {
-			std::vector<entry_lp> out;
+			std::vector<entry_kpp> out;
 			out.reserve(input.size());
 			std::unique_lock<std::mutex> lock(mutex);
 			for(const auto& entry : input) {
@@ -109,12 +112,10 @@ void compute_stage1(int L_index, int num_threads,
 				if(pos[1] >= L_buffer.size()) {
 					continue;	// skip out of bounds
 				}
-				const uint128_t line_point =
-						Encoding::SquareToLinePoint(L_buffer[pos[0]], L_buffer[pos[1]]);
-				
-				entry_lp tmp;
-				tmp.point = line_point;
+				entry_kpp tmp;
 				tmp.key = get_sort_key<S>{}(entry);
+				tmp.pos[0] = L_buffer[pos[0]];
+				tmp.pos[1] = L_buffer[pos[1]];
 				out.push_back(tmp);
 				
 				if(pos[0] > M && L_buffer.size() > M) {
@@ -127,7 +128,7 @@ void compute_stage1(int L_index, int num_threads,
 				}
 			}
 			R_add_2.take(out);
-		}, "phase3/lp_conv");
+		}, "phase3/merge");
 	
 	Thread<std::pair<std::vector<S>, size_t>> R_read_7(
 		[&R_read](std::pair<std::vector<S>, size_t>& input) {
