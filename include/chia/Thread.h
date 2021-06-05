@@ -15,7 +15,10 @@
 #include <functional>
 #include <condition_variable>
 
+#ifdef _GNU_SOURCE
 #include <pthread.h>
+#endif
+
 
 template<typename T>
 class Processor {
@@ -88,7 +91,9 @@ private:
 			if(thread_name.size() > 15) {
 				thread_name.resize(15);
 			}
+#ifdef _GNU_SOURCE
 			pthread_setname_np(pthread_self(), thread_name.c_str());
+#endif
 		}
 		std::unique_lock<std::mutex> lock(mutex);
 		while(!is_fail) {
