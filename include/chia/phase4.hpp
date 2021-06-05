@@ -213,9 +213,6 @@ void compute(	const phase3::output_t& input, output_t& out,
 {
 	const auto total_begin = get_wall_time_micros();
 	
-	out.params = input.params;
-	out.plot_file_name = input.plot_file_name;
-	
 	FILE* plot_file = fopen(input.plot_file_name.c_str(), "r+");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
@@ -225,6 +222,11 @@ void compute(	const phase3::output_t& input, output_t& out,
 							num_threads, input.final_pointer_7, input.num_written_7);
 	
 	fclose(plot_file);
+	
+	out.params = input.params;
+	out.plot_file_name = tmp_dir + plot_name + ".plot";
+	
+	std::rename(input.plot_file_name.c_str(), out.plot_file_name.c_str());
 	
 	std::cout << "Phase 4 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
 			", final plot size is " << out.plot_size << " bytes" << std::endl;

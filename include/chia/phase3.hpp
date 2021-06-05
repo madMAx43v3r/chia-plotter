@@ -433,7 +433,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".";
 	
 	out.params = input.params;
-	out.plot_file_name = tmp_dir + plot_name + ".tmp";
+	out.plot_file_name = tmp_dir + plot_name + ".plot.tmp";
 	
 	FILE* plot_file = fopen(out.plot_file_name.c_str(), "wb");
 	if(!plot_file) {
