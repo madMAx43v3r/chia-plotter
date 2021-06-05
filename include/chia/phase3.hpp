@@ -458,7 +458,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	remove(input.table_1.file_name);
 	
 	auto L_sort_np = std::make_shared<DiskSortNP>(
-			32, log_num_buckets, prefix_2 + "p3s2.t2", false);
+			32, log_num_buckets, prefix_2 + "p3s2.t2");
 	
 	num_written_final += compute_stage2(
 			1, num_threads, R_sort_lp.get(), L_sort_np.get(),
@@ -475,7 +475,7 @@ void compute(	phase2::output_t& input, output_t& out,
 				L_index, num_threads, L_sort_np.get(), input.sort[L_index].get(), R_sort_lp.get());
 		
 		L_sort_np = std::make_shared<DiskSortNP>(
-				32, log_num_buckets, prefix_2 + "p3s2." + R_t, false);
+				32, log_num_buckets, prefix_2 + "p3s2." + R_t);
 		
 		num_written_final += compute_stage2(
 				L_index, num_threads, R_sort_lp.get(), L_sort_np.get(),
