@@ -287,7 +287,7 @@ void compute_f1(const uint8_t* id, int num_threads, DS* T1_sort)
 template<typename T, typename S, typename R, typename DS_L, typename DS_R>
 uint64_t compute_matches(	int R_index, int num_threads,
 							DS_L* L_sort, DS_R* R_sort,
-							Processor<std::vector<R>>* L_tmp_out,
+							Processor<std::vector<T>>* L_tmp_out,
 							Processor<std::vector<S>>* R_tmp_out)
 {
 	std::atomic<uint64_t> num_found {};
@@ -333,7 +333,8 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		}, R_out, num_threads, "phase1/eval");
 	
 	ThreadPool<std::vector<match_input_t>, std::vector<match_t<T>>, FxMatcher<T>> match_pool(
-		[&num_found, &num_written](std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
+		[&num_found, &num_written]
+		 (std::vector<match_input_t>& input, std::vector<match_t<T>>& out, FxMatcher<T>& Fx) {
 			out.reserve(64 * 1024);
 			for(const auto& pair : input) {
 				num_found += Fx.find_matches(pair.L_offset[1], *pair.L_bucket[1], *pair.L_bucket[0], out);
@@ -342,19 +343,12 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		}, &eval_pool, num_threads, "phase1/match");
 	
 	Thread<std::vector<T>> read_thread(
-		[&L_index, &L_offset, &L_bucket, &avg_bucket_size, &match_pool, L_tmp_out](std::vector<T>& input) {
-			if(L_tmp_out) {
-				std::vector<R> tmp(input.size());
-				for(size_t i = 0; i < tmp.size(); ++i) {
-					tmp[i].assign(input[i]);
-				}
-				L_tmp_out->take(tmp);
-			}
+		[&L_index, &L_offset, &L_bucket, &avg_bucket_size, &match_pool, L_tmp_out]
+		 (std::vector<T>& input) {
 			std::vector<match_input_t> out;
 			out.reserve(1024);
 			for(const auto& entry : input) {
 				const uint64_t index = entry.y / kBC;
-//				std::cout << "x=" << entry.x << ", y=" << entry.y << ", index=" << index << std::endl;
 				if(index < L_index[0]) {
 					throw std::logic_error("input not sorted");
 				}
@@ -381,9 +375,10 @@ uint64_t compute_matches(	int R_index, int num_threads,
 				}
 				L_bucket[0]->push_back(entry);
 			}
-//			std::cout << "block size = " << input.size() << ", number of buckets = " << out.size()
-//					<< ", avg. bucket size = " << avg_bucket_size << std::endl;
 			match_pool.take(out);
+			if(L_tmp_out) {
+				L_tmp_out->take(input);
+			}
 		}, "phase1/slice");
 	
 	L_sort->read(&read_thread, num_threads);
@@ -416,10 +411,12 @@ uint64_t compute_table(	int R_index, int num_threads,
 						DS_L* L_sort, DS_R* R_sort,
 						DiskTable<R>* L_tmp, DiskTable<S>* R_tmp = nullptr)
 {
-	Thread<std::vector<R>> L_write(
-		[L_tmp](std::vector<R>& input) {
+	Thread<std::vector<T>> L_write(
+		[L_tmp](std::vector<T>& input) {
 			for(const auto& entry : input) {
-				L_tmp->write(entry);
+				R tmp;
+				tmp.assign(entry);
+				L_tmp->write(tmp);
 			}
 		}, "phase1/write/L");
 	
