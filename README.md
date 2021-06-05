@@ -61,3 +61,8 @@ which was about 40x more efficient than the CPU miner. See my other repos.
 
 As such, it's only a matter of time until i'll add OpenCL support to speed up the plotter even more,
 keeping most of the load off the CPUs.
+
+## How to install latest cmake on 18.04
+
+https://askubuntu.com/questions/1203635/installing-latest-cmake-on-ubuntu-18-04-3-lts-run-via-wsl-openssl-error
+
