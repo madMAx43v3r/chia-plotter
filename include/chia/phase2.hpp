@@ -24,6 +24,8 @@ void compute_table(	int R_index, int num_threads,
 					bitfield* L_used,
 					const bitfield* R_used)
 {
+	const int num_threads_read = std::max(num_threads / 4, 2);
+	
 	DiskTable<T> R_input(R_table);
 	{
 		const auto begin = get_wall_time_micros();
@@ -41,7 +43,7 @@ void compute_table(	int R_index, int num_threads,
 			}, nullptr, num_threads, "phase2/mark");
 		
 		L_used->clear();
-		R_input.read(&pool);
+		R_input.read(&pool, num_threads_read);
 		pool.close();
 		
 		std::cout << "[P2] Table " << R_index << " scan took "
@@ -101,7 +103,7 @@ void compute_table(	int R_index, int num_threads,
 			}
 		}, &R_count, num_threads, "phase2/remap");
 	
-	R_input.read(&map_pool);
+	R_input.read(&map_pool, num_threads_read);
 	
 	map_pool.close();
 	R_count.close();
