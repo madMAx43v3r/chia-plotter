@@ -19,6 +19,12 @@ private:
 	struct local_t {
 		FILE* file = nullptr;
 		uint8_t* buffer = nullptr;
+		~local_t() {
+			if(file) {
+				fclose(file);
+			}
+			delete [] buffer;
+		}
 	};
 	
 public:
@@ -67,14 +73,7 @@ public:
 		if(left_over) {
 			pool.take_copy(std::make_pair(offset, left_over));
 		}
-		pool.wait();
-		
-		for(size_t i = 0; i < pool.num_threads(); ++i)
-		{
-			auto& local = pool.get_local(i);
-			fclose(local.file);
-			delete [] local.buffer;
-		}
+		pool.close();
 	}
 	
 	// NOT thread-safe
