@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 	const auto out = create_plot(params, num_threads, log_num_buckets, "test", "", "");
 	
 	std::cout << "Total plot creation time was "
-			<< (get_wall_time_micros() - total_begin) / 1e6 << " sec";
+			<< (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
 	return 0;
 }
 
