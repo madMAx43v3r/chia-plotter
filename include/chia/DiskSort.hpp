@@ -144,6 +144,10 @@ template<typename T, typename Key>
 void DiskSort<T, Key>::read(Processor<std::vector<T>>* output,
 							int num_threads, int num_threads_read)
 {
+	if(num_threads_read < 0) {
+		num_threads_read = std::max(num_threads / 2, 2);
+	}
+	
 	ThreadPool<std::vector<T>, std::vector<T>> sort_pool(
 		[](std::vector<T>& input, std::vector<T>& out, size_t&) {
 			std::sort(input.begin(), input.end(),

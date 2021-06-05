@@ -63,7 +63,7 @@ public:
 	DiskSort(DiskSort&) = delete;
 	DiskSort& operator=(DiskSort&) = delete;
 	
-	void read(Processor<std::vector<T>>* output, int num_threads, int num_threads_read = 2);
+	void read(Processor<std::vector<T>>* output, int num_threads, int num_threads_read = -1);
 	
 	void finish();
 	
