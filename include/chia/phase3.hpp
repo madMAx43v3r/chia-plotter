@@ -45,7 +45,7 @@ void compute_stage1(int L_index, int num_threads,
 			}
 			if(L_position > L_offset) {
 				// delete old data
-				const auto count = std::min(L_position - L_offset, L_buffer.size());
+				const auto count = std::min<uint64_t>(L_position - L_offset, L_buffer.size());
 				L_offset += count;
 				L_buffer.erase(L_buffer.begin(), L_buffer.begin() + count);
 			}
