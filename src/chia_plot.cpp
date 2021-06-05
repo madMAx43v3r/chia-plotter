@@ -10,6 +10,8 @@
 #include <chia/phase3.hpp>
 #include <chia/phase4.hpp>
 
+#include <bls.hpp>
+
 #include <iostream>
 
 
