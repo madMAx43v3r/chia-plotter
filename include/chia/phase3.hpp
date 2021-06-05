@@ -369,13 +369,15 @@ uint64_t compute_stage2(int L_index, int num_threads,
 			std::vector<entry_np> out;
 			out.reserve(input.size());
 			for(const auto& entry : input) {
-				const auto index = R_num_read++;
-				if(index < uint64_t(1) << 32) {
-					entry_np tmp;
-					tmp.key = entry.key;
-					tmp.pos = index;
-					out.push_back(tmp);
+				if(R_num_read >= uint64_t(1) << 32) {
+					break;	// skip 32-bit overflow
 				}
+				const auto index = R_num_read++;
+				entry_np tmp;
+				tmp.key = entry.key;
+				tmp.pos = index;
+				out.push_back(tmp);
+				
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0) {
 					if(index != 0) {
