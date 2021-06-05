@@ -421,6 +421,99 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	return num_written_final;
 }
 
+inline
+void compute(	phase2::output_t& input, output_t& out,
+				const int num_threads, const int log_num_buckets,
+				const std::string plot_name,
+				const std::string tmp_dir,
+				const std::string tmp_dir_2)
+{
+	const auto total_begin = get_wall_time_micros();
+	
+	const std::string prefix_2 = tmp_dir_2 + plot_name + ".";
+	
+	out.params = input.params;
+	out.plot_file_name = tmp_dir + plot_name + ".tmp";
+	
+	FILE* plot_file = fopen(out.plot_file_name.c_str(), "wb");
+	if(!plot_file) {
+		throw std::runtime_error("fopen() failed");
+	}
+	out.header_size = WriteHeader(plot_file, 32, input.params.id.data(), nullptr, 0);
+	
+	std::vector<uint64_t> final_pointers(8, 0);
+	final_pointers[1] = out.header_size;
+	
+	uint64_t num_written_final = 0;
+	
+	DiskTable<phase2::entry_1> L_table_1(input.table_1);
+	
+	auto R_sort_lp = std::make_shared<DiskSortLP>(
+			63, log_num_buckets, prefix_2 + "p3s1.t2");
+	
+	compute_stage1<phase2::entry_1, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
+			1, num_threads, nullptr, input.sort[1].get(), R_sort_lp.get(), &L_table_1, input.bitfield_1.get());
+	
+	input.bitfield_1 = nullptr;
+	remove(input.table_1.file_name);
+	
+	auto L_sort_np = std::make_shared<DiskSortNP>(
+			32, log_num_buckets, prefix_2 + "p3s2.t2", false);
+	
+	num_written_final += compute_stage2(
+			1, num_threads, R_sort_lp.get(), L_sort_np.get(),
+			plot_file, final_pointers[1], &final_pointers[2]);
+	
+	for(int L_index = 2; L_index < 6; ++L_index)
+	{
+		const std::string R_t = "t" + std::to_string(L_index + 1);
+		
+		R_sort_lp = std::make_shared<DiskSortLP>(
+				63, log_num_buckets, prefix_2 + "p3s1." + R_t);
+		
+		compute_stage1<entry_np, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
+				L_index, num_threads, L_sort_np.get(), input.sort[L_index].get(), R_sort_lp.get());
+		
+		L_sort_np = std::make_shared<DiskSortNP>(
+				32, log_num_buckets, prefix_2 + "p3s2." + R_t, false);
+		
+		num_written_final += compute_stage2(
+				L_index, num_threads, R_sort_lp.get(), L_sort_np.get(),
+				plot_file, final_pointers[L_index], &final_pointers[L_index + 1]);
+	}
+	
+	DiskTable<phase2::entry_7> R_table_7(input.table_7);
+	
+	R_sort_lp = std::make_shared<DiskSortLP>(63, log_num_buckets, prefix_2 + "p3s1.t7");
+	
+	compute_stage1<entry_np, phase2::entry_7, DiskSortNP, phase2::DiskSort7>(
+			6, num_threads, L_sort_np.get(), nullptr, R_sort_lp.get(), nullptr, nullptr, &R_table_7);
+	
+	remove(input.table_7.file_name);
+	
+	L_sort_np = std::make_shared<DiskSortNP>(32, log_num_buckets, prefix_2 + "p3s2.t7");
+	
+	const auto num_written_final_7 = compute_stage2(
+			6, num_threads, R_sort_lp.get(), L_sort_np.get(),
+			plot_file, final_pointers[6], &final_pointers[7]);
+	num_written_final += num_written_final_7;
+	
+	fseek_set(plot_file, out.header_size - 10 * 8);
+	for(size_t i = 1; i < final_pointers.size(); ++i) {
+		uint8_t tmp[8] = {};
+		Util::IntToEightBytes(tmp, final_pointers[i]);
+		fwrite_ex(plot_file, tmp, sizeof(tmp));
+	}
+	fclose(plot_file);
+	
+	out.sort_7 = L_sort_np;
+	out.num_written_7 = num_written_final_7;
+	out.final_pointer_7 = final_pointers[7];
+	
+	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
+			", wrote " << num_written_final << " entries to final plot" << std::endl;
+}
+
 
 } // phase3
 

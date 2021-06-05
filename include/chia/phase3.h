@@ -92,6 +92,15 @@ struct get_line_point {
 typedef DiskSort<entry_lp, get_line_point<entry_lp>> DiskSortLP;
 typedef DiskSort<entry_np, get_sort_key<entry_np>> DiskSortNP;
 
+struct output_t {
+	int header_size = 0;
+	uint64_t num_written_7 = 0;
+	uint64_t final_pointer_7 = 0;
+	phase1::input_t params;
+	std::string plot_file_name;
+	std::shared_ptr<DiskSortNP> sort_7;
+};
+
 
 } // phase3
 

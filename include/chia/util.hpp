@@ -409,4 +409,9 @@ size_t fwrite_at(FILE* file, uint64_t offset, const void* buf, size_t length) {
 	return length;
 }
 
+inline
+void remove(const std::string& file_name) {
+	std::remove(file_name.c_str());
+}
+
 #endif  // SRC_CPP_UTIL_HPP_

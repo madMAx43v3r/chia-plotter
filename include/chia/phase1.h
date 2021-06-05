@@ -206,7 +206,8 @@ typedef DiskSort<entry_5, get_y<entry_5>> DiskSort5;
 typedef DiskSort<entry_6, get_y<entry_6>> DiskSort6;
 typedef DiskSort<entry_7, get_y<entry_7>> DiskSort7;
 
-struct ouput_t {
+struct output_t {
+	input_t params;
 	std::array<table_t, 7> table;
 };
 

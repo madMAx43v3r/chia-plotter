@@ -37,12 +37,24 @@ public:
 		}
 	}
 	
+	DiskTable(const table_t& info)
+		:	DiskTable(info.file_name, info.num_entries)
+	{
+	}
+	
 	~DiskTable() {
 		close();
 	}
 	
 	DiskTable(DiskTable&) = delete;
 	DiskTable& operator=(DiskTable&) = delete;
+	
+	table_t get_info() const {
+		table_t out;
+		out.file_name = file_name;
+		out.num_entries = num_entries;
+		return out;
+	}
 	
 	void read(	Processor<std::pair<std::vector<T>, size_t>>* output,
 				int num_threads_read = 2, const size_t block_size = 65536) const

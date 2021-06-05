@@ -204,5 +204,31 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     return end_byte;
 }
 
+inline
+void compute(	const phase3::output_t& input, output_t& out,
+				const int num_threads, const int log_num_buckets,
+				const std::string plot_name,
+				const std::string tmp_dir,
+				const std::string tmp_dir_2)
+{
+	const auto total_begin = get_wall_time_micros();
+	
+	out.params = input.params;
+	out.plot_file_name = input.plot_file_name;
+	
+	FILE* plot_file = fopen(input.plot_file_name.c_str(), "r+");
+	if(!plot_file) {
+		throw std::runtime_error("fopen() failed");
+	}
+	
+	out.plot_size = compute(plot_file, input.header_size, input.sort_7.get(),
+							num_threads, input.final_pointer_7, input.num_written_7);
+	
+	fclose(plot_file);
+	
+	std::cout << "Phase 4 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
+			", final plot size is " << out.plot_size << " bytes" << std::endl;
+}
+
 
 } // phase4

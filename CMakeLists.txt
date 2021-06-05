@@ -62,9 +62,13 @@ add_executable(test_phase_4 test/test_phase_4.cpp)
 
 add_executable(check_phase_1 test/check_phase_1.cpp)
 
+add_executable(chia_plot src/chia_plot.cpp)
+
 target_link_libraries(test_phase_1 chia_plotter)
 target_link_libraries(test_phase_2 chia_plotter)
 target_link_libraries(test_phase_3 chia_plotter)
 target_link_libraries(test_phase_4 chia_plotter)
 
 target_link_libraries(check_phase_1 chia_plotter)
+
+target_link_libraries(chia_plot chia_plotter)

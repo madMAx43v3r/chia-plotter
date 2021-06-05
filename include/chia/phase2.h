@@ -74,8 +74,12 @@ struct set_sort_key<entry_7> {
 typedef DiskSort<entry_x, get_pos<entry_x>> DiskSortT;
 typedef DiskSort<entry_7, get_pos<entry_7>> DiskSort7;		// dummy
 
-struct ouput_t {
+struct output_t {
+	phase1::input_t params;
+	table_t table_1;
+	table_t table_7;
 	std::shared_ptr<bitfield> bitfield_1;
+	std::shared_ptr<DiskSortT> sort[6];
 };
 
 

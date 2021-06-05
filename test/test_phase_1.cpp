@@ -27,11 +27,6 @@ int main(int argc, char** argv)
 	
 	initialize();
 	
-	std::array<FILE*, 7> tmp_files;
-	for(size_t i = 0; i < tmp_files.size(); ++i) {
-		tmp_files[i] = fopen(("test.p1.table" + std::to_string(i + 1) + ".tmp").c_str(), "wb");
-	}
-	
 	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, "test.p1.t1");
 	compute_f1(id, num_threads, &sort_1);
 	
