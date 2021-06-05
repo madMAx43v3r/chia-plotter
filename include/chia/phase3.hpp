@@ -298,15 +298,12 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	const auto begin = get_wall_time_micros();
 	
 	uint64_t R_num_read = 0;
-	uint64_t last_point = 0;
-	uint64_t num_written_final = 0;
 	std::atomic<uint64_t> L_num_write {0};
+	std::atomic<uint64_t> num_written_final {0};
 	
 	struct park_data_t {
 		uint64_t index = 0;
-		uint64_t check_point = 0;
-		std::vector<uint8_t> deltas;
-		std::vector<uint64_t> stubs;
+		std::vector<uint64_t> points;
 	} park;
 	
 	struct park_out_t {
@@ -336,21 +333,38 @@ uint64_t compute_stage2(int L_index, int num_threads,
 		}, "phase3/write");
 	
 	ThreadPool<park_data_t, park_out_t> park_threads(
-		[L_index, L_final_begin, park_size_bytes]
+		[L_index, L_final_begin, park_size_bytes, &num_written_final]
 		 (park_data_t& input, park_out_t& out, size_t&) {
+			const auto& points = input.points;
+			if(points.empty()) {
+				throw std::logic_error("empty park input");
+			}
+			std::vector<uint8_t> deltas(points.size() - 1);
+			std::vector<uint64_t> stubs(points.size() - 1);
+			for(size_t i = 0; i < points.size() - 1; ++i) {
+				const auto big_delta = points[i + 1] - points[i];
+				const auto stub = big_delta & ((1ull << (32 - kStubMinusBits)) - 1);
+				const auto small_delta = big_delta >> (32 - kStubMinusBits);
+				if(small_delta >= 256) {
+					throw std::logic_error("small_delta >= 256 (" + std::to_string(small_delta) + ")");
+				}
+				deltas[i] = small_delta;
+				stubs[i] = stub;
+			}
 			out.offset = L_final_begin + input.index * park_size_bytes;
 			out.buffer.resize(park_size_bytes);
 			WritePark(
-				input.check_point,
-				input.deltas,
-				input.stubs,
+				points[0],
+				deltas,
+				stubs,
 				L_index,
 				out.buffer.data(),
 				out.buffer.size());
+			num_written_final += points.size();
 		}, &park_write, std::max(num_threads / 2, 1), "phase3/park");
 	
 	Thread<std::vector<entry_lp>> R_read(
-		[&last_point, &R_num_read, &L_add, &park, &park_threads, &num_written_final]
+		[&R_num_read, &L_add, &park, &park_threads]
 		 (std::vector<entry_lp>& input) {
 			std::vector<entry_np> out;
 			out.reserve(input.size());
@@ -365,41 +379,24 @@ uint64_t compute_stage2(int L_index, int num_threads,
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0) {
 					if(index != 0) {
-						num_written_final += (park.deltas.size() + 1);
 						park_threads.take(park);
-						park.index += 1;
+						park.index++;
 					}
-					park.deltas.clear();
-					park.stubs.clear();
-					park.check_point = entry.point;
+					park.points.clear();
+					park.points.reserve(kEntriesPerPark);
 				}
-				if(entry.point < last_point) {
-					throw std::logic_error("input not sorted");
-				}
-				const auto big_delta = entry.point - last_point;
-				const auto stub = big_delta & ((1ull << (32 - kStubMinusBits)) - 1);
-				const auto small_delta = big_delta >> (32 - kStubMinusBits);
-				
-				if(small_delta >= 256) {
-					throw std::logic_error("small_delta >= 256 (" + std::to_string(small_delta) + ")");
-				}
-				if(index % kEntriesPerPark) {
-					park.deltas.push_back(small_delta);
-					park.stubs.push_back(stub);
-				}
-				last_point = entry.point;
+				park.points.push_back(entry.point);
 			}
 			L_add.take(out);
-		}, "phase3/delta");
+		}, "phase3/slice");
 	
 	R_sort->read(&R_read, num_threads);
 	R_read.close();
 	
 	// Since we don't have a perfect multiple of EPP entries, this writes the last ones
-	if(park.deltas.size() > 0) {
-		num_written_final += (park.deltas.size() + 1);
+	if(!park.points.empty()) {
 		park_threads.take(park);
-		// TODO: why not increment park.index here ?
+		park.index++;
 	}
 	park_threads.close();
 	park_write.close();
@@ -408,10 +405,13 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	L_sort->finish();
 	
 	if(R_final_begin) {
-		*R_final_begin = L_final_begin + (park.index + 1) * park_size_bytes;
+		*R_final_begin = L_final_begin + park.index * park_size_bytes;
 	}
 	Encoding::ANSFree(kRValues[L_index - 1]);
 	
+	if(L_num_write < R_num_read) {
+		std::cout << "Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
+	}
 	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", wrote " << L_num_write << " left entries"
