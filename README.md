@@ -87,6 +87,14 @@ Phase 4 took 193.905 sec, final plot size is 108835549588 bytes
 Total plot creation time was 3140.75 sec
 ```
 
+## How to Verify
+
+To make sure the plots are valid you can use the `ProofOfSpace` tool from `chiapos`:
+
+```
+ProofOfSpace check -f plot-k32-???.plot [num_iterations]
+```
+
 ## Future Plans
 
 I do have some history with GPU mining, back in 2014 I was the first to open source a XPM GPU miner,
