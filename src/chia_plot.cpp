@@ -31,7 +31,7 @@ phase4::output_t create_plot(	phase1::input_t& params,
 	phase3::compute(out_2, out_3, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase4::output_t out_4;
-	phase4::compute(out_3, out_4, std::min(num_threads, 8), log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase4::compute(out_3, out_4, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
 	return out_4;
 }
 
