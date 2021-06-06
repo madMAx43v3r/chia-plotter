@@ -8,7 +8,7 @@ simply by increasing the number of "cores", ie. threads.
 
 ## Usage
 
-````
+```
 chia_plot <pool_key> <farmer_key> [tmp_dir] [tmp_dir2] [num_threads] [log_num_buckets]
 
 For <pool_key> and <farmer_key> see output of `chia keys show`.
