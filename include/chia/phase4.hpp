@@ -138,9 +138,10 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 			if(f7_position % kEntriesPerPark == 0 && f7_position > 0)
 			{
 				park_data.offset = final_file_writer_3;
+				final_file_writer_3 += P7_park_size;
+				
 				p7_threads.take(park_data);
 				
-				final_file_writer_3 += P7_park_size;
 				park_data.array.clear();
 				park_data.array.reserve(kEntriesPerPark);
 			}
@@ -152,9 +153,9 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 				out.offset = final_file_writer_1;
 				out.buffer.resize(4);
 				Bits(entry_y, k).ToBytes(out.buffer.data());
+				final_file_writer_1 += out.buffer.size();
 				
 				plot_write.take(out);
-				final_file_writer_1 += out.buffer.size();
 				
 				if(num_C1_entries > 0) {
 					park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * C3_size;
