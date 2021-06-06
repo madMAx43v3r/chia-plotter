@@ -439,7 +439,8 @@ void compute(	phase2::output_t& input, output_t& out,
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}
-	out.header_size = WriteHeader(plot_file, 32, input.params.id.data(), nullptr, 0);
+	out.header_size = WriteHeader(	plot_file, 32, input.params.id.data(),
+									input.params.memo.data(), input.params.memo.size());
 	
 	std::vector<uint64_t> final_pointers(8, 0);
 	final_pointers[1] = out.header_size;
