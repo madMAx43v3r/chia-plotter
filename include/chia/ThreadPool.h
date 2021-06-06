@@ -27,7 +27,7 @@ private:
 	
 public:
 	ThreadPool(	const std::function<void(T&, S&, L&)>& func, Processor<S>* output,
-				int num_threads, const std::string& name = "")
+				const int num_threads, const std::string& name = "")
 		:	output(output),
 			execute(func)
 	{
@@ -35,11 +35,15 @@ public:
 			throw std::logic_error("num_threads < 1");
 		}
 		for(int i = 0; i < num_threads; ++i) {
-			auto state = std::make_shared<thread_t>();
-			state->thread = std::make_shared<Thread<T>>(
-					std::bind(&ThreadPool::wrapper, this, i, std::placeholders::_1),
+			threads.push_back(std::make_shared<thread_t>());
+		}
+		for(int i = 0; i < num_threads; ++i) {
+			threads[i]->thread = std::make_shared<Thread<T>>(
+					std::bind(&ThreadPool::wrapper, this,
+							threads[i].get(),
+							threads[((i + num_threads) - 1) % num_threads].get(),
+							std::placeholders::_1),
 					name.empty() ? name : name + "/" + std::to_string(i));
-			threads.push_back(state);
 		}
 	}
 	
@@ -49,7 +53,7 @@ public:
 	
 	// NOT thread-safe
 	void take(T& data) override {
-		auto state = threads[next % threads.size()];
+		const auto& state = threads[next % threads.size()];
 		state->thread->wait();
 		{
 			std::lock_guard<std::mutex> lock(state->mutex);
@@ -61,7 +65,7 @@ public:
 	
 	// NOT thread-safe
 	void wait() {
-		for(auto state : threads) {
+		for(const auto& state : threads) {
 			state->thread->wait();
 		}
 	}
@@ -69,35 +73,36 @@ public:
 	// NOT thread-safe
 	void close() {
 		wait();
-		for(auto state : threads) {
+		for(const auto& state : threads) {
 			state->thread->close();
 		}
 		threads.clear();
 	}
 	
+	// NOT thread-safe
 	size_t num_threads() const {
 		return threads.size();
 	}
 	
 	// NOT thread-safe
 	L& get_local(size_t index) {
-		return threads[index]->local;
+		const auto& state = threads[index];
+		state->thread->wait();
+		return state->local;
 	}
 	
 	// NOT thread-safe
 	void set_local(size_t index, L&& value) {
-		threads[index]->local = value;
+		const auto& state = threads[index];
+		state->thread->wait();
+		state->local = value;
 	}
 	
 private:
-	void wrapper(const size_t index, T& input)
+	void wrapper(thread_t* state, thread_t* prev, T& input)
 	{
-		auto state = threads[index];
-		
 		S out;
 		execute(input, out, state->local);
-		
-		auto prev = threads[((index + threads.size()) - 1) % threads.size()];
 		{
 			std::unique_lock<std::mutex> lock(prev->mutex);
 			while(prev->job < state->job) {

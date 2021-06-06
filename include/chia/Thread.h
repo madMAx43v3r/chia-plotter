@@ -48,25 +48,37 @@ public:
 	
 	// thread-safe
 	void take(T& data) override {
-		{
-			std::unique_lock<std::mutex> lock(mutex);
-			if(is_fail) {
-				throw std::runtime_error("thread failed with: " + ex_what);
-			}
-			while(is_busy) {
+		std::unique_lock<std::mutex> lock(mutex);
+		while(do_run && is_avail) {
+			signal.wait(lock);
+		}
+		if(!do_run) {
+			return;
+		}
+		is_avail = true;
+		input = std::move(data);
+		
+		if(is_busy) {
+			// wait for thread to take new input (no triple buffering)
+			while(do_run && is_avail && is_busy) {
+				signal.notify_all();
 				signal.wait(lock);
 			}
-			input = std::move(data);
-			is_busy = true;
+		} else {
+			// simple notify since thread is just waiting for new input
+			lock.unlock();
+			signal.notify_all();
 		}
-		signal.notify_all();
 	}
 	
-	// thread-safe
+	// wait for thread to finish all pending input [thread-safe]
 	void wait() {
 		std::unique_lock<std::mutex> lock(mutex);
-		while(do_run && is_busy) {
+		while(do_run && (is_avail || is_busy)) {
 			signal.wait(lock);
+		}
+		if(is_fail) {
+			throw std::runtime_error("thread failed with: " + ex_what);
 		}
 	}
 	
@@ -96,24 +108,31 @@ private:
 #endif
 		}
 		std::unique_lock<std::mutex> lock(mutex);
-		while(!is_fail) {
-			while(do_run && !is_busy) {
+		while(true) {
+			while(do_run && !is_avail) {
+				signal.notify_all();	// notify about is_busy change
 				signal.wait(lock);
 			}
 			if(!do_run) {
 				break;
 			}
+			T tmp = std::move(input);
+			is_avail = false;
+			is_busy = true;
+			lock.unlock();
+			signal.notify_all();		// notify about is_busy + is_avail change
 			try {
-				execute(input);
+				execute(tmp);
+				lock.lock();
 			} catch(const std::exception& ex) {
+				lock.lock();
+				do_run = false;
 				is_fail = true;
 				ex_what = ex.what();
-				std::cerr << ex.what();
 			}
 			is_busy = false;
-			signal.notify_all();
 		}
-		signal.notify_all();
+		signal.notify_all();		// notify about do_run + is_fail + is_busy change
 	}
 	
 private:
@@ -121,6 +140,7 @@ private:
 	bool do_run = true;
 	bool is_fail = false;
 	bool is_busy = false;
+	bool is_avail = false;
 	std::mutex mutex;
 	std::thread thread;
 	std::condition_variable signal;
