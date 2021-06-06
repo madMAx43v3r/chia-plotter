@@ -73,73 +73,102 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     final_table_begin_pointers[11] = end_byte;
 
     uint64_t final_file_writer_1 = begin_byte_C1;
-    uint64_t final_file_writer_2 = begin_byte_C3;
     uint64_t final_file_writer_3 = final_table_begin_pointers[7];
 
     uint64_t prev_y = 0;
-    std::vector<Bits> C2;
+    uint64_t f7_position = 0;
     uint64_t num_C1_entries = 0;
-    std::vector<uint8_t> deltas_to_write;
-
-    auto C1_entry_buf = new uint8_t[Util::ByteAlign(k) / 8];
-    auto C3_entry_buf = new uint8_t[size_C3];
-    auto P7_entry_buf = new uint8_t[P7_park_size];
+    
+    std::vector<uint32_t> C2;
 
     std::cout << "[P4] Starting to write C1 and C3 tables" << std::endl;
     
-    uint64_t f7_position = 0;
-    ParkBits to_write_p7;
+	struct park_deltas_t {
+		uint64_t offset = 0;
+		std::vector<uint8_t> deltas;
+	} park_deltas;
+	
+	struct park_bits_t {
+		uint64_t offset = 0;
+		ParkBits bits;
+	} park_bits;
+	
+    struct write_data_t {
+		uint64_t offset = 0;
+		std::vector<uint8_t> buffer;
+	};
+    
+    Thread<write_data_t> plot_write(
+		[plot_file](write_data_t& write) {
+			fwrite_at(plot_file, write.offset, write.buffer.data(), write.buffer.size());
+		}, "phase4/write");
+    
+     Thread<park_bits_t> p7_thread(
+    	[P7_park_size, &plot_write](park_bits_t& park) {
+    		write_data_t out;
+			out.offset = park.offset;
+    		out.buffer.resize(P7_park_size);
+			park.bits.ToBytes(out.buffer.data());
+			plot_write.take(out);
+		}, "phase4/P7");
+    
+    ThreadPool<park_deltas_t, write_data_t> park_threads(
+    	[size_C3](park_deltas_t& park, write_data_t& out, size_t&) {
+			out.offset = park.offset;
+    		out.buffer.resize(size_C3);
+    		const size_t num_bytes =
+				Encoding::ANSEncodeDeltas(park.deltas, kC3R, out.buffer.data() + 2) + 2;
+
+			// We need to be careful because deltas are variable sized, and they need to fit
+			assert(size_C3 * 8 > num_bytes);
+			Util::IntToTwoBytes(out.buffer.data(), num_bytes - 2);	// Write the size
+		}, &plot_write, std::max(num_threads / 2, 1), "phase4/park");
 
     // We read each table7 entry, which is sorted by f7, but we don't need f7 anymore. Instead,
 	// we will just store pos6, and the deltas in table C3, and checkpoints in tables C1 and C2.
     Thread<std::vector<phase3::entry_np>> thread(
-	[plot_file, P7_park_size, P7_entry_buf, C1_entry_buf, C3_entry_buf, &f7_position, &to_write_p7,
-	 begin_byte_C3, size_C3, &deltas_to_write, &prev_y, &C2,
-	 &num_C1_entries, &final_file_writer_1, &final_file_writer_2, &final_file_writer_3]
+	[begin_byte_C3, size_C3, P7_park_size, &f7_position, &num_C1_entries, &prev_y, &C2,
+	 &park_deltas, &park_bits, &park_threads, &p7_thread, &plot_write,
+	 &final_file_writer_1, &final_file_writer_3]
 	 (std::vector<phase3::entry_np>& input) {
 		for(const auto& entry : input) {
 			const uint64_t entry_y = entry.key;
 			const uint64_t entry_new_pos = entry.pos;
 	
-			Bits entry_y_bits = Bits(entry_y, k);
-	
-			if (f7_position % kEntriesPerPark == 0 && f7_position > 0) {
-				memset(P7_entry_buf, 0, P7_park_size);
-				to_write_p7.ToBytes(P7_entry_buf);
-				final_file_writer_3 +=
-						fwrite_at(plot_file, final_file_writer_3, (P7_entry_buf), P7_park_size);
-				to_write_p7 = ParkBits();
-			}
-	
-			to_write_p7 += ParkBits(entry_new_pos, k + 1);
-	
-			if (f7_position % kCheckpoint1Interval == 0) {
-				entry_y_bits.ToBytes(C1_entry_buf);
-				final_file_writer_1 +=
-						fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), Util::ByteAlign(k) / 8);
+			if(f7_position % kEntriesPerPark == 0 && f7_position > 0)
+			{
+				park_bits.offset = final_file_writer_3;
+				p7_thread.take(park_bits);
 				
-				if (num_C1_entries > 0) {
-					final_file_writer_2 = begin_byte_C3 + (num_C1_entries - 1) * size_C3;
-					size_t num_bytes =
-						Encoding::ANSEncodeDeltas(deltas_to_write, kC3R, C3_entry_buf + 2) + 2;
+				final_file_writer_3 += P7_park_size;
+				park_bits.bits = ParkBits();
+			}
+			park_bits.bits += ParkBits(entry_new_pos, k + 1);
 	
-					// We need to be careful because deltas are variable sized, and they need to fit
-					assert(size_C3 * 8 > num_bytes);
-	
-					// Write the size
-					Util::IntToTwoBytes(C3_entry_buf, num_bytes - 2);
-	
-					final_file_writer_2 +=
-							fwrite_at(plot_file, final_file_writer_2, (C3_entry_buf), num_bytes);
+			if(f7_position % kCheckpoint1Interval == 0)
+			{
+				write_data_t out;
+				out.offset = final_file_writer_1;
+				out.buffer.resize(4);
+				Bits(entry_y, k).ToBytes(out.buffer.data());
+				
+				plot_write.take(out);
+				final_file_writer_1 += out.buffer.size();
+				
+				if(num_C1_entries > 0) {
+					park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * size_C3;
+					park_threads.take(park_deltas);
 				}
 				prev_y = entry_y;
-				if (f7_position % (kCheckpoint1Interval * kCheckpoint2Interval) == 0) {
-					C2.emplace_back(std::move(entry_y_bits));
+				
+				if(f7_position % (kCheckpoint1Interval * kCheckpoint2Interval) == 0) {
+					C2.push_back(entry_y);
 				}
-				deltas_to_write.clear();
-				++num_C1_entries;
-			} else {
-				deltas_to_write.push_back(entry_y - prev_y);
+				park_deltas.deltas.clear();
+				num_C1_entries++;
+			}
+			else {
+				park_deltas.deltas.push_back(entry_y - prev_y);
 				prev_y = entry_y;
 			}
 			f7_position++;
@@ -149,48 +178,38 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     L_sort_7->read(&thread, num_threads);
     thread.close();
     
-    Encoding::ANSFree(kC3R);
+    park_bits.offset = final_file_writer_3;
+    p7_thread.take(park_bits);
+    final_file_writer_3 += P7_park_size;
 
-    // Writes the final park to disk
-    memset(P7_entry_buf, 0, P7_park_size);
-    to_write_p7.ToBytes(P7_entry_buf);
-
-    final_file_writer_3 += fwrite_at(plot_file, final_file_writer_3, (P7_entry_buf), P7_park_size);
-
-    if (!deltas_to_write.empty()) {
-        size_t num_bytes = Encoding::ANSEncodeDeltas(deltas_to_write, kC3R, C3_entry_buf + 2);
-        memset(C3_entry_buf + num_bytes + 2, 0, size_C3 - (num_bytes + 2));
-        final_file_writer_2 = begin_byte_C3 + (num_C1_entries - 1) * size_C3;
-
-        // Write the size
-        Util::IntToTwoBytes(C3_entry_buf, num_bytes);
-
-        final_file_writer_2 +=
-        		fwrite_at(plot_file, final_file_writer_2, (C3_entry_buf), size_C3);
-        Encoding::ANSFree(kC3R);
+    if(!park_deltas.deltas.empty()) {
+    	park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * size_C3;
+		park_threads.take(park_deltas);
     }
+    Encoding::ANSFree(kC3R);
+    
+    park_threads.close();
+    p7_thread.close();
+    plot_write.close();
 
+    uint8_t C1_entry_buf[4] = {};
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), Util::ByteAlign(k) / 8);
+    		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), sizeof(C1_entry_buf));
     
     std::cout << "[P4] Finished writing C1 and C3 tables" << std::endl;
     std::cout << "[P4] Writing C2 table" << std::endl;
 
-    for (Bits &C2_entry : C2) {
-        C2_entry.ToBytes(C1_entry_buf);
+    for(const uint64_t C2_entry : C2) {
+        Bits(C2_entry, k).ToBytes(C1_entry_buf);
         final_file_writer_1 +=
-        		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), Util::ByteAlign(k) / 8);
+        		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), sizeof(C1_entry_buf));
     }
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), Util::ByteAlign(k) / 8);
+    		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), sizeof(C1_entry_buf));
     
     std::cout << "[P4] Finished writing C2 table" << std::endl;
-
-    delete[] C3_entry_buf;
-    delete[] C1_entry_buf;
-    delete[] P7_entry_buf;
 
     final_file_writer_1 = header_size - 8 * 3;
     uint8_t table_pointer_bytes[8] = {};
