@@ -88,10 +88,10 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 		std::vector<uint8_t> deltas;
 	} park_deltas;
 	
-	struct park_bits_t {
+	struct park_data_t {
 		uint64_t offset = 0;
-		ParkBits bits;
-	} park_bits;
+		std::vector<uint32_t> array;	// new_pos
+	} park_data;
 	
     struct write_data_t {
 		uint64_t offset = 0;
@@ -103,12 +103,16 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 			fwrite_at(plot_file, write.offset, write.buffer.data(), write.buffer.size());
 		}, "phase4/write");
     
-     Thread<park_bits_t> p7_thread(
-    	[P7_park_size, &plot_write](park_bits_t& park) {
+     Thread<park_data_t> p7_thread(
+    	[P7_park_size, &plot_write](park_data_t& park) {
     		write_data_t out;
 			out.offset = park.offset;
     		out.buffer.resize(P7_park_size);
-			park.bits.ToBytes(out.buffer.data());
+    		ParkBits bits;
+    		for(uint64_t new_pos : park.array) {
+    			bits += ParkBits(new_pos, k + 1);
+    		}
+			bits.ToBytes(out.buffer.data());
 			plot_write.take(out);
 		}, "phase4/P7");
     
@@ -126,24 +130,24 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 
     // We read each table7 entry, which is sorted by f7, but we don't need f7 anymore. Instead,
 	// we will just store pos6, and the deltas in table C3, and checkpoints in tables C1 and C2.
-    Thread<std::vector<phase3::entry_np>> thread(
+    Thread<std::vector<phase3::entry_np>> read_thread(
 	[begin_byte_C3, size_C3, P7_park_size, &f7_position, &num_C1_entries, &prev_y, &C2,
-	 &park_deltas, &park_bits, &park_threads, &p7_thread, &plot_write,
+	 &park_deltas, &park_data, &park_threads, &p7_thread, &plot_write,
 	 &final_file_writer_1, &final_file_writer_3]
 	 (std::vector<phase3::entry_np>& input) {
 		for(const auto& entry : input) {
 			const uint64_t entry_y = entry.key;
-			const uint64_t entry_new_pos = entry.pos;
 	
 			if(f7_position % kEntriesPerPark == 0 && f7_position > 0)
 			{
-				park_bits.offset = final_file_writer_3;
-				p7_thread.take(park_bits);
+				park_data.offset = final_file_writer_3;
+				p7_thread.take(park_data);
 				
 				final_file_writer_3 += P7_park_size;
-				park_bits.bits = ParkBits();
+				park_data.array.clear();
+				park_data.array.reserve(kEntriesPerPark);
 			}
-			park_bits.bits += ParkBits(entry_new_pos, k + 1);
+			park_data.array.push_back(entry.pos);
 	
 			if(f7_position % kCheckpoint1Interval == 0)
 			{
@@ -159,27 +163,27 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 					park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * size_C3;
 					park_threads.take(park_deltas);
 				}
-				prev_y = entry_y;
-				
 				if(f7_position % (kCheckpoint1Interval * kCheckpoint2Interval) == 0) {
 					C2.push_back(entry_y);
 				}
 				park_deltas.deltas.clear();
+				park_deltas.deltas.reserve(kCheckpoint1Interval);
 				num_C1_entries++;
 			}
 			else {
 				park_deltas.deltas.push_back(entry_y - prev_y);
-				prev_y = entry_y;
 			}
+			prev_y = entry_y;
 			f7_position++;
 		}
 	}, "phase4/read");
     
-    L_sort_7->read(&thread, num_threads);
-    thread.close();
+    L_sort_7->read(&read_thread, num_threads);
     
-    park_bits.offset = final_file_writer_3;
-    p7_thread.take(park_bits);
+    read_thread.close();
+    
+    park_data.offset = final_file_writer_3;
+    p7_thread.take(park_data);
     final_file_writer_3 += P7_park_size;
 
     if(!park_deltas.deltas.empty()) {
