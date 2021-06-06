@@ -89,7 +89,7 @@ phase4::output_t create_plot(	const int num_threads,
 		}
 		bls::Util::Hash256(params.id.data(), bytes.data(), bytes.size());
 	}
-	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M-%S")
+	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
 	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
