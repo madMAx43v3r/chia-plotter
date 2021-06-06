@@ -103,7 +103,6 @@ private:
 			if(!do_run) {
 				break;
 			}
-			lock.unlock();
 			try {
 				execute(input);
 			} catch(const std::exception& ex) {
@@ -111,7 +110,6 @@ private:
 				ex_what = ex.what();
 				std::cerr << ex.what();
 			}
-			lock.lock();
 			is_busy = false;
 			signal.notify_all();
 		}
