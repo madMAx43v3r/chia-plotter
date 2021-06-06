@@ -64,8 +64,8 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     const uint64_t total_C2_entries = cdiv(total_C1_entries, kCheckpoint2Interval);
     const uint64_t begin_byte_C3 = begin_byte_C2 + (total_C2_entries + 1) * (Util::ByteAlign(k) / 8);
 
-    const uint32_t size_C3 = CalculateC3Size(k);
-    const uint64_t end_byte = begin_byte_C3 + total_C1_entries * size_C3;
+    const uint32_t C3_size = CalculateC3Size(k);
+    const uint64_t end_byte = begin_byte_C3 + total_C1_entries * C3_size;
 
     final_table_begin_pointers[8] = begin_byte_C1;
     final_table_begin_pointers[9] = begin_byte_C2;
@@ -103,9 +103,8 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 			fwrite_at(plot_file, write.offset, write.buffer.data(), write.buffer.size());
 		}, "phase4/write");
     
-     Thread<park_data_t> p7_thread(
-    	[P7_park_size, &plot_write](park_data_t& park) {
-    		write_data_t out;
+    ThreadPool<park_data_t, write_data_t> p7_threads(
+    	[P7_park_size](park_data_t& park, write_data_t& out, size_t&) {
 			out.offset = park.offset;
     		out.buffer.resize(P7_park_size);
     		ParkBits bits;
@@ -113,26 +112,25 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     			bits += ParkBits(new_pos, k + 1);
     		}
 			bits.ToBytes(out.buffer.data());
-			plot_write.take(out);
-		}, "phase4/P7");
+		}, &plot_write, std::max(num_threads / 2, 1), "phase4/P7");
     
     ThreadPool<park_deltas_t, write_data_t> park_threads(
-    	[size_C3](park_deltas_t& park, write_data_t& out, size_t&) {
+    	[C3_size](park_deltas_t& park, write_data_t& out, size_t&) {
 			out.offset = park.offset;
-    		out.buffer.resize(size_C3);
+    		out.buffer.resize(C3_size);
     		const size_t num_bytes =
 				Encoding::ANSEncodeDeltas(park.deltas, kC3R, out.buffer.data() + 2) + 2;
 
 			// We need to be careful because deltas are variable sized, and they need to fit
-			assert(size_C3 * 8 > num_bytes);
+			assert(C3_size * 8 > num_bytes);
 			Util::IntToTwoBytes(out.buffer.data(), num_bytes - 2);	// Write the size
 		}, &plot_write, std::max(num_threads / 2, 1), "phase4/park");
 
     // We read each table7 entry, which is sorted by f7, but we don't need f7 anymore. Instead,
 	// we will just store pos6, and the deltas in table C3, and checkpoints in tables C1 and C2.
     Thread<std::vector<phase3::entry_np>> read_thread(
-	[begin_byte_C3, size_C3, P7_park_size, &f7_position, &num_C1_entries, &prev_y, &C2,
-	 &park_deltas, &park_data, &park_threads, &p7_thread, &plot_write,
+	[begin_byte_C3, C3_size, P7_park_size, &f7_position, &num_C1_entries, &prev_y, &C2,
+	 &park_deltas, &park_data, &park_threads, &p7_threads, &plot_write,
 	 &final_file_writer_1, &final_file_writer_3]
 	 (std::vector<phase3::entry_np>& input) {
 		for(const auto& entry : input) {
@@ -141,7 +139,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 			if(f7_position % kEntriesPerPark == 0 && f7_position > 0)
 			{
 				park_data.offset = final_file_writer_3;
-				p7_thread.take(park_data);
+				p7_threads.take(park_data);
 				
 				final_file_writer_3 += P7_park_size;
 				park_data.array.clear();
@@ -160,7 +158,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 				final_file_writer_1 += out.buffer.size();
 				
 				if(num_C1_entries > 0) {
-					park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * size_C3;
+					park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * C3_size;
 					park_threads.take(park_deltas);
 				}
 				if(f7_position % (kCheckpoint1Interval * kCheckpoint2Interval) == 0) {
@@ -183,17 +181,17 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     read_thread.close();
     
     park_data.offset = final_file_writer_3;
-    p7_thread.take(park_data);
+    p7_threads.take(park_data);
     final_file_writer_3 += P7_park_size;
 
     if(!park_deltas.deltas.empty()) {
-    	park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * size_C3;
+    	park_deltas.offset = begin_byte_C3 + (num_C1_entries - 1) * C3_size;
 		park_threads.take(park_deltas);
     }
     Encoding::ANSFree(kC3R);
     
     park_threads.close();
-    p7_thread.close();
+    p7_threads.close();
     plot_write.close();
 
     uint8_t C1_entry_buf[4] = {};
