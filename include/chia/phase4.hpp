@@ -113,17 +113,18 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 			bits.ToBytes(out.buffer.data());
 		}, &plot_write, std::max(num_threads / 2, 1), "phase4/P7");
     
-    ThreadPool<park_deltas_t, write_data_t> park_threads(
-    	[C3_size](park_deltas_t& park, write_data_t& out, size_t&) {
+	ThreadPool<park_deltas_t, write_data_t> park_threads(
+		[C3_size](park_deltas_t& park, write_data_t& out, size_t&) {
 			out.offset = park.offset;
-    		out.buffer.resize(C3_size);
-    		const size_t num_bytes =
-				Encoding::ANSEncodeDeltas(park.deltas, kC3R, out.buffer.data() + 2) + 2;
-
-			// We need to be careful because deltas are variable sized, and they need to fit
-			assert(C3_size * 8 > num_bytes);
-			Util::IntToTwoBytes(out.buffer.data(), num_bytes - 2);	// Write the size
-		}, &plot_write, std::max(num_threads / 2, 1), "phase4/park");
+			out.buffer.resize(C3_size);
+			const size_t num_bytes =
+					Encoding::ANSEncodeDeltas(park.deltas, kC3R, out.buffer.data() + 2);
+			
+			if(num_bytes + 2 > C3_size) {
+				throw std::logic_error("C3 overflow");
+			}
+			Util::IntToTwoBytes(out.buffer.data(), num_bytes);	// Write the size
+		}, &plot_write, std::max(num_threads / 2, 1), "phase4/C3");
 
     // We read each table7 entry, which is sorted by f7, but we don't need f7 anymore. Instead,
 	// we will just store pos6, and the deltas in table C3, and checkpoints in tables C1 and C2.
