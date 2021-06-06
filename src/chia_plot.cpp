@@ -48,7 +48,8 @@ std::string get_date_string_ex(const char* format, bool UTC = false, int64_t tim
 }
 
 inline
-phase4::output_t create_plot(	const int num_threads, const int log_num_buckets,
+phase4::output_t create_plot(	const int num_threads,
+								const int log_num_buckets,
 								const vector<uint8_t>& pool_key_bytes,
 								const vector<uint8_t>& farmer_key_bytes,
 								const std::string& tmp_dir,
@@ -91,6 +92,8 @@ phase4::output_t create_plot(	const int num_threads, const int log_num_buckets,
 	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M-%S")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
+	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
+	std::cout << "Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
 	std::cout << "Plot Name: " << plot_name << std::endl;
 	
 	// memo = bytes(pool_public_key) + bytes(farmer_public_key) + bytes(local_master_sk)
@@ -122,15 +125,22 @@ phase4::output_t create_plot(	const int num_threads, const int log_num_buckets,
 int main(int argc, char** argv)
 {
 	if(argc < 3) {
-		std::cout << "chia_plot <pool_key> <farmer_key> [num_threads] [log_num_buckets]" << std::endl;
+		std::cout << "chia_plot <pool_key> <farmer_key> [tmp_dir] [tmp_dir2] [num_threads] [log_num_buckets]" << std::endl << std::endl;
+		std::cout << "For <pool_key> and <farmer_key> see output of `chia keys show`." << std::endl;
+		std::cout << "<tmp_dir> needs about 200G space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')" << std::endl;
+		std::cout << "<tmp_dir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes." << std::endl;
+		std::cout << "If <tmp_dir> is not specified it defaults to current directory." << std::endl;
+		std::cout << "If <tmp_dir2> is not specified it defaults to <tmp_dir>." << std::endl;
 		return -1;
 	}
 	const auto pool_key = hex_to_bytes(argv[1]);
 	const auto farmer_key = hex_to_bytes(argv[2]);
-	const int num_threads = argc > 3 ? atoi(argv[3]) : 4;
-	const int log_num_buckets = argc > 4 ? atoi(argv[4]) : 7;
+	const std::string tmp_dir = argc > 3 ? std::string(argv[3]) : std::string();
+	const std::string tmp_dir2 = argc > 4 ? std::string(argv[4]) : tmp_dir;
+	const int num_threads = argc > 5 ? atoi(argv[5]) : 4;
+	const int log_num_buckets = argc > 6 ? atoi(argv[6]) : 7;
 	
-	const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, "", "");
+	const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 	
 	// TODO: copy to destination
 	
