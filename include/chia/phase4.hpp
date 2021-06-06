@@ -65,7 +65,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     const uint64_t begin_byte_C3 = begin_byte_C2 + (total_C2_entries + 1) * (Util::ByteAlign(k) / 8);
 
     const uint32_t size_C3 = CalculateC3Size(k);
-    const uint64_t end_byte = begin_byte_C3 + (total_C1_entries)*size_C3;
+    const uint64_t end_byte = begin_byte_C3 + total_C1_entries * size_C3;
 
     final_table_begin_pointers[8] = begin_byte_C1;
     final_table_begin_pointers[9] = begin_byte_C2;
@@ -173,7 +173,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 			}
 			f7_position++;
 		}
-	}, "phase4/final");
+	}, "phase4/read");
     
     L_sort_7->read(&thread, num_threads);
     thread.close();
@@ -195,7 +195,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     uint8_t C1_entry_buf[4] = {};
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), sizeof(C1_entry_buf));
+    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
     
     std::cout << "[P4] Finished writing C1 and C3 tables" << std::endl;
     std::cout << "[P4] Writing C2 table" << std::endl;
@@ -203,11 +203,11 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     for(const uint64_t C2_entry : C2) {
         Bits(C2_entry, k).ToBytes(C1_entry_buf);
         final_file_writer_1 +=
-        		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), sizeof(C1_entry_buf));
+        		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
     }
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, (C1_entry_buf), sizeof(C1_entry_buf));
+    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
     
     std::cout << "[P4] Finished writing C2 table" << std::endl;
 
