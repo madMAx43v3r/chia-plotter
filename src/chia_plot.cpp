@@ -70,11 +70,13 @@ phase4::output_t create_plot(	const int num_threads, const int log_num_buckets,
 	randombytes_buf(seed.data(), seed.size());
 	
 	bls::AugSchemeMPL MPL;
-	bls::PrivateKey sk = MPL.KeyGen(seed);
+	const bls::PrivateKey master_sk = MPL.KeyGen(seed);
+	
+	bls::PrivateKey local_sk = master_sk;
 	for(uint32_t i : {12381, 8444, 3, 0}) {
-		sk = MPL.DeriveChildSk(sk, i);
+		local_sk = MPL.DeriveChildSk(local_sk, i);
 	}
-	const bls::G1Element local_key = sk.GetG1Element();
+	const bls::G1Element local_key = local_sk.GetG1Element();
 	const bls::G1Element plot_key = local_key + farmer_key;
 	
 	phase1::input_t params;
@@ -91,7 +93,13 @@ phase4::output_t create_plot(	const int num_threads, const int log_num_buckets,
 	
 	std::cout << "Plot Name: " << plot_name << std::endl;
 	
-	// TODO: memo
+	// memo = bytes(pool_public_key) + bytes(farmer_public_key) + bytes(local_master_sk)
+	params.memo.insert(params.memo.end(), pool_key_bytes.begin(), pool_key_bytes.end());
+	params.memo.insert(params.memo.end(), farmer_key_bytes.begin(), farmer_key_bytes.end());
+	{
+		const auto bytes = master_sk.Serialize();
+		params.memo.insert(params.memo.end(), bytes.begin(), bytes.end());
+	}
 	
 	phase1::output_t out_1;
 	phase1::compute(params, out_1, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
@@ -114,7 +122,7 @@ phase4::output_t create_plot(	const int num_threads, const int log_num_buckets,
 int main(int argc, char** argv)
 {
 	if(argc < 3) {
-		std::cout << "Usage: chia_plot <pool_key> <farmer_key> [num_threads] [log_num_buckets]" << std::endl;
+		std::cout << "chia_plot <pool_key> <farmer_key> [num_threads] [log_num_buckets]" << std::endl;
 		return -1;
 	}
 	const auto pool_key = hex_to_bytes(argv[1]);
