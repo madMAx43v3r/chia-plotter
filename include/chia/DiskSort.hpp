@@ -171,9 +171,9 @@ void DiskSort<T, Key>::read(Processor<std::vector<T>>* output,
 	for(size_t i = 0; i < buckets.size(); ++i) {
 		read_pool.take_copy(i);
 	}
-	read_pool.wait();
-	sort_thread.wait();
-	sort_pool.wait();
+	read_pool.close();
+	sort_thread.close();
+	sort_pool.close();
 }
 
 template<typename T, typename Key>
