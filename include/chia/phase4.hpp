@@ -51,8 +51,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 	
 	const uint32_t P7_park_size = Util::ByteAlign((k + 1) * kEntriesPerPark) / 8;
     const uint64_t number_of_p7_parks =
-        ((final_entries_written == 0 ? 0 : final_entries_written - 1) / kEntriesPerPark) +
-        1;
+        ((final_entries_written == 0 ? 0 : final_entries_written - 1) / kEntriesPerPark) + 1;
     
     std::array<uint64_t, 12> final_table_begin_pointers = {};
     final_table_begin_pointers[7] = final_pointer_7;
