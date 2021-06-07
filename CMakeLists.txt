@@ -4,7 +4,7 @@ project(chia-plotter C CXX ASM)
 
 add_subdirectory(lib/bls-signatures)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fopenmp -Wall -Wno-unused-function")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -Wall -Wno-unused-function")
 
 include_directories(
 	lib
