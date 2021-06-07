@@ -132,6 +132,8 @@ int main(int argc, char** argv)
 		std::cout << "<tmp_dir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes." << std::endl;
 		std::cout << "If <tmp_dir> is not specified it defaults to current directory." << std::endl;
 		std::cout << "If <tmp_dir2> is not specified it defaults to <tmp_dir>." << std::endl;
+		std::cout << "[num_threads] defaults to 4, it's recommended to use number of physical cores." << std::endl;
+		std::cout << "[log_num_buckets] defaults to 7 (2^7 = 128)" << std::endl;
 		return -1;
 	}
 	const auto pool_key = hex_to_bytes(argv[1]);
