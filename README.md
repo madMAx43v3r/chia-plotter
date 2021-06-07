@@ -16,6 +16,8 @@ For <pool_key> and <farmer_key> see output of `chia keys show`.
 <tmp_dir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes.
 If <tmp_dir> is not specified it defaults to current directory.
 If <tmp_dir2> is not specified it defaults to <tmp_dir>.
+[num_threads] defaults to 4, it's recommended to use number of physical cores.
+[log_num_buckets] defaults to 7 (2^7 = 128)
 ```
 
 Make sure to crank up `<num_threads>` if you have plenty of cores, the default is 4.
