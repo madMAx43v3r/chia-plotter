@@ -8,6 +8,7 @@
 #ifndef INCLUDE_CHIA_DISKSORT_H_
 #define INCLUDE_CHIA_DISKSORT_H_
 
+#include <chia/buffer.h>
 #include <chia/ThreadPool.h>
 
 #include <vector>
@@ -21,13 +22,6 @@
 template<typename T, typename Key>
 class DiskSort {
 private:
-	template<size_t N>
-	struct buffer_t {
-		size_t count = 0;
-		uint8_t buffer[N * T::disk_size];
-		static constexpr size_t max_count = N;
-	};
-	
 	struct bucket_t {
 		FILE* file = nullptr;
 		std::mutex mutex;
@@ -50,7 +44,7 @@ public:
 	private:
 		DiskSort* disk = nullptr;
 		const int key_shift = 0;
-		std::vector<buffer_t<4096>> buckets;
+		std::vector<write_buffer_t<T>> buckets;
 	};
 	
 	DiskSort(	int key_size, int log_num_buckets,
@@ -63,7 +57,8 @@ public:
 	DiskSort(DiskSort&) = delete;
 	DiskSort& operator=(DiskSort&) = delete;
 	
-	void read(Processor<std::vector<T>>* output, int num_threads, int num_threads_read = -1);
+	void read(	Processor<std::vector<T>>* output,
+				int num_threads, int num_threads_read = -1);
 	
 	void finish();
 	
@@ -85,7 +80,9 @@ public:
 	}
 	
 private:
-	void read_bucket(size_t& index, std::vector<std::vector<T>>& out);
+	void read_bucket(	size_t& index,
+						std::vector<std::vector<T>>& out,
+						read_buffer_t<T>& buffer);
 	
 private:
 	const int key_size = 0;

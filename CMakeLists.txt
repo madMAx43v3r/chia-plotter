@@ -54,6 +54,7 @@ add_library(fse STATIC ${FSE_FILES})
 
 add_library(chia_plotter STATIC
 	lib/chacha8.c
+	src/settings.cpp
 )
 
 target_link_libraries(chia_plotter blake3 fse Threads::Threads)
@@ -69,7 +70,7 @@ add_executable(check_phase_1 test/check_phase_1.cpp)
 
 add_executable(chia_plot src/chia_plot.cpp)
 
-target_link_libraries(test_disk_sort Threads::Threads)
+target_link_libraries(test_disk_sort chia_plotter)
 
 target_link_libraries(test_phase_1 chia_plotter)
 target_link_libraries(test_phase_2 chia_plotter)
