@@ -142,11 +142,21 @@ int main(int argc, char** argv)
 	const int log_num_buckets = argc > 6 ? atoi(argv[6]) : 7;
 	
 	if(pool_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <pool_key>: " << bls::Util::HexStr(pool_key) << std::endl;
+		std::cout << "Invalid <pool_key>: " << bls::Util::HexStr(pool_key)
+			<< " (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
 		return -2;
 	}
 	if(farmer_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <farmer_key>: " << bls::Util::HexStr(farmer_key) << std::endl;
+		std::cout << "Invalid <farmer_key>: " << bls::Util::HexStr(farmer_key)
+			<< " (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
+		return -2;
+	}
+	if(num_threads < 1 || num_threads > 1024) {
+		std::cout << "Invalid num_threads: " << num_threads << " (supported: [1..1024])" << std::endl;
+		return -2;
+	}
+	if(log_num_buckets < 4 || log_num_buckets > 16) {
+		std::cout << "Invalid log_num_buckets: " << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
 	try {
