@@ -22,7 +22,7 @@ Make sure to crank up `<num_threads>` if you have plenty of cores, the default i
 Depending on the phase more threads will be launched, the setting is just a multiplier.
 
 RAM usage depends on `<num_threads>` and `<log_num_buckets>`.
-With default `<log_num_buckets>` and 4 threads it's ~2GB, with 16 threads it's ~6GB.
+With default `<log_num_buckets>` and 4 threads it's ~2GB total, with 16 threads it's ~6GB total.
 
 ## How to Support
 
