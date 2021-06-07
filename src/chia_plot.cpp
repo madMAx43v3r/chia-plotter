@@ -9,6 +9,7 @@
 #include <chia/phase2.hpp>
 #include <chia/phase3.hpp>
 #include <chia/phase4.hpp>
+#include <chia/chia_filesystem.hpp>
 
 #include <bls.hpp>
 #include <sodium.h>
@@ -16,7 +17,6 @@
 #include <chrono>
 #include <iostream>
 
-#include <dirent.h>
 
 inline
 std::vector<uint8_t> hex_to_bytes(const std::string& hex)
@@ -141,18 +141,21 @@ int main(int argc, char** argv)
 	const int num_threads = argc > 5 ? atoi(argv[5]) : 4;
 	const int log_num_buckets = argc > 6 ? atoi(argv[6]) : 7;
 
-	DIR *dir1 = opendir(tmp_dir.data());
-	DIR *dir2 = opendir(tmp_dir2.data());
-	if (dir1 == NULL) {
-		std::cout << "Temporary 1 directory does not exist or is not accessible." << std::endl;
+	try {	
+
+	// Check if the paths exist
+        	if (!fs::exists(tmp_dir)) {
+            		throw InvalidValueException("Temp directory " + tmp_dir + " does not exist");
+        	}
+
+        	if (!fs::exists(tmp_dir2)) {
+            		throw InvalidValueException("Temp2 directory " + tmp_dir2 + " does not exist");
+        	}
+	}
+	catch (InvalidValueException& e) {
+		std::cout << e.what() << std::endl;
 		return -2;
 	}
-	if (dir2 == NULL) {
-		std::cout << "Temporary 2 directory does not exist or is not accessible." << std::endl;
-		return -3;
-	}
-	closedir(dir1);
-	closedir(dir2);
 	
 	const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 	
