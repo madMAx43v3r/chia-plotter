@@ -141,6 +141,14 @@ int main(int argc, char** argv)
 	const int num_threads = argc > 5 ? atoi(argv[5]) : 4;
 	const int log_num_buckets = argc > 6 ? atoi(argv[6]) : 7;
 	
+	if(pool_key.size() != bls::G1Element::SIZE) {
+		std::cout << "Invalid <pool_key>: " << bls::Util::HexStr(pool_key) << std::endl;
+		return -2;
+	}
+	if(farmer_key.size() != bls::G1Element::SIZE) {
+		std::cout << "Invalid <farmer_key>: " << bls::Util::HexStr(farmer_key) << std::endl;
+		return -2;
+	}
 	try {
 		// Check if the paths exist
 		if(!fs::exists(tmp_dir)) {
@@ -151,7 +159,7 @@ int main(int argc, char** argv)
 		}
 	}
 	catch(const std::exception& ex) {
-		std::cout << ex.what() << std::endl;
+		std::cout << "Error: " << ex.what() << std::endl;
 		return -2;
 	}
 	
