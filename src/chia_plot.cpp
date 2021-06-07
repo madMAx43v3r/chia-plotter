@@ -16,6 +16,7 @@
 #include <chrono>
 #include <iostream>
 
+#include <dirent.h>
 
 inline
 std::vector<uint8_t> hex_to_bytes(const std::string& hex)
@@ -139,6 +140,19 @@ int main(int argc, char** argv)
 	const std::string tmp_dir2 = argc > 4 ? std::string(argv[4]) : tmp_dir;
 	const int num_threads = argc > 5 ? atoi(argv[5]) : 4;
 	const int log_num_buckets = argc > 6 ? atoi(argv[6]) : 7;
+
+	DIR *dir1 = opendir(tmp_dir.data());
+	DIR *dir2 = opendir(tmp_dir2.data());
+	if (dir1 == NULL) {
+		std::cout << "Temporary 1 directory does not exist or is not accessible." << std::endl;
+		return -2;
+	}
+	if (dir2 == NULL) {
+		std::cout << "Temporary 2 directory does not exist or is not accessible." << std::endl;
+		return -3;
+	}
+	closedir(dir1);
+	closedir(dir2);
 	
 	const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 	
