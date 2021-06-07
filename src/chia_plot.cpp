@@ -153,6 +153,14 @@ int main(int argc, char** argv)
 			<< " (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
 		return -2;
 	}
+	if(!tmp_dir.empty() && tmp_dir.find_last_of("/\\") != tmp_dir.size() - 1) {
+		std::cout << "Invalid <tmp_dir>: " << tmp_dir << " (needs trailing '/' or '\\')" << std::endl;
+		return -2;
+	}
+	if(!tmp_dir2.empty() && tmp_dir2.find_last_of("/\\") != tmp_dir2.size() - 1) {
+		std::cout << "Invalid <tmp_dir2>: " << tmp_dir2 << " (needs trailing '/' or '\\')" << std::endl;
+		return -2;
+	}
 	if(num_threads < 1 || num_threads > 1024) {
 		std::cout << "Invalid num_threads: " << num_threads << " (supported: [1..1024])" << std::endl;
 		return -2;
