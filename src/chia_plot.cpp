@@ -140,20 +140,18 @@ int main(int argc, char** argv)
 	const std::string tmp_dir2 = argc > 4 ? std::string(argv[4]) : tmp_dir;
 	const int num_threads = argc > 5 ? atoi(argv[5]) : 4;
 	const int log_num_buckets = argc > 6 ? atoi(argv[6]) : 7;
-
-	try {	
-
-	// Check if the paths exist
-        	if (!fs::exists(tmp_dir)) {
-            		throw InvalidValueException("Temp directory " + tmp_dir + " does not exist");
-        	}
-
-        	if (!fs::exists(tmp_dir2)) {
-            		throw InvalidValueException("Temp2 directory " + tmp_dir2 + " does not exist");
-        	}
+	
+	try {
+		// Check if the paths exist
+		if(!fs::exists(tmp_dir)) {
+			throw std::runtime_error("<tmp_dir> directory '" + tmp_dir + "' does not exist");
+		}
+		if(!fs::exists(tmp_dir2)) {
+			throw std::runtime_error("<tmp_dir2> directory '" + tmp_dir2 + "' does not exist");
+		}
 	}
-	catch (InvalidValueException& e) {
-		std::cout << e.what() << std::endl;
+	catch(const std::exception& ex) {
+		std::cout << ex.what() << std::endl;
 		return -2;
 	}
 	
