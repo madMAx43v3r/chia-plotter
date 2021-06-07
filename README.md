@@ -106,6 +106,7 @@ keeping most of the load off the CPUs.
 ## Dependencies
 
 - cmake (>=3.14)
+- libgmp3-dev
 - libsodium-dev
 
 ## Install
