@@ -8,6 +8,7 @@
 #ifndef INCLUDE_CHIA_DISKTABLE_H_
 #define INCLUDE_CHIA_DISKTABLE_H_
 
+#include <chia/stdiox.hpp>
 #include <chia/buffer.h>
 #include <chia/ThreadPool.h>
 
@@ -34,7 +35,7 @@ public:
 			num_entries(num_entries)
 	{
 		if(!num_entries) {
-			file_out = fopen(file_name.c_str(), "wb");
+			file_out = stdiox::fopen(file_name.c_str(), "wb");
 		}
 	}
 	
@@ -68,7 +69,7 @@ public:
 		
 		for(size_t i = 0; i < pool.num_threads(); ++i)
 		{
-			FILE* file = fopen(file_name.c_str(), "rb");
+			FILE* file = stdiox::fopen(file_name.c_str(), "rb");
 			if(!file) {
 				throw std::runtime_error("fopen() failed");
 			}

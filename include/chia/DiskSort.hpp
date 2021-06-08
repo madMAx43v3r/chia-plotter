@@ -8,6 +8,7 @@
 #ifndef INCLUDE_CHIA_DISKSORT_HPP_
 #define INCLUDE_CHIA_DISKSORT_HPP_
 
+#include <chia/stdiox.hpp>
 #include <chia/DiskSort.h>
 #include <chia/util.hpp>
 
@@ -22,7 +23,7 @@ void DiskSort<T, Key>::bucket_t::open(const char* mode)
 	if(file) {
 		fclose(file);
 	}
-	file = fopen(file_name.c_str(), mode);
+	file = stdiox::fopen(file_name.c_str(), mode);
 	if(!file) {
 		throw std::runtime_error("fopen() failed");
 	}

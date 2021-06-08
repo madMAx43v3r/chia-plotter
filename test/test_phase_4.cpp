@@ -4,9 +4,8 @@
  *  Created on: Jun 3, 2021
  *      Author: mad
  */
-
+#include <chia/stdiox.hpp>
 #include <chia/phase4.hpp>
-
 #include <iostream>
 
 using namespace phase4;
@@ -19,7 +18,7 @@ int main(int argc, char** argv)
 	
 	const auto total_begin = get_wall_time_micros();
 	
-	FILE* plot_file = fopen("test.plot.tmp", "rb+");
+	FILE* plot_file = stdiox::fopen("test.plot.tmp", "rb+");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}
