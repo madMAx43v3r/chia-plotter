@@ -31,7 +31,7 @@ void DiskSort<T, Key>::bucket_t::open(const char* mode)
 template<typename T, typename Key>
 void DiskSort<T, Key>::bucket_t::write(const void* data, size_t count)
 {
-	std::lock_guard lock(mutex);
+	std::lock_guard<std::mutex> lock(mutex);
 	if(file) {
 		if(fwrite(data, T::disk_size, count, file) != count) {
 			throw std::runtime_error("fwrite() failed");
