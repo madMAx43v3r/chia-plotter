@@ -19,7 +19,7 @@
 
 
 inline
-void copy_file(const std::string& src_path, const std::string& dst_path)
+uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 {
 	FILE* src = fopen(src_path.c_str(), "rb");
 	if(!src) {
@@ -45,18 +45,20 @@ void copy_file(const std::string& src_path, const std::string& dst_path)
 		throw std::runtime_error("fclose() failed");
 	}
 	fclose(src);
+	return total_bytes;
 }
 
 inline
-void final_copy(const std::string& src_path, const std::string& dst_path)
+uint64_t final_copy(const std::string& src_path, const std::string& dst_path)
 {
 	if(src_path == dst_path) {
-		return;
+		return 0;
 	}
 	const std::string tmp_dst_path = dst_path + ".tmp";
-	copy_file(src_path, tmp_dst_path);
+	const auto total_bytes = copy_file(src_path, tmp_dst_path);
 	remove(src_path.c_str());
 	rename(tmp_dst_path.c_str(), dst_path.c_str());
+	return total_bytes;
 }
 
 
