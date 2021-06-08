@@ -1,3 +1,4 @@
 /build
 *.out
 *.tmp
+*.bak
