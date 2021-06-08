@@ -246,7 +246,7 @@ void compute(	const phase3::output_t& input, output_t& out,
 	fclose(plot_file);
 	
 	out.params = input.params;
-	out.plot_file_name = tmp_dir + plot_name + ".plot";
+	out.plot_file_name = tmp_dir + plot_name + ".plot.tmp";
 	
 	std::rename(input.plot_file_name.c_str(), out.plot_file_name.c_str());
 	

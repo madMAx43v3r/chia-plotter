@@ -17,6 +17,12 @@
 #include <chrono>
 #include <iostream>
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
 
 inline
 std::vector<uint8_t> hex_to_bytes(const std::string& hex)
@@ -54,7 +60,8 @@ phase4::output_t create_plot(	const int num_threads,
 								const vector<uint8_t>& pool_key_bytes,
 								const vector<uint8_t>& farmer_key_bytes,
 								const std::string& tmp_dir,
-								const std::string& tmp_dir_2)
+								const std::string& tmp_dir_2,
+								const std::string& final_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -95,6 +102,7 @@ phase4::output_t create_plot(	const int num_threads,
 	
 	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
 	std::cout << "Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
+	std::cout << "Final Directory: " << (final_dir.empty() ? "$PWD" : final_dir) << std::endl;
 	std::cout << "Plot Name: " << plot_name << std::endl;
 	
 	// memo = bytes(pool_public_key) + bytes(farmer_public_key) + bytes(local_master_sk)
@@ -132,6 +140,7 @@ int main(int argc, char** argv)
 		std::cout << "<tmp_dir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes." << std::endl;
 		std::cout << "If <tmp_dir> is not specified it defaults to current directory." << std::endl;
 		std::cout << "If <tmp_dir2> is not specified it defaults to <tmp_dir>." << std::endl;
+		std::cout << "If <final_dir> is not specified it defaults to <tmp_dir>" << std::endl;
 		std::cout << "[num_threads] defaults to 4, it's recommended to use number of physical cores." << std::endl;
 		std::cout << "[log_num_buckets] defaults to 7 (2^7 = 128)" << std::endl;
 		return -1;
@@ -140,8 +149,9 @@ int main(int argc, char** argv)
 	const auto farmer_key = hex_to_bytes(argv[2]);
 	const std::string tmp_dir = argc > 3 ? std::string(argv[3]) : std::string();
 	const std::string tmp_dir2 = argc > 4 ? std::string(argv[4]) : tmp_dir;
-	const int num_threads = argc > 5 ? atoi(argv[5]) : 4;
-	const int log_num_buckets = argc > 6 ? atoi(argv[6]) : 7;
+	const std::string final_dir = argc > 5 ? std::string(argv[5]) : tmp_dir;
+	const int num_threads = argc > 6 ? atoi(argv[6]) : 4;
+	const int log_num_buckets = argc > 7 ? atoi(argv[7]) : 7;
 	
 	if(pool_key.size() != bls::G1Element::SIZE) {
 		std::cout << "Invalid <pool_key>: " << bls::Util::HexStr(pool_key)
@@ -161,6 +171,10 @@ int main(int argc, char** argv)
 		std::cout << "Invalid <tmp_dir2>: " << tmp_dir2 << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
+	if(!final_dir.empty() && final_dir.find_last_of("/\\") != final_dir.size() - 1) {
+                std::cout << "Invalid <final_dir>: " << final_dir << " (needs trailing '/' or '\\')" << std::endl;
+                return -2;
+        }
 	if(num_threads < 1 || num_threads > 1024) {
 		std::cout << "Invalid num_threads: " << num_threads << " (supported: [1..1024])" << std::endl;
 		return -2;
@@ -177,15 +191,72 @@ int main(int argc, char** argv)
 		if(!fs::exists(tmp_dir2)) {
 			throw std::runtime_error("<tmp_dir2> directory '" + tmp_dir2 + "' does not exist");
 		}
+		if (!fs::exists(final_dir)) {
+                        throw InvalidValueException("<final_dir> directory " + final_dir + " does not exist");
+                }
+
 	}
 	catch(const std::exception& ex) {
 		std::cout << "Error: " << ex.what() << std::endl;
 		return -2;
 	}
 	
-	const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
+	const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2, final_dir);
+
+	      //Copy to destination
+        bool bCopied = false;
+        bool bRenamed = false;
+        std::string final_f = out.plot_file_name;
+        final_f.erase(final_f.find_last_of("."), std::string::npos);
+        fs::path final_tmp_filename = fs::path(final_dir) / fs::path(out.plot_file_name);
+        fs::path final_filename = fs::path(final_dir) / fs::path(final_f);
+        const auto copy_begin = get_wall_time_micros();
+        do {
+                std::error_code ec;
+                if (tmp_dir == final_dir || tmp_dir2 == final_dir) {
+                        fs::rename(out.plot_file_name,final_filename,ec);
+                        if (ec.value() != 0) {
+                                std::cout << "Could not rename " << out.plot_file_name << " to " << final_filename
+                                         << ". Error " << ec.message() << ". Retrying in one minute." << std::endl;
+                        } else {
+                                bRenamed = true;
+                                std::cout << "Renamed final file from " << out.plot_file_name << " to  " << final_filename << std::endl;
+                        }
+                } else {
+                        if (!bCopied) {
+                                  fs::copy(out.plot_file_name,final_tmp_filename,fs::copy_options::overwrite_existing, ec);
+                                  if (ec.value() != 0) {
+                                        std::cout << "Could not copy "  << out.plot_file_name << " to " << final_tmp_filename
+                                                  << ". Error " << ec.message() << ". Retrying in one minute. " << std::endl;
+                                  } else {
+                                        std::cout << "Copied final file from "  << out.plot_file_name << " to " << final_tmp_filename << std::endl;
+                                        std::cout << "Copy time =  " << (get_wall_time_micros() - copy_begin) / 1e6 << " sec" << std::endl;
+                                        bCopied = true;
+                                        bool removed = fs::remove(out.plot_file_name);
+                                        std::cout << "Removed .tmp file " << out.plot_file_name << "? " << removed << std::endl;
+                                  }
+                        }
+
+                }
+                if (bCopied && (!bRenamed)) {
+                        fs::rename(final_tmp_filename, final_filename, ec);
+                        if (ec.value() !=0) {
+                                std::cout << "Could not rename " << final_tmp_filename << " to " << final_filename
+                                << ". Error " << ec.message() << ". Retrying in one minute." << std::endl;
+                        } else {
+                                std::cout << "Renamed final file from " << final_tmp_filename << " to " << final_filename << std::endl;
+                                bRenamed = true;
+                        }
+                }
+         if (!bRenamed) {
+#ifdef _WIN32
+                Sleep(1 * 60000);
+#else
+                sleep(1 * 60);
+#endif
+            }
+        } while (!bRenamed);
 	
-	// TODO: copy to destination
 	
 	return 0;
 }
