@@ -9,7 +9,6 @@
 #include <chia/phase2.hpp>
 #include <chia/phase3.hpp>
 #include <chia/phase4.hpp>
-#include <chia/chia_filesystem.hpp>
 
 #include <bls.hpp>
 #include <sodium.h>
@@ -169,17 +168,16 @@ int main(int argc, char** argv)
 		std::cout << "Invalid log_num_buckets: " << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
-	try {
-		// Check if the paths exist
-		if(!fs::exists(tmp_dir)) {
-			throw std::runtime_error("<tmp_dir> directory '" + tmp_dir + "' does not exist");
-		}
-		if(!fs::exists(tmp_dir2)) {
-			throw std::runtime_error("<tmp_dir2> directory '" + tmp_dir2 + "' does not exist");
-		}
+	if(auto file = fopen((tmp_dir + ".chia_plot_tmp").c_str(), "wb")) {
+		fclose(file);
+	} else {
+		std::cout << "Failed to write to <tmp_dir> directory: '" << tmp_dir << "'" << std::endl;
+		return -2;
 	}
-	catch(const std::exception& ex) {
-		std::cout << "Error: " << ex.what() << std::endl;
+	if(auto file = fopen((tmp_dir2 + ".chia_plot_tmp2").c_str(), "wb")) {
+		fclose(file);
+	} else {
+		std::cout << "Failed to write to <tmp_dir2> directory: '" << tmp_dir2 << "'" << std::endl;
 		return -2;
 	}
 	
