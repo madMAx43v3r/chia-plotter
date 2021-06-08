@@ -132,7 +132,7 @@ void compute_stage1(int L_index, int num_threads,
 	std::thread R_sort_read(
 		[num_threads, L_table, R_sort, R_table, &R_read, &R_read_7]() {
 			if(R_table) {
-				R_table->read(&R_read_7);
+				R_table->read(&R_read_7, std::max(num_threads / 4, 2));
 				R_read_7.close();
 			} else {
 				const int div = L_table ? 1 : 2;
@@ -141,7 +141,7 @@ void compute_stage1(int L_index, int num_threads,
 		});
 	
 	if(L_table) {
-		L_table->read(&L_read_1);
+		L_table->read(&L_read_1, std::max(num_threads / 4, 2));
 		L_read_1.close();
 	} else {
 		const int div = R_table ? 1 : 2;
