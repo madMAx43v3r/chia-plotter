@@ -125,13 +125,9 @@ void DiskSort<T, Key>::write(size_t index, const void* data, size_t count)
 		throw std::logic_error("read only");
 	}
 	if(index >= buckets.size()) {
-		throw std::logic_error("index out of range");
+		throw std::logic_error("bucket index out of range");
 	}
-	auto& bucket = buckets[index];
-	if(fwrite(data, T::disk_size, count, bucket.file) != count) {
-		throw std::runtime_error("fwrite() failed");
-	}
-	bucket.num_entries += count;
+	buckets[index].write(data, count);
 }
 
 template<typename T, typename Key>
