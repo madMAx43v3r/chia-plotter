@@ -111,8 +111,9 @@ void compute_stage1(int L_index, int num_threads,
 				}
 				pos[0] -= L_offset;
 				pos[1] -= L_offset;
-				if(std::max(pos[0], pos[1]) >= L_buffer.size()) {
-					throw std::logic_error("position out of bounds");
+				const auto max_pos = std::max(pos[0], pos[1]);
+				if(max_pos >= L_buffer.size()) {
+					throw std::logic_error("position out of bounds (" + std::to_string(max_pos) + ")");
 				}
 				entry_kpp tmp;
 				tmp.key = get_sort_key<S>{}(entry);
