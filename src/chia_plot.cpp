@@ -206,12 +206,15 @@ int main(int argc, char** argv)
         //Copy to destination
         bool bCopied = false;
         bool bRenamed = false;
-        std::string final_f = out.plot_file_name;
-        final_f.erase(final_f.find_last_of("."), std::string::npos);
+
+	std::filesystem::path final_plot_temp_file(out.plot_file_name);
+        std::string final_plot_file = final_plot_temp_file.filename();
+        fs::path final_tmp_filename = fs::path(final_dir) / fs::path(final_plot_file);
+        
+	final_plot_file.erase(final_plot_file.find_last_of("."), std::string::npos);
 	fs::path p_tmp_filename = fs::path(tmp_dir) / fs::path(out.plot_file_name);
-        fs::path final_tmp_filename = fs::path(final_dir) / fs::path(out.plot_file_name);
-        fs::path final_filename = fs::path(final_dir) / fs::path(final_f);
-        const auto copy_begin = get_wall_time_micros();
+        fs::path final_filename = fs::path(final_dir) / fs::path(final_plot_file);
+
         do {
                 std::error_code ec;
                 if (tmp_dir == final_dir || tmp_dir2 == final_dir) {
@@ -225,6 +228,8 @@ int main(int argc, char** argv)
                         }
                 } else {
                         if (!bCopied) {
+				  std::cout << "Copying plot " << p_tmp_filename << " to destination " << final_tmp_filename << std::endl;
+        			  const auto copy_begin = get_wall_time_micros();
                                   fs::copy(p_tmp_filename,final_tmp_filename,fs::copy_options::overwrite_existing, ec);
                                   if (ec.value() != 0) {
                                         std::cout << "Could not copy "  << p_tmp_filename << " to " << final_tmp_filename
@@ -234,7 +239,7 @@ int main(int argc, char** argv)
                                         std::cout << "Copy time =  " << (get_wall_time_micros() - copy_begin) / 1e6 << " sec" << std::endl;
                                         bCopied = true;
                                         bool removed = fs::remove(p_tmp_filename);
-                                        std::cout << "Removed .tmp file " << p_tmp_filename << "? " << removed << std::endl;
+					std::cout << "Removed temp2 file " << p_tmp_filename << "? " << removed << std::endl;
                                   }
                         }
 
