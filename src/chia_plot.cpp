@@ -124,9 +124,13 @@ int main(int argc, char** argv)
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"help", "Print help");
 	
+	if(argc <= 1) {
+		std::cout << options.help({""}) << std::endl;
+		return 0;
+	}
 	const auto args = options.parse(argc, argv);
 	
-	if(args.count("help") || argc <= 1) {
+	if(args.count("help")) {
 		std::cout << options.help({""}) << std::endl;
 		return 0;
 	}
