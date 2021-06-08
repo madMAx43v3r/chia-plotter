@@ -8,6 +8,7 @@
 #ifndef INCLUDE_CHIA_DISKTABLE_H_
 #define INCLUDE_CHIA_DISKTABLE_H_
 
+#include <chia/buffer.h>
 #include <chia/ThreadPool.h>
 
 #include <cstdio>
@@ -57,7 +58,8 @@ public:
 	}
 	
 	void read(	Processor<std::pair<std::vector<T>, size_t>>* output,
-				int num_threads_read = 2, const size_t block_size = 65536) const
+				int num_threads_read = 2,
+				const size_t block_size = g_read_chunk_size) const
 	{
 		ThreadPool<std::pair<size_t, size_t>, std::pair<std::vector<T>, size_t>, local_t> pool(
 			std::bind(&DiskTable::read_block, this,
@@ -90,19 +92,19 @@ public:
 	
 	// NOT thread-safe
 	void write(const T& entry) {
-		if(cache_count >= N) {
+		if(cache.count >= cache.capacity) {
 			flush();
 		}
-		entry.write(cache + cache_count * T::disk_size);
-		cache_count++;
+		entry.write(cache.entry_at(cache.count));
+		cache.count++;
 	}
 	
 	void flush() {
-		if(fwrite(cache, T::disk_size, cache_count, file_out) != cache_count) {
+		if(fwrite(cache.data, cache.entry_size, cache.count, file_out) != cache.count) {
 			throw std::runtime_error("fwrite() failed");
 		}
-		num_entries += cache_count;
-		cache_count = 0;
+		num_entries += cache.count;
+		cache.count = 0;
 	}
 	
 	void close() {
@@ -115,7 +117,8 @@ public:
 	
 private:
 	void read_block(std::pair<size_t, size_t>& param,
-					std::pair<std::vector<T>, size_t>& out, local_t& local) const
+					std::pair<std::vector<T>, size_t>& out,
+					local_t& local) const
 	{
 		if(int err = fseek(local.file, param.first * T::disk_size, SEEK_SET)) {
 			throw std::runtime_error("fseek() failed");
@@ -135,9 +138,7 @@ private:
 	std::string file_name;
 	size_t num_entries;
 	
-	static constexpr size_t N = 4096;
-	uint8_t cache[N * T::disk_size];
-	size_t cache_count = 0;
+	write_buffer_t<T> cache;
 	FILE* file_out = nullptr;
 	
 };

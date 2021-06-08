@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <string>
 
+#include <chia/settings.h>
+
 
 // Unique plot id which will be used as a ChaCha8 key, and determines the PoSpace.
 const uint32_t kIdLen = 32;
