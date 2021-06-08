@@ -203,37 +203,38 @@ int main(int argc, char** argv)
 	
 	const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2, final_dir);
 
-	      //Copy to destination
+        //Copy to destination
         bool bCopied = false;
         bool bRenamed = false;
         std::string final_f = out.plot_file_name;
         final_f.erase(final_f.find_last_of("."), std::string::npos);
+	fs::path p_tmp_filename = fs::path(tmp_dir) / fs::path(out.plot_file_name);
         fs::path final_tmp_filename = fs::path(final_dir) / fs::path(out.plot_file_name);
         fs::path final_filename = fs::path(final_dir) / fs::path(final_f);
         const auto copy_begin = get_wall_time_micros();
         do {
                 std::error_code ec;
                 if (tmp_dir == final_dir || tmp_dir2 == final_dir) {
-                        fs::rename(out.plot_file_name,final_filename,ec);
+                        fs::rename(p_tmp_filename,final_filename,ec);
                         if (ec.value() != 0) {
-                                std::cout << "Could not rename " << out.plot_file_name << " to " << final_filename
+                                std::cout << "Could not rename " << p_tmp_filename << " to " << final_filename
                                          << ". Error " << ec.message() << ". Retrying in one minute." << std::endl;
                         } else {
                                 bRenamed = true;
-                                std::cout << "Renamed final file from " << out.plot_file_name << " to  " << final_filename << std::endl;
+                                std::cout << "Renamed final file from " << p_tmp_filename << " to  " << final_filename << std::endl;
                         }
                 } else {
                         if (!bCopied) {
-                                  fs::copy(out.plot_file_name,final_tmp_filename,fs::copy_options::overwrite_existing, ec);
+                                  fs::copy(p_tmp_filename,final_tmp_filename,fs::copy_options::overwrite_existing, ec);
                                   if (ec.value() != 0) {
-                                        std::cout << "Could not copy "  << out.plot_file_name << " to " << final_tmp_filename
+                                        std::cout << "Could not copy "  << p_tmp_filename << " to " << final_tmp_filename
                                                   << ". Error " << ec.message() << ". Retrying in one minute. " << std::endl;
                                   } else {
-                                        std::cout << "Copied final file from "  << out.plot_file_name << " to " << final_tmp_filename << std::endl;
+                                        std::cout << "Copied final file from "  << p_tmp_filename << " to " << final_tmp_filename << std::endl;
                                         std::cout << "Copy time =  " << (get_wall_time_micros() - copy_begin) / 1e6 << " sec" << std::endl;
                                         bCopied = true;
-                                        bool removed = fs::remove(out.plot_file_name);
-                                        std::cout << "Removed .tmp file " << out.plot_file_name << "? " << removed << std::endl;
+                                        bool removed = fs::remove(p_tmp_filename);
+                                        std::cout << "Removed .tmp file " << p_tmp_filename << "? " << removed << std::endl;
                                   }
                         }
 
