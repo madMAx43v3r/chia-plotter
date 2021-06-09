@@ -55,7 +55,11 @@ uint64_t final_copy(const std::string& src_path, const std::string& dst_path)
 		return 0;
 	}
 	const std::string tmp_dst_path = dst_path + ".tmp";
-	const auto total_bytes = copy_file(src_path, tmp_dst_path);
+	uint64_t total_bytes = 0;
+	if(rename(src_path.c_str(), tmp_dst_path.c_str())) {
+		// try manual copy
+		total_bytes = copy_file(src_path, tmp_dst_path);
+	}
 	remove(src_path.c_str());
 	rename(tmp_dst_path.c_str(), dst_path.c_str());
 	return total_bytes;

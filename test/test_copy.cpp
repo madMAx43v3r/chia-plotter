@@ -7,6 +7,8 @@
 
 #include <chia/copy.h>
 
+#include <iostream>
+
 
 int main(int argc, char** argv)
 {
@@ -14,7 +16,9 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	
-	final_copy(argv[1], argv[2]);
+	const auto bytes = final_copy(argv[1], argv[2]);
+	
+	std::cout << bytes << " bytes copied" <<  std::endl;
 	
 	return 0;
 }
