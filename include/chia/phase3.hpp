@@ -327,14 +327,16 @@ uint64_t compute_stage2(int L_index, int num_threads,
 			L_num_write += input.size();
 		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
-	Thread<park_out_t> park_write(
-		[plot_file](park_out_t& park) {
-			fwrite_at(plot_file, park.offset, park.buffer.data(), park.buffer.size());
+	Thread<std::vector<park_out_t>> park_write(
+		[plot_file](std::vector<park_out_t>& input) {
+			for(const auto& park : input) {
+				fwrite_at(plot_file, park.offset, park.buffer.data(), park.buffer.size());
+			}
 		}, "phase3/write");
 	
-	ThreadPool<std::vector<park_data_t>, park_out_t> park_threads(
+	ThreadPool<std::vector<park_data_t>, std::vector<park_out_t>> park_threads(
 		[L_index, L_final_begin, park_size_bytes, &num_written_final]
-		 (std::vector<park_data_t>& input, park_out_t& out, size_t&) {
+		 (std::vector<park_data_t>& input, std::vector<park_out_t>& out, size_t&) {
 			for(const auto& park : input) {
 				const auto& points = park.points;
 				if(points.empty()) {
@@ -352,15 +354,17 @@ uint64_t compute_stage2(int L_index, int num_threads,
 					deltas[i] = small_delta;
 					stubs[i] = stub;
 				}
-				out.offset = L_final_begin + park.index * park_size_bytes;
-				out.buffer.resize(park_size_bytes);
+				park_out_t tmp;
+				tmp.offset = L_final_begin + park.index * park_size_bytes;
+				tmp.buffer.resize(park_size_bytes);
 				WritePark(
 					points[0],
 					deltas,
 					stubs,
 					L_index,
-					out.buffer.data(),
-					out.buffer.size());
+					tmp.buffer.data(),
+					tmp.buffer.size());
+				out.emplace_back(std::move(tmp));
 				num_written_final += points.size();
 			}
 		}, &park_write, std::max(num_threads / 2, 1), "phase3/park");
