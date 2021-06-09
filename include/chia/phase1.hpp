@@ -13,7 +13,7 @@
 #include <chia/DiskTable.h>
 #include <chia/bits.hpp>
 
-#include "b3/blake3.h"
+#include "blake3.h"
 #include "chacha8.h"
 
 
@@ -400,8 +400,8 @@ uint64_t compute_matches(	int R_index, int num_threads,
 		R_sort->finish();
 	}
 	if(num_written < num_found) {
-		std::cout << "[P1] Lost " << num_found - num_written
-				<< " matches due to 32-bit overflow." << std::endl;
+//		std::cout << "[P1] Lost " << num_found - num_written
+//				<< " matches due to 32-bit overflow." << std::endl;
 	}
 	return num_written;
 }
