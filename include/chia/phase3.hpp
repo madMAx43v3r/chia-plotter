@@ -297,7 +297,6 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	const auto begin = get_wall_time_micros();
 	
 	uint64_t R_num_read = 0;
-	uint64_t R_num_read_1 = 0;
 	std::atomic<uint64_t> L_num_write {0};
 	std::atomic<uint64_t> num_written_final {0};
 	
@@ -369,15 +368,23 @@ uint64_t compute_stage2(int L_index, int num_threads,
 			}
 		}, &park_write, std::max(num_threads / 2, 1), "phase3/park");
 	
-	Thread<std::vector<entry_lp>> R_slice(
-		[&R_num_read_1, &park, &park_threads](std::vector<entry_lp>& input) {
+	Thread<std::vector<entry_lp>> R_read(
+		[&R_num_read, &L_add, &park, &park_threads]
+		 (std::vector<entry_lp>& input) {
+			std::vector<entry_np> out;
 			std::vector<park_data_t> parks;
+			out.reserve(input.size());
 			parks.reserve(input.size() / kEntriesPerPark + 2);
 			for(const auto& entry : input) {
-				const auto index = R_num_read_1++;
+				const auto index = R_num_read++;
 				if(index >= uint64_t(1) << 32) {
 					continue;	// skip 32-bit overflow
 				}
+				entry_np tmp;
+				tmp.key = entry.key;
+				tmp.pos = index;
+				out.push_back(tmp);
+				
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0) {
 					if(index != 0) {
@@ -389,30 +396,12 @@ uint64_t compute_stage2(int L_index, int num_threads,
 				}
 				park.points.push_back(entry.point);
 			}
+			L_add.take(out);
 			park_threads.take(parks);
 		}, "phase3/slice");
 	
-	Thread<std::vector<entry_lp>> R_read(
-		[&R_num_read, &L_add, &R_slice](std::vector<entry_lp>& input) {
-			std::vector<entry_np> out;
-			out.reserve(input.size());
-			for(const auto& entry : input) {
-				const auto index = R_num_read++;
-				if(index >= uint64_t(1) << 32) {
-					continue;	// skip 32-bit overflow
-				}
-				entry_np tmp;
-				tmp.key = entry.key;
-				tmp.pos = index;
-				out.push_back(tmp);
-			}
-			L_add.take(out);
-			R_slice.take(input);
-		}, "phase3/count");
-	
 	R_sort->read(&R_read, num_threads);
 	R_read.close();
-	R_slice.close();
 	
 	// Since we don't have a perfect multiple of EPP entries, this writes the last ones
 	if(!park.points.empty()) {
@@ -431,9 +420,6 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	}
 	Encoding::ANSFree(kRValues[L_index - 1]);
 	
-	if(R_num_read_1 != R_num_read) {
-		throw std::logic_error("R_num_read_1 != R_num_read");
-	}
 	if(L_num_write < R_num_read) {
 //		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
 	}
