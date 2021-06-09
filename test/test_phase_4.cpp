@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 	
 	const auto total_begin = get_wall_time_micros();
 	
-	FILE* plot_file = stdiox::fopen("test.plot.tmp", "rb+");
+	FILE* plot_file = FOPEN("test.plot.tmp", "rb+");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}

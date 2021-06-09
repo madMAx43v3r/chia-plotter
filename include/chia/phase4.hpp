@@ -235,7 +235,7 @@ void compute(	const phase3::output_t& input, output_t& out,
 {
 	const auto total_begin = get_wall_time_micros();
 	
-	FILE* plot_file = stdiox::fopen(input.plot_file_name.c_str(), "rb+");
+	FILE* plot_file = FOPEN(input.plot_file_name.c_str(), "rb+");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}

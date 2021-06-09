@@ -435,7 +435,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	out.params = input.params;
 	out.plot_file_name = tmp_dir + plot_name + ".plot.tmp";
 	
-	FILE* plot_file = stdiox::fopen(out.plot_file_name.c_str(), "wb");
+	FILE* plot_file = FOPEN(out.plot_file_name.c_str(), "wb");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}
