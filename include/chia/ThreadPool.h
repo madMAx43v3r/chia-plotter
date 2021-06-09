@@ -101,11 +101,16 @@ public:
 private:
 	void wrapper(thread_t* state, thread_t* prev, T& input)
 	{
+		uint64_t job = -1;
+		{
+			std::lock_guard<std::mutex> lock(state->mutex);
+			job = state->job;
+		}
 		S out;
 		execute(input, out, state->local);
 		{
 			std::unique_lock<std::mutex> lock(prev->mutex);
-			while(prev->job < state->job) {
+			while(prev->job < job) {
 				prev->signal.wait(lock);
 			}
 		}
