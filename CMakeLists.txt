@@ -8,49 +8,54 @@ find_package(Threads REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 
+set(BLAKE3_PATH lib/BLAKE3/c)
+set(FSE_PATH lib/FSE/lib)
+
 include_directories(
 	lib
 	include
-	lib/bls-signatures/src/
+	${BLAKE3_PATH}
+	lib/bls-signatures/src
 )
 
 IF (WIN32)
 set(BLAKE3_SRC
-    lib/b3/blake3.c
-    lib/b3/blake3_portable.c
-    lib/b3/blake3_dispatch.c
-    lib/b3/blake3_avx2.c
-    lib/b3/blake3_avx512.c
-    lib/b3/blake3_sse41.c
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
+    ${BLAKE3_PATH}/blake3_avx2_x86-64_windows_gnu.S
+	${BLAKE3_PATH}/blake3_sse41_x86-64_windows_gnu.S
+	${BLAKE3_PATH}/blake3_avx512_x86-64_windows_gnu.S
+	${BLAKE3_PATH}/blake3_sse2_x86-64_windows_gnu.S
 )
 ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
 set(BLAKE3_SRC
-    lib/b3/blake3.c
-    lib/b3/blake3_portable.c
-    lib/b3/blake3_dispatch.c
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
 )
 ELSE()
 set(BLAKE3_SRC
-    lib/b3/blake3.c
-    lib/b3/blake3_portable.c
-    lib/b3/blake3_dispatch.c
-    lib/b3/blake3_avx2_x86-64_unix.S
-    lib/b3/blake3_avx512_x86-64_unix.S
-    lib/b3/blake3_sse41_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
+    ${BLAKE3_PATH}/blake3_avx2_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3_avx512_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3_sse41_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3_sse2_x86-64_unix.S
 )
 ENDIF()
 
-set(FSE_LIB lib/FSE/lib)
-set(FSE_FILES
-    ${FSE_LIB}/fse_compress.c
-    ${FSE_LIB}/fse_decompress.c
-    ${FSE_LIB}/entropy_common.c
-    ${FSE_LIB}/hist.c
+set(FSE_SRC
+    ${FSE_PATH}/fse_compress.c
+    ${FSE_PATH}/fse_decompress.c
+    ${FSE_PATH}/entropy_common.c
+    ${FSE_PATH}/hist.c
 )
 
 add_library(blake3 STATIC ${BLAKE3_SRC})
 
-add_library(fse STATIC ${FSE_FILES})
+add_library(fse STATIC ${FSE_SRC})
 
 add_library(chia_plotter STATIC
 	lib/chacha8.c

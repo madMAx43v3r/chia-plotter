@@ -13,7 +13,7 @@
 #include <chia/DiskTable.h>
 #include <chia/bits.hpp>
 
-#include "b3/blake3.h"
+#include "blake3.h"
 #include "chacha8.h"
 
 
