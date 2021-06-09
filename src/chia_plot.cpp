@@ -185,13 +185,19 @@ int main(int argc, char** argv)
 	if(auto file = fopen((tmp_dir + ".chia_plot_tmp").c_str(), "wb")) {
 		fclose(file);
 	} else {
-		std::cout << "Failed to write to <tmp_dir> directory: '" << tmp_dir << "'" << std::endl;
+		std::cout << "Failed to write to <tmpdir> directory: '" << tmp_dir << "'" << std::endl;
 		return -2;
 	}
 	if(auto file = fopen((tmp_dir2 + ".chia_plot_tmp2").c_str(), "wb")) {
 		fclose(file);
 	} else {
-		std::cout << "Failed to write to <tmp_dir2> directory: '" << tmp_dir2 << "'" << std::endl;
+		std::cout << "Failed to write to <tmpdir2> directory: '" << tmp_dir2 << "'" << std::endl;
+		return -2;
+	}
+	if(auto file = fopen((final_dir + ".chia_plot_final").c_str(), "wb")) {
+		fclose(file);
+	} else {
+		std::cout << "Failed to write to <finaldir> directory: '" << final_dir << "'" << std::endl;
 		return -2;
 	}
 	
