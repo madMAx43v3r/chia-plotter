@@ -25,6 +25,7 @@ namespace phase1 {
 struct input_t {
 	std::array<uint8_t, 32> id = {};
 	std::vector<uint8_t> memo;
+	std::string plot_name;
 };
 
 struct entry_1 {
