@@ -117,9 +117,9 @@ int main(int argc, char** argv)
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Log2 number of buckets (default = 7 (ie. 2^7 = 128))", cxxopts::value<int>(log_num_buckets))(
-		"t, tmpdir", "Temporary directory, needs ~200G (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
+		"t, tmpdir", "Temporary directory, needs ~220G (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110G [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
-		"d, finaldir", "Final directory (default = tmpdir)", cxxopts::value<std::string>(final_dir))(
+		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"help", "Print help");
