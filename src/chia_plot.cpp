@@ -156,13 +156,13 @@ int main(int argc, char** argv)
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	
 	if(pool_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <poolkey>: " << bls::Util::HexStr(pool_key)
-			<< " (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
+		std::cout << "Invalid <poolkey>: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
+			<< "' (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
 		return -2;
 	}
 	if(farmer_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <farmerkey>: " << bls::Util::HexStr(farmer_key)
-			<< " (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
+		std::cout << "Invalid <farmerkey>: " << bls::Util::HexStr(farmer_key) << ", '" << farmer_key_str
+			<< "' (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
 		return -2;
 	}
 	if(!tmp_dir.empty() && tmp_dir.find_last_of("/\\") != tmp_dir.size() - 1) {
