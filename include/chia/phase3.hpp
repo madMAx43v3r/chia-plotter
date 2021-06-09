@@ -411,7 +411,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	Encoding::ANSFree(kRValues[L_index - 1]);
 	
 	if(L_num_write < R_num_read) {
-		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
+//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
 	}
 	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
