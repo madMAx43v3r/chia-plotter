@@ -9,22 +9,30 @@ simply by increasing the number of "cores", ie. threads.
 ## Usage
 
 ```
-chia_plot <pool_key> <farmer_key> [tmp_dir] [tmp_dir2] [num_threads] [log_num_buckets]
+For <poolkey> and <farmerkey> see output of `chia keys show`.
+<tmpdir> needs about 220G space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
+<tmpdir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes.
 
-For <pool_key> and <farmer_key> see output of `chia keys show`.
-<tmp_dir> needs about 200G space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
-<tmp_dir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes.
-If <tmp_dir> is not specified it defaults to current directory.
-If <tmp_dir2> is not specified it defaults to <tmp_dir>.
-[num_threads] defaults to 4, it's recommended to use number of physical cores.
-[log_num_buckets] defaults to 7 (2^7 = 128)
+Usage:
+  chia_plot [OPTION...]
+
+  -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
+  -r, --threads arg    Number of threads (default = 4)
+  -u, --buckets arg    Log2 number of buckets (default = 7 (ie. 2^7 = 128))
+  -t, --tmpdir arg     Temporary directory, needs ~200G (default = $PWD)
+  -2, --tmpdir2 arg    Temporary directory 2, needs ~110G [RAM] (default =
+                       <tmpdir>)
+  -d, --finaldir arg   Final directory (default = tmpdir)
+  -p, --poolkey arg    Pool Public Key (48 bytes)
+  -f, --farmerkey arg  Farmer Public Key (48 bytes)
+      --help           Print help
 ```
 
-Make sure to crank up `<num_threads>` if you have plenty of cores, the default is 4.
+Make sure to crank up `<threads>` if you have plenty of cores, the default is 4.
 Depending on the phase more threads will be launched, the setting is just a multiplier.
 
-RAM usage depends on `<num_threads>` and `<log_num_buckets>`.
-With default `<log_num_buckets>` and 4 threads it's ~2GB total, with 16 threads it's ~6GB total.
+RAM usage depends on `<threads>` and `<buckets>`.
+With default `<buckets>` and 4 threads it's ~2GB total, with 16 threads it's ~6GB total.
 
 ## How to Support
 
@@ -34,7 +42,7 @@ I developed this on my own time, even though I already filled all my HDDs (~50 T
 
 ## Results
 
-On a dual Xeon(R) E5-2650v2@2.60GHz R720 with 256GB RAM and a 3x800GB SATA SSD RAID0, using a 110G tmpfs for `<tmp_dir2>`:
+On a dual Xeon(R) E5-2650v2@2.60GHz R720 with 256GB RAM and a 3x800GB SATA SSD RAID0, using a 110G tmpfs for `<tmpdir2>`:
 
 ```
 Number of Threads: 16
@@ -94,7 +102,9 @@ Total plot creation time was 3129.28 sec
 To make sure the plots are valid you can use the `ProofOfSpace` tool from `chiapos`:
 
 ```
-ProofOfSpace check -f plot-k32-???.plot [num_iterations]
+git clone https://github.com/Chia-Network/chiapos.git
+cd chiapos && mkdir build && cd build && cmake .. && make -j8
+./ProofOfSpace check -f plot-k32-???.plot [num_iterations]
 ```
 
 ## Future Plans
