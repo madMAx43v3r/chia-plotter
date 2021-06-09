@@ -390,7 +390,7 @@ std::ifstream::pos_type get_file_size(const char* file_name)
 
 inline
 void fseek_set(FILE* file, uint64_t offset) {
-	if(stdiox::fseek(file, offset, SEEK_SET)) {
+	if(FSEEK(file, offset, SEEK_SET)) {
 		throw std::runtime_error("fseek() failed");
 	}
 }

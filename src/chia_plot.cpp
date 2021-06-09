@@ -4,7 +4,7 @@
  *  Created on: Jun 5, 2021
  *      Author: mad
  */
-
+#include <chia/stdiox.hpp>
 #include <chia/phase1.hpp>
 #include <chia/phase2.hpp>
 #include <chia/phase3.hpp>
@@ -171,13 +171,13 @@ int main(int argc, char** argv)
 		std::cout << "Invalid log_num_buckets: " << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
-	if(auto file = fopen((tmp_dir + ".chia_plot_tmp").c_str(), "wb")) {
+	if(auto file = FOPEN((tmp_dir + ".chia_plot_tmp").c_str(), "wb")) {
 		fclose(file);
 	} else {
 		std::cout << "Failed to write to <tmp_dir> directory: '" << tmp_dir << "'" << std::endl;
 		return -2;
 	}
-	if(auto file = fopen((tmp_dir2 + ".chia_plot_tmp2").c_str(), "wb")) {
+	if(auto file = FOPEN((tmp_dir2 + ".chia_plot_tmp2").c_str(), "wb")) {
 		fclose(file);
 	} else {
 		std::cout << "Failed to write to <tmp_dir2> directory: '" << tmp_dir2 << "'" << std::endl;

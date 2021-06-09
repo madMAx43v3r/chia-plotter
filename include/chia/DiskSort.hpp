@@ -23,7 +23,7 @@ void DiskSort<T, Key>::bucket_t::open(const char* mode)
 	if(file) {
 		fclose(file);
 	}
-	file = stdiox::fopen(file_name.c_str(), mode);
+	file = FOPEN(file_name.c_str(), mode);
 	if(!file) {
 		throw std::runtime_error("fopen() failed");
 	}

@@ -35,7 +35,7 @@ public:
 			num_entries(num_entries)
 	{
 		if(!num_entries) {
-			file_out = stdiox::fopen(file_name.c_str(), "wb");
+			file_out = FOPEN(file_name.c_str(), "wb");
 		}
 	}
 	
@@ -69,7 +69,7 @@ public:
 		
 		for(size_t i = 0; i < pool.num_threads(); ++i)
 		{
-			FILE* file = stdiox::fopen(file_name.c_str(), "rb");
+			FILE* file = FOPEN(file_name.c_str(), "rb");
 			if(!file) {
 				throw std::runtime_error("fopen() failed");
 			}
