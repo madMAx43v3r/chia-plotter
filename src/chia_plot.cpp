@@ -186,23 +186,35 @@ int main(int argc, char** argv)
 		std::cout << "Invalid <buckets> parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
-	if(auto file = fopen((tmp_dir + ".chia_plot_tmp").c_str(), "wb")) {
-		fclose(file);
-	} else {
-		std::cout << "Failed to write to <tmpdir> directory: '" << tmp_dir << "'" << std::endl;
-		return -2;
+	{
+		const std::string path = tmp_dir + ".chia_plot_tmp";
+		if(auto file = fopen(path.c_str(), "wb")) {
+			fclose(file);
+			remove(path.c_str());
+		} else {
+			std::cout << "Failed to write to <tmpdir> directory: '" << tmp_dir << "'" << std::endl;
+			return -2;
+		}
 	}
-	if(auto file = fopen((tmp_dir2 + ".chia_plot_tmp2").c_str(), "wb")) {
-		fclose(file);
-	} else {
-		std::cout << "Failed to write to <tmpdir2> directory: '" << tmp_dir2 << "'" << std::endl;
-		return -2;
+	{
+		const std::string path = tmp_dir2 + ".chia_plot_tmp2";
+		if(auto file = fopen(path.c_str(), "wb")) {
+			fclose(file);
+			remove(path.c_str());
+		} else {
+			std::cout << "Failed to write to <tmpdir2> directory: '" << tmp_dir2 << "'" << std::endl;
+			return -2;
+		}
 	}
-	if(auto file = fopen((final_dir + ".chia_plot_final").c_str(), "wb")) {
-		fclose(file);
-	} else {
-		std::cout << "Failed to write to <finaldir> directory: '" << final_dir << "'" << std::endl;
-		return -2;
+	{
+		const std::string path = final_dir + ".chia_plot_final";
+		if(auto file = fopen(path.c_str(), "wb")) {
+			fclose(file);
+			remove(path.c_str());
+		} else {
+			std::cout << "Failed to write to <finaldir> directory: '" << final_dir << "'" << std::endl;
+			return -2;
+		}
 	}
 	
 	std::cout << "Final Directory: " << final_dir << std::endl;
