@@ -23,7 +23,7 @@
 	#include <processthreadsapi.h>
 	#define GETPID GetCurrentProcessId
 #else
-	#define GETPID
+	#define GETPID int(-1)
 #endif
 
 
