@@ -381,6 +381,36 @@ int64_t get_wall_time_micros() {
 }
 
 inline
+std::vector<uint8_t> hex_to_bytes(const std::string& hex)
+{
+	std::vector<uint8_t> result;
+	for(size_t i = 0; i < hex.length(); i += 2) {
+		const std::string byteString = hex.substr(i, 2);
+		result.push_back(::strtol(byteString.c_str(), NULL, 16));
+	}
+	return result;
+}
+
+inline
+std::string get_date_string_ex(const char* format, bool UTC = false, int64_t time_secs = -1) {
+	::time_t time_;
+	if(time_secs < 0) {
+		::time(&time_);
+	} else {
+		time_ = time_secs;
+	}
+	::tm* tmp;
+	if(UTC) {
+		tmp = ::gmtime(&time_);
+	} else {
+		tmp = ::localtime(&time_);
+	}
+	char buf[256];
+	::strftime(buf, sizeof(buf), format, tmp);
+	return std::string(buf);
+}
+
+inline
 std::ifstream::pos_type get_file_size(const char* file_name)
 {
 	std::ifstream in(file_name, std::ifstream::ate | std::ifstream::binary);
