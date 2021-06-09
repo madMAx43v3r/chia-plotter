@@ -75,7 +75,6 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     uint64_t final_file_writer_3 = final_table_begin_pointers[7];
 
     uint64_t prev_y = 0;
-    uint64_t f7_position = 0;
     uint64_t num_C1_entries = 0;
     
     std::vector<uint32_t> C2;
@@ -128,12 +127,13 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 
     // We read each table7 entry, which is sorted by f7, but we don't need f7 anymore. Instead,
 	// we will just store pos6, and the deltas in table C3, and checkpoints in tables C1 and C2.
-    Thread<std::vector<phase3::entry_np>> read_thread(
-	[begin_byte_C3, C3_size, P7_park_size, &f7_position, &num_C1_entries, &prev_y, &C2,
+    Thread<std::pair<std::vector<phase3::entry_np>, size_t>> read_thread(
+	[begin_byte_C3, C3_size, P7_park_size, &num_C1_entries, &prev_y, &C2,
 	 &park_deltas, &park_data, &park_threads, &p7_threads, &plot_write,
 	 &final_file_writer_1, &final_file_writer_3]
-	 (std::vector<phase3::entry_np>& input) {
-		for(const auto& entry : input) {
+	 (std::pair<std::vector<phase3::entry_np>, size_t>& input) {
+		uint64_t f7_position = input.second;
+		for(const auto& entry : input.first) {
 			const uint64_t entry_y = entry.key;
 	
 			if(f7_position % kEntriesPerPark == 0 && f7_position > 0)

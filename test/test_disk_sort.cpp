@@ -42,9 +42,9 @@ int main(int argc, char** argv)
 		
 		FILE* out = fopen("sorted.out", "wb");
 		
-		Thread<std::vector<phase1::entry_1>> thread(
-			[out](std::vector<phase1::entry_1>& input) {
-				for(const auto& entry : input) {
+		Thread<std::pair<std::vector<phase1::entry_1>, size_t>> thread(
+			[out](std::pair<std::vector<phase1::entry_1>, size_t>& input) {
+				for(const auto& entry : input.first) {
 					write_entry(out, entry);
 				}
 			}, "test_output");
@@ -75,9 +75,9 @@ int main(int argc, char** argv)
 		uint64_t f_max = 0;
 		FILE* out = fopen("sorted.out", "wb");
 		
-		Thread<std::vector<phase1::entry_4>> thread(
-			[out, &f_max](std::vector<phase1::entry_4>& input) {
-				for(const auto& entry : input) {
+		Thread<std::pair<std::vector<phase1::entry_4>, size_t>> thread(
+			[out, &f_max](std::pair<std::vector<phase1::entry_4>, size_t>& input) {
+				for(const auto& entry : input.first) {
 					write_entry(out, entry);
 					if(entry.y < f_max) {
 						throw std::logic_error("entry.f < f_max");

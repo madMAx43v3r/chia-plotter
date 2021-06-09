@@ -57,7 +57,7 @@ public:
 	DiskSort(DiskSort&) = delete;
 	DiskSort& operator=(DiskSort&) = delete;
 	
-	void read(	Processor<std::vector<T>>* output,
+	void read(	Processor<std::pair<std::vector<T>, size_t>>* output,
 				int num_threads, int num_threads_read = -1);
 	
 	void finish();
@@ -80,8 +80,8 @@ public:
 	}
 	
 private:
-	void read_bucket(	size_t& index,
-						std::vector<std::vector<T>>& out,
+	void read_bucket(	std::pair<size_t, size_t>& index,
+						std::vector<std::pair<std::vector<T>, size_t>>& out,
 						read_buffer_t<T>& buffer);
 	
 private:
