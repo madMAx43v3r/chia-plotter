@@ -30,7 +30,7 @@ phase4::output_t create_plot(	const int num_threads,
 	const auto total_begin = get_wall_time_micros();
 	
 	std::cout << "Number of Threads: " << num_threads << std::endl;
-	std::cout << "Number of Sort Buckets: 2^" << log_num_buckets
+	std::cout << "Number of Buckets: 2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
 	
 	const bls::G1Element pool_key = bls::G1Element::FromByteVector(pool_key_bytes);
@@ -111,12 +111,12 @@ int main(int argc, char** argv)
 	std::string final_dir;
 	int num_plots = 1;
 	int num_threads = 4;
-	int log_num_buckets = 7;
+	int num_buckets = 128;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
-		"u, buckets", "Log2 number of buckets (default = 7 (ie. 2^7 = 128))", cxxopts::value<int>(log_num_buckets))(
+		"u, buckets", "Number of buckets (default = 128)", cxxopts::value<int>(num_buckets))(
 		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
@@ -154,6 +154,7 @@ int main(int argc, char** argv)
 	}
 	const auto pool_key = hex_to_bytes(pool_key_str);
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
+	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
 	
 	if(pool_key.size() != bls::G1Element::SIZE) {
 		std::cout << "Invalid <poolkey>: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
@@ -182,7 +183,7 @@ int main(int argc, char** argv)
 		return -2;
 	}
 	if(log_num_buckets < 4 || log_num_buckets > 16) {
-		std::cout << "Invalid <buckets> parameter: " << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
+		std::cout << "Invalid <buckets> parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
 	if(auto file = fopen((tmp_dir + ".chia_plot_tmp").c_str(), "wb")) {
