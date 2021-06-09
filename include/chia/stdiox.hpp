@@ -22,8 +22,6 @@
 
         return file;
     }
-}
-
 
 #else
 #define FOPEN(...) fopen(__VA_ARGS__)
