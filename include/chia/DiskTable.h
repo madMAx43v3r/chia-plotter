@@ -121,7 +121,7 @@ private:
 					std::pair<std::vector<T>, size_t>& out,
 					local_t& local) const
 	{
-		if(int err = fseek(local.file, param.first * T::disk_size, SEEK_SET)) {
+		if(int err = FSEEK(local.file, param.first * T::disk_size, SEEK_SET)) {
 			throw std::runtime_error("fseek() failed");
 		}
 		if(fread(local.buffer, T::disk_size, param.second, local.file) != param.second) {

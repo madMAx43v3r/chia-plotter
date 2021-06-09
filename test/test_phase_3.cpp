@@ -16,8 +16,12 @@ using namespace phase3;
 
 int main(int argc, char** argv)
 {
+
+#ifdef _WIN32	
 	// the following line increases the number of open simultaneous files
 	int newmaxstdio = _setmaxstdio(8192);
+#endif
+
 	const int num_threads = argc > 1 ? atoi(argv[1]) : 4;
 	const int log_num_buckets = argc > 2 ? atoi(argv[2]) : 7;
 	

@@ -124,8 +124,11 @@ phase4::output_t create_plot(	const int num_threads,
 
 int main(int argc, char** argv)
 {
+
+#ifdef _WIN32	
 	// the following line increases the number of open simultaneous files
 	int newmaxstdio = _setmaxstdio(8192);
+#endif
 
 	if(argc < 3) {
 		std::cout << "chia_plot <pool_key> <farmer_key> [tmp_dir] [tmp_dir2] [num_threads] [log_num_buckets]" << std::endl << std::endl;
