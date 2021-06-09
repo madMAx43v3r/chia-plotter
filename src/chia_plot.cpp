@@ -149,6 +149,9 @@ int main(int argc, char** argv)
 	if(tmp_dir2.empty()) {
 		tmp_dir2 = tmp_dir;
 	}
+	if(final_dir.empty()) {
+		final_dir = tmp_dir;
+	}
 	const auto pool_key = hex_to_bytes(pool_key_str);
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	
@@ -201,7 +204,7 @@ int main(int argc, char** argv)
 		return -2;
 	}
 	
-	std::cout << "Final Directory: " << (final_dir.empty() ? tmp_dir : final_dir) << std::endl;
+	std::cout << "Final Directory: " << final_dir << std::endl;
 	
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
@@ -231,7 +234,7 @@ int main(int argc, char** argv)
 	{
 		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
-		if(!final_dir.empty() && final_dir != tmp_dir)
+		if(final_dir != tmp_dir)
 		{
 			const auto dst_path = final_dir + out.params.plot_name + ".plot";
 			std::cout << "Started copy to " << dst_path << std::endl;
