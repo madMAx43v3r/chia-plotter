@@ -15,7 +15,17 @@
 
 #include <chrono>
 #include <iostream>
-#include <unistd.h>
+
+#ifdef __linux__ 
+    #include <unistd.h>
+	#define GETPID getpid
+#elif _WIN32
+    #include <processthreadsapi.h>
+	#define GETPID GetCurrentProcessId
+#else
+	// Possibly Darwin here
+#endif
+
 
 
 inline
@@ -58,7 +68,7 @@ phase4::output_t create_plot(	const int num_threads,
 {
 	const auto total_begin = get_wall_time_micros();
 
-	std::cout << "Process ID is: " << ::getpid() << std::endl;
+	std::cout << "Process ID is: " << GETPID << std::endl;
 	
 	std::cout << "Number of Threads: " << num_threads << std::endl;
 	std::cout << "Number of Sort Buckets: 2^" << log_num_buckets
