@@ -100,8 +100,8 @@ int main(int argc, char** argv)
 	cxxopts::Options options("chia_plot",
 		"Multi-threaded pipelined Chia k32 plotter.\n\n"
 		"For <poolkey> and <farmerkey> see output of `chia keys show`.\n"
-		"<tmpdir> needs about 200G space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
-		"<tmpdir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
+		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
+		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
 	);
 	
 	std::string pool_key_str;
@@ -117,8 +117,8 @@ int main(int argc, char** argv)
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Log2 number of buckets (default = 7 (ie. 2^7 = 128))", cxxopts::value<int>(log_num_buckets))(
-		"t, tmpdir", "Temporary directory, needs ~220G (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
-		"2, tmpdir2", "Temporary directory 2, needs ~110G [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
+		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
+		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
