@@ -1,17 +1,3 @@
-#if defined(__ELF__) && defined(__linux__)
-.section .note.GNU-stack,"",%progbits
-#endif
-
-#if defined(__ELF__) && defined(__CET__) && defined(__has_include)
-#if __has_include(<cet.h>)
-#include <cet.h>
-#endif
-#endif
-
-#if !defined(_CET_ENDBR)
-#define _CET_ENDBR
-#endif
-
 .intel_syntax noprefix
 .global blake3_hash_many_sse41
 .global _blake3_hash_many_sse41
@@ -19,24 +5,37 @@
 .global _blake3_compress_in_place_sse41
 .global blake3_compress_xof_sse41
 .global _blake3_compress_xof_sse41
-#ifdef __APPLE__
-.text
-#else
 .section .text
-#endif
         .p2align  6
 _blake3_hash_many_sse41:
 blake3_hash_many_sse41:
-        _CET_ENDBR
         push    r15
         push    r14
         push    r13
         push    r12
+        push    rsi
+        push    rdi
         push    rbx
         push    rbp
         mov     rbp, rsp
-        sub     rsp, 360
+        sub     rsp, 528
         and     rsp, 0xFFFFFFFFFFFFFFC0
+        movdqa  xmmword ptr [rsp+0x170], xmm6
+        movdqa  xmmword ptr [rsp+0x180], xmm7
+        movdqa  xmmword ptr [rsp+0x190], xmm8
+        movdqa  xmmword ptr [rsp+0x1A0], xmm9
+        movdqa  xmmword ptr [rsp+0x1B0], xmm10
+        movdqa  xmmword ptr [rsp+0x1C0], xmm11
+        movdqa  xmmword ptr [rsp+0x1D0], xmm12
+        movdqa  xmmword ptr [rsp+0x1E0], xmm13
+        movdqa  xmmword ptr [rsp+0x1F0], xmm14
+        movdqa  xmmword ptr [rsp+0x200], xmm15
+        mov     rdi, rcx
+        mov     rsi, rdx
+        mov     rdx, r8
+        mov     rcx, r9
+        mov     r8, qword ptr [rbp+0x68]
+        movzx   r9, byte ptr [rbp+0x70]
         neg     r9d
         movd    xmm0, r9d
         pshufd  xmm0, xmm0, 0x00
@@ -57,11 +56,11 @@ blake3_hash_many_sse41:
         pshufd  xmm2, xmm2, 0x00
         psubd   xmm2, xmm1
         movdqa  xmmword ptr [rsp+0x120], xmm2
-        mov     rbx, qword ptr [rbp+0x50]
+        mov     rbx, qword ptr [rbp+0x90]
         mov     r15, rdx
         shl     r15, 6
-        movzx   r13d, byte ptr [rbp+0x38]
-        movzx   r12d, byte ptr [rbp+0x48]
+        movzx   r13d, byte ptr [rbp+0x78]
+        movzx   r12d, byte ptr [rbp+0x88]
         cmp     rsi, 4
         jc      3f
 2:
@@ -79,7 +78,7 @@ blake3_hash_many_sse41:
         mov     r9, qword ptr [rdi+0x8]
         mov     r10, qword ptr [rdi+0x10]
         mov     r11, qword ptr [rdi+0x18]
-        movzx   eax, byte ptr [rbp+0x40]
+        movzx   eax, byte ptr [rbp+0x80]
         or      eax, r13d
         xor     edx, edx
 9:
@@ -1441,11 +1440,23 @@ blake3_hash_many_sse41:
         cmp     rsi, 4
         jnc     2b
         test    rsi, rsi
-        jnz     3f
+        jne     3f
 4:
+        movdqa  xmm6, xmmword ptr [rsp+0x170]
+        movdqa  xmm7, xmmword ptr [rsp+0x180]
+        movdqa  xmm8, xmmword ptr [rsp+0x190]
+        movdqa  xmm9, xmmword ptr [rsp+0x1A0]
+        movdqa  xmm10, xmmword ptr [rsp+0x1B0]
+        movdqa  xmm11, xmmword ptr [rsp+0x1C0]
+        movdqa  xmm12, xmmword ptr [rsp+0x1D0]
+        movdqa  xmm13, xmmword ptr [rsp+0x1E0]
+        movdqa  xmm14, xmmword ptr [rsp+0x1F0]
+        movdqa  xmm15, xmmword ptr [rsp+0x200]
         mov     rsp, rbp
         pop     rbp
         pop     rbx
+        pop     rdi
+        pop     rsi
         pop     r12
         pop     r13
         pop     r14
@@ -1469,7 +1480,7 @@ blake3_hash_many_sse41:
         movaps  xmmword ptr [rsp+0x10], xmm14
         mov     r8, qword ptr [rdi]
         mov     r9, qword ptr [rdi+0x8]
-        movzx   eax, byte ptr [rbp+0x40]
+        movzx   eax, byte ptr [rbp+0x80]
         or      eax, r13d
         xor     edx, edx
 2:
@@ -1684,7 +1695,7 @@ blake3_hash_many_sse41:
         movaps  xmm14, xmmword ptr [ROT8+rip]
         movaps  xmm15, xmmword ptr [ROT16+rip]
         mov     r8, qword ptr [rdi]
-        movzx   eax, byte ptr [rbp+0x40]
+        movzx   eax, byte ptr [rbp+0x80]
         or      eax, r13d
         xor     edx, edx
 2:
@@ -1789,23 +1800,32 @@ blake3_hash_many_sse41:
 .p2align 6
 blake3_compress_in_place_sse41:
 _blake3_compress_in_place_sse41:
-        _CET_ENDBR
-        movups  xmm0, xmmword ptr [rdi]
-        movups  xmm1, xmmword ptr [rdi+0x10]
+        sub     rsp, 120
+        movdqa  xmmword ptr [rsp], xmm6
+        movdqa  xmmword ptr [rsp+0x10], xmm7
+        movdqa  xmmword ptr [rsp+0x20], xmm8
+        movdqa  xmmword ptr [rsp+0x30], xmm9
+        movdqa  xmmword ptr [rsp+0x40], xmm11
+        movdqa  xmmword ptr [rsp+0x50], xmm14
+        movdqa  xmmword ptr [rsp+0x60], xmm15
+        movups  xmm0, xmmword ptr [rcx]
+        movups  xmm1, xmmword ptr [rcx+0x10]
         movaps  xmm2, xmmword ptr [BLAKE3_IV+rip]
-        shl     r8, 32
-        add     rdx, r8
-        movq    xmm3, rcx
-        movq    xmm4, rdx
+        movzx   eax, byte ptr [rsp+0xA0]
+        movzx   r8d, r8b
+        shl     rax, 32
+        add     r8, rax
+        movq    xmm3, r9
+        movq    xmm4, r8
         punpcklqdq xmm3, xmm4
-        movups  xmm4, xmmword ptr [rsi]
-        movups  xmm5, xmmword ptr [rsi+0x10]
+        movups  xmm4, xmmword ptr [rdx]
+        movups  xmm5, xmmword ptr [rdx+0x10]
         movaps  xmm8, xmm4
         shufps  xmm4, xmm5, 136
         shufps  xmm8, xmm5, 221
         movaps  xmm5, xmm8
-        movups  xmm6, xmmword ptr [rsi+0x20]
-        movups  xmm7, xmmword ptr [rsi+0x30]
+        movups  xmm6, xmmword ptr [rdx+0x20]
+        movups  xmm7, xmmword ptr [rdx+0x30]
         movaps  xmm8, xmm6
         shufps  xmm6, xmm7, 136
         pshufd  xmm6, xmm6, 0x93
@@ -1883,32 +1903,49 @@ _blake3_compress_in_place_sse41:
 9:
         pxor    xmm0, xmm2
         pxor    xmm1, xmm3
-        movups  xmmword ptr [rdi], xmm0
-        movups  xmmword ptr [rdi+0x10], xmm1
+        movups  xmmword ptr [rcx], xmm0
+        movups  xmmword ptr [rcx+0x10], xmm1
+        movdqa  xmm6, xmmword ptr [rsp]
+        movdqa  xmm7, xmmword ptr [rsp+0x10]
+        movdqa  xmm8, xmmword ptr [rsp+0x20]
+        movdqa  xmm9, xmmword ptr [rsp+0x30]
+        movdqa  xmm11, xmmword ptr [rsp+0x40]
+        movdqa  xmm14, xmmword ptr [rsp+0x50]
+        movdqa  xmm15, xmmword ptr [rsp+0x60]
+        add     rsp, 120
         ret
 
+
 .p2align 6
-blake3_compress_xof_sse41:
 _blake3_compress_xof_sse41:
-        _CET_ENDBR
-        movups  xmm0, xmmword ptr [rdi]
-        movups  xmm1, xmmword ptr [rdi+0x10]
+blake3_compress_xof_sse41:
+        sub     rsp, 120
+        movdqa  xmmword ptr [rsp], xmm6
+        movdqa  xmmword ptr [rsp+0x10], xmm7
+        movdqa  xmmword ptr [rsp+0x20], xmm8
+        movdqa  xmmword ptr [rsp+0x30], xmm9
+        movdqa  xmmword ptr [rsp+0x40], xmm11
+        movdqa  xmmword ptr [rsp+0x50], xmm14
+        movdqa  xmmword ptr [rsp+0x60], xmm15
+        movups  xmm0, xmmword ptr [rcx]
+        movups  xmm1, xmmword ptr [rcx+0x10]
         movaps  xmm2, xmmword ptr [BLAKE3_IV+rip]
-        movzx   eax, r8b
-        movzx   edx, dl
+        movzx   eax, byte ptr [rsp+0xA0]
+        movzx   r8d, r8b
+        mov     r10, qword ptr [rsp+0xA8]
         shl     rax, 32
-        add     rdx, rax
-        movq    xmm3, rcx
-        movq    xmm4, rdx
+        add     r8, rax
+        movq    xmm3, r9
+        movq    xmm4, r8
         punpcklqdq xmm3, xmm4
-        movups  xmm4, xmmword ptr [rsi]
-        movups  xmm5, xmmword ptr [rsi+0x10]
+        movups  xmm4, xmmword ptr [rdx]
+        movups  xmm5, xmmword ptr [rdx+0x10]
         movaps  xmm8, xmm4
         shufps  xmm4, xmm5, 136
         shufps  xmm8, xmm5, 221
         movaps  xmm5, xmm8
-        movups  xmm6, xmmword ptr [rsi+0x20]
-        movups  xmm7, xmmword ptr [rsi+0x30]
+        movups  xmm6, xmmword ptr [rdx+0x20]
+        movups  xmm7, xmmword ptr [rdx+0x30]
         movaps  xmm8, xmm6
         shufps  xmm6, xmm7, 136
         pshufd  xmm6, xmm6, 0x93
@@ -1984,24 +2021,28 @@ _blake3_compress_xof_sse41:
         movdqa  xmm6, xmm8
         jmp     9b
 9:
-        movdqu  xmm4, xmmword ptr [rdi]
-        movdqu  xmm5, xmmword ptr [rdi+0x10]
+        movdqu  xmm4, xmmword ptr [rcx]
+        movdqu  xmm5, xmmword ptr [rcx+0x10]
         pxor    xmm0, xmm2
         pxor    xmm1, xmm3
         pxor    xmm2, xmm4
         pxor    xmm3, xmm5
-        movups  xmmword ptr [r9], xmm0
-        movups  xmmword ptr [r9+0x10], xmm1
-        movups  xmmword ptr [r9+0x20], xmm2
-        movups  xmmword ptr [r9+0x30], xmm3
+        movups  xmmword ptr [r10], xmm0
+        movups  xmmword ptr [r10+0x10], xmm1
+        movups  xmmword ptr [r10+0x20], xmm2
+        movups  xmmword ptr [r10+0x30], xmm3
+        movdqa  xmm6, xmmword ptr [rsp]
+        movdqa  xmm7, xmmword ptr [rsp+0x10]
+        movdqa  xmm8, xmmword ptr [rsp+0x20]
+        movdqa  xmm9, xmmword ptr [rsp+0x30]
+        movdqa  xmm11, xmmword ptr [rsp+0x40]
+        movdqa  xmm14, xmmword ptr [rsp+0x50]
+        movdqa  xmm15, xmmword ptr [rsp+0x60]
+        add     rsp, 120
         ret
 
 
-#ifdef __APPLE__
-.static_data
-#else
 .section .rodata
-#endif
 .p2align  6
 BLAKE3_IV:
         .long  0x6A09E667, 0xBB67AE85
@@ -2010,19 +2051,19 @@ ROT16:
         .byte  2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13
 ROT8:
         .byte  1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12
-ADD0:	
+ADD0:   
         .long  0, 1, 2, 3
 ADD1:
-	.long  4, 4, 4, 4
+        .long  4, 4, 4, 4
 BLAKE3_IV_0:
-	.long  0x6A09E667, 0x6A09E667, 0x6A09E667, 0x6A09E667
+        .long  0x6A09E667, 0x6A09E667, 0x6A09E667, 0x6A09E667
 BLAKE3_IV_1:
-	.long  0xBB67AE85, 0xBB67AE85, 0xBB67AE85, 0xBB67AE85
+        .long  0xBB67AE85, 0xBB67AE85, 0xBB67AE85, 0xBB67AE85
 BLAKE3_IV_2:
-	.long  0x3C6EF372, 0x3C6EF372, 0x3C6EF372, 0x3C6EF372
+        .long  0x3C6EF372, 0x3C6EF372, 0x3C6EF372, 0x3C6EF372
 BLAKE3_IV_3:
-	.long  0xA54FF53A, 0xA54FF53A, 0xA54FF53A, 0xA54FF53A
+        .long  0xA54FF53A, 0xA54FF53A, 0xA54FF53A, 0xA54FF53A
 BLAKE3_BLOCK_LEN:
-	.long  64, 64, 64, 64
+        .long  64, 64, 64, 64
 CMP_MSB_MASK:
-	.long  0x80000000, 0x80000000, 0x80000000, 0x80000000
+        .long  0x80000000, 0x80000000, 0x80000000, 0x80000000

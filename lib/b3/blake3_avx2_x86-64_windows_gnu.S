@@ -1,49 +1,48 @@
-#if defined(__ELF__) && defined(__linux__)
-.section .note.GNU-stack,"",%progbits
-#endif
-
-#if defined(__ELF__) && defined(__CET__) && defined(__has_include)
-#if __has_include(<cet.h>)
-#include <cet.h>
-#endif
-#endif
-
-#if !defined(_CET_ENDBR)
-#define _CET_ENDBR
-#endif
-
 .intel_syntax noprefix
 .global _blake3_hash_many_avx2
 .global blake3_hash_many_avx2
-#ifdef __APPLE__
-.text
-#else
 .section .text
-#endif
         .p2align  6
 _blake3_hash_many_avx2:
 blake3_hash_many_avx2:
-        _CET_ENDBR
         push    r15
         push    r14
         push    r13
         push    r12
+        push    rsi
+        push    rdi
         push    rbx
         push    rbp
         mov     rbp, rsp
-        sub     rsp, 680
+        sub     rsp, 880
         and     rsp, 0xFFFFFFFFFFFFFFC0
+        vmovdqa xmmword ptr [rsp+0x2D0], xmm6
+        vmovdqa xmmword ptr [rsp+0x2E0], xmm7
+        vmovdqa xmmword ptr [rsp+0x2F0], xmm8
+        vmovdqa xmmword ptr [rsp+0x300], xmm9
+        vmovdqa xmmword ptr [rsp+0x310], xmm10
+        vmovdqa xmmword ptr [rsp+0x320], xmm11
+        vmovdqa xmmword ptr [rsp+0x330], xmm12
+        vmovdqa xmmword ptr [rsp+0x340], xmm13
+        vmovdqa xmmword ptr [rsp+0x350], xmm14
+        vmovdqa xmmword ptr [rsp+0x360], xmm15
+        mov     rdi, rcx
+        mov     rsi, rdx
+        mov     rdx, r8
+        mov     rcx, r9
+        mov     r8, qword ptr [rbp+0x68]
+        movzx   r9, byte ptr [rbp+0x70]
         neg     r9d
         vmovd   xmm0, r9d
         vpbroadcastd ymm0, xmm0
-        vmovdqa ymmword ptr [rsp+0x280], ymm0
+        vmovdqa ymmword ptr [rsp+0x260], ymm0
         vpand   ymm1, ymm0, ymmword ptr [ADD0+rip]
         vpand   ymm2, ymm0, ymmword ptr [ADD1+rip]
-        vmovdqa ymmword ptr [rsp+0x220], ymm2
+        vmovdqa ymmword ptr [rsp+0x2A0], ymm2
         vmovd   xmm2, r8d
         vpbroadcastd ymm2, xmm2
         vpaddd  ymm2, ymm2, ymm1
-        vmovdqa ymmword ptr [rsp+0x240], ymm2
+        vmovdqa ymmword ptr [rsp+0x220], ymm2
         vpxor   ymm1, ymm1, ymmword ptr [CMP_MSB_MASK+rip]
         vpxor   ymm2, ymm2, ymmword ptr [CMP_MSB_MASK+rip]
         vpcmpgtd ymm2, ymm1, ymm2
@@ -51,9 +50,9 @@ blake3_hash_many_avx2:
         vmovd   xmm3, r8d
         vpbroadcastd ymm3, xmm3
         vpsubd  ymm3, ymm3, ymm2
-        vmovdqa ymmword ptr [rsp+0x260], ymm3
+        vmovdqa ymmword ptr [rsp+0x240], ymm3
         shl     rdx, 6
-        mov     qword ptr [rsp+0x2A0], rdx
+        mov     qword ptr [rsp+0x2C0], rdx
         cmp     rsi, 8
         jc      3f
 2:
@@ -73,16 +72,16 @@ blake3_hash_many_avx2:
         mov     r13, qword ptr [rdi+0x28]
         mov     r14, qword ptr [rdi+0x30]
         mov     r15, qword ptr [rdi+0x38]
-        movzx   eax, byte ptr [rbp+0x38]
-        movzx   ebx, byte ptr [rbp+0x40]
+        movzx   eax, byte ptr [rbp+0x78]
+        movzx   ebx, byte ptr [rbp+0x80]
         or      eax, ebx
         xor     edx, edx
-.p2align  5
+.p2align 5
 9:
-        movzx   ebx, byte ptr [rbp+0x48]
+        movzx   ebx, byte ptr [rbp+0x88]
         or      ebx, eax
         add     rdx, 64
-        cmp     rdx, qword ptr [rsp+0x2A0]
+        cmp     rdx, qword ptr [rsp+0x2C0]
         cmove   eax, ebx
         mov     dword ptr [rsp+0x200], eax
         vmovups xmm8, xmmword ptr [r8+rdx-0x40]
@@ -182,8 +181,8 @@ blake3_hash_many_avx2:
         vpaddd  ymm1, ymm1, ymm5
         vpaddd  ymm2, ymm2, ymm6
         vpaddd  ymm3, ymm3, ymm7
-        vpxor   ymm12, ymm0, ymmword ptr [rsp+0x240]
-        vpxor   ymm13, ymm1, ymmword ptr [rsp+0x260]
+        vpxor   ymm12, ymm0, ymmword ptr [rsp+0x220]
+        vpxor   ymm13, ymm1, ymmword ptr [rsp+0x240]
         vpxor   ymm14, ymm2, ymmword ptr [BLAKE3_BLOCK_LEN+rip]
         vpxor   ymm15, ymm3, ymm15
         vbroadcasti128 ymm8, xmmword ptr [ROT16+rip]
@@ -1245,9 +1244,9 @@ blake3_hash_many_avx2:
         vpxor   ymm5, ymm5, ymm13
         vpxor   ymm6, ymm6, ymm14
         vpxor   ymm7, ymm7, ymm15
-        movzx   eax, byte ptr [rbp+0x38]
+        movzx   eax, byte ptr [rbp+0x78]
         jne     9b
-        mov     rbx, qword ptr [rbp+0x50]
+        mov     rbx, qword ptr [rbp+0x90]
         vunpcklps ymm8, ymm0, ymm1
         vunpcklps ymm9, ymm2, ymm3
         vunpckhps ymm10, ymm0, ymm1
@@ -1284,18 +1283,18 @@ blake3_hash_many_avx2:
         vmovups ymmword ptr [rbx+0xA0], ymm11
         vmovups ymmword ptr [rbx+0xC0], ymm14
         vmovups ymmword ptr [rbx+0xE0], ymm15
-        vmovdqa ymm0, ymmword ptr [rsp+0x220]
-        vpaddd  ymm1, ymm0, ymmword ptr [rsp+0x240]
-        vmovdqa ymmword ptr [rsp+0x240], ymm1
+        vmovdqa ymm0, ymmword ptr [rsp+0x2A0]
+        vpaddd  ymm1, ymm0, ymmword ptr [rsp+0x220]
+        vmovdqa ymmword ptr [rsp+0x220], ymm1
         vpxor   ymm0, ymm0, ymmword ptr [CMP_MSB_MASK+rip]
         vpxor   ymm2, ymm1, ymmword ptr [CMP_MSB_MASK+rip]
         vpcmpgtd ymm2, ymm0, ymm2
-        vmovdqa ymm0, ymmword ptr [rsp+0x260]
+        vmovdqa ymm0, ymmword ptr [rsp+0x240]
         vpsubd  ymm2, ymm0, ymm2
-        vmovdqa ymmword ptr [rsp+0x260], ymm2
+        vmovdqa ymmword ptr [rsp+0x240], ymm2
         add     rdi, 64
         add     rbx, 256
-        mov     qword ptr [rbp+0x50], rbx
+        mov     qword ptr [rbp+0x90], rbx
         sub     rsi, 8
         cmp     rsi, 8
         jnc     2b
@@ -1303,28 +1302,40 @@ blake3_hash_many_avx2:
         jnz     3f
 4:
         vzeroupper
+        vmovdqa xmm6, xmmword ptr [rsp+0x2D0]
+        vmovdqa xmm7, xmmword ptr [rsp+0x2E0]
+        vmovdqa xmm8, xmmword ptr [rsp+0x2F0]
+        vmovdqa xmm9, xmmword ptr [rsp+0x300]
+        vmovdqa xmm10, xmmword ptr [rsp+0x310]
+        vmovdqa xmm11, xmmword ptr [rsp+0x320]
+        vmovdqa xmm12, xmmword ptr [rsp+0x330]
+        vmovdqa xmm13, xmmword ptr [rsp+0x340]
+        vmovdqa xmm14, xmmword ptr [rsp+0x350]
+        vmovdqa xmm15, xmmword ptr [rsp+0x360]
         mov     rsp, rbp
         pop     rbp
         pop     rbx
+        pop     rdi
+        pop     rsi
         pop     r12
         pop     r13
         pop     r14
         pop     r15
         ret
-.p2align  5
+.p2align 5
 3:
-        mov     rbx, qword ptr [rbp+0x50]
-        mov     r15, qword ptr [rsp+0x2A0]
-        movzx   r13d, byte ptr [rbp+0x38]
-        movzx   r12d, byte ptr [rbp+0x48]
+        mov     rbx, qword ptr [rbp+0x90]
+        mov     r15, qword ptr [rsp+0x2C0]
+        movzx   r13d, byte ptr [rbp+0x78]
+        movzx   r12d, byte ptr [rbp+0x88]
         test    rsi, 0x4
         je      3f
         vbroadcasti128 ymm0, xmmword ptr [rcx]
         vbroadcasti128 ymm1, xmmword ptr [rcx+0x10]
         vmovdqa ymm8, ymm0
         vmovdqa ymm9, ymm1
-        vbroadcasti128 ymm12, xmmword ptr [rsp+0x240]
-        vbroadcasti128 ymm13, xmmword ptr [rsp+0x260]
+        vbroadcasti128 ymm12, xmmword ptr [rsp+0x220]
+        vbroadcasti128 ymm13, xmmword ptr [rsp+0x240]
         vpunpckldq ymm14, ymm12, ymm13
         vpunpckhdq ymm15, ymm12, ymm13
         vpermq  ymm14, ymm14, 0x50
@@ -1338,10 +1349,10 @@ blake3_hash_many_avx2:
         mov     r9, qword ptr [rdi+0x8]
         mov     r10, qword ptr [rdi+0x10]
         mov     r11, qword ptr [rdi+0x18]
-        movzx   eax, byte ptr [rbp+0x40]
+        movzx   eax, byte ptr [rbp+0x80]
         or      eax, r13d
         xor     edx, edx
-.p2align  5
+.p2align 5
 2:
         mov     r14d, eax
         or      eax, r12d
@@ -1377,10 +1388,6 @@ blake3_hash_many_avx2:
         vshufps ymm15, ymm10, ymm11, 221
         vpshufd ymm14, ymm14, 0x93
         vpshufd ymm15, ymm15, 0x93
-        prefetcht0 [r8+rdx+0x80]
-        prefetcht0 [r9+rdx+0x80]
-        prefetcht0 [r10+rdx+0x80]
-        prefetcht0 [r11+rdx+0x80]
         vpbroadcastd ymm2, dword ptr [rsp+0x200]
         vmovdqa ymm3, ymmword ptr [rsp]
         vmovdqa ymm11, ymmword ptr [rsp+0x20]
@@ -1535,15 +1542,15 @@ blake3_hash_many_avx2:
         vmovdqu xmmword ptr [rbx+0x50], xmm9
         vextracti128 xmmword ptr [rbx+0x60], ymm8, 0x01
         vextracti128 xmmword ptr [rbx+0x70], ymm9, 0x01
-        vmovaps xmm8, xmmword ptr [rsp+0x280]
-        vmovaps xmm0, xmmword ptr [rsp+0x240]
-        vmovaps xmm1, xmmword ptr [rsp+0x250]
-        vmovaps xmm2, xmmword ptr [rsp+0x260]
-        vmovaps xmm3, xmmword ptr [rsp+0x270]
+        vmovaps xmm8, xmmword ptr [rsp+0x260]
+        vmovaps xmm0, xmmword ptr [rsp+0x220]
+        vmovaps xmm1, xmmword ptr [rsp+0x230]
+        vmovaps xmm2, xmmword ptr [rsp+0x240]
+        vmovaps xmm3, xmmword ptr [rsp+0x250]
         vblendvps xmm0, xmm0, xmm1, xmm8
         vblendvps xmm2, xmm2, xmm3, xmm8
-        vmovaps xmmword ptr [rsp+0x240], xmm0
-        vmovaps xmmword ptr [rsp+0x260], xmm2
+        vmovaps xmmword ptr [rsp+0x220], xmm0
+        vmovaps xmmword ptr [rsp+0x240], xmm2
         add     rbx, 128
         add     rdi, 32
         sub     rsi, 4
@@ -1552,21 +1559,21 @@ blake3_hash_many_avx2:
         je      3f
         vbroadcasti128 ymm0, xmmword ptr [rcx]
         vbroadcasti128 ymm1, xmmword ptr [rcx+0x10]
-        vmovd   xmm13, dword ptr [rsp+0x240]
-        vpinsrd xmm13, xmm13, dword ptr [rsp+0x260], 1
+        vmovd   xmm13, dword ptr [rsp+0x220]
+        vpinsrd xmm13, xmm13, dword ptr [rsp+0x240], 1
         vpinsrd xmm13, xmm13, dword ptr [BLAKE3_BLOCK_LEN+rip], 2
-        vmovd   xmm14, dword ptr [rsp+0x244]
-        vpinsrd xmm14, xmm14, dword ptr [rsp+0x264], 1
+        vmovd   xmm14, dword ptr [rsp+0x224]
+        vpinsrd xmm14, xmm14, dword ptr [rsp+0x244], 1
         vpinsrd xmm14, xmm14, dword ptr [BLAKE3_BLOCK_LEN+rip], 2
         vinserti128 ymm13, ymm13, xmm14, 0x01
         vbroadcasti128 ymm14, xmmword ptr [ROT16+rip]
         vbroadcasti128 ymm15, xmmword ptr [ROT8+rip]
         mov     r8, qword ptr [rdi]
         mov     r9, qword ptr [rdi+0x8]
-        movzx   eax, byte ptr [rbp+0x40]
+        movzx   eax, byte ptr [rbp+0x80]
         or      eax, r13d
         xor     edx, edx
-.p2align  5
+.p2align 5
 2:
         mov     r14d, eax
         or      eax, r12d
@@ -1661,15 +1668,15 @@ blake3_hash_many_avx2:
         vmovdqu xmmword ptr [rbx+0x10], xmm1
         vextracti128 xmmword ptr [rbx+0x20], ymm0, 0x01
         vextracti128 xmmword ptr [rbx+0x30], ymm1, 0x01
-        vmovaps ymm8, ymmword ptr [rsp+0x280]
-        vmovaps ymm0, ymmword ptr [rsp+0x240]
-        vmovups ymm1, ymmword ptr [rsp+0x248]
-        vmovaps ymm2, ymmword ptr [rsp+0x260]
-        vmovups ymm3, ymmword ptr [rsp+0x268]
+        vmovaps ymm8, ymmword ptr [rsp+0x260]
+        vmovaps ymm0, ymmword ptr [rsp+0x220]
+        vmovups ymm1, ymmword ptr [rsp+0x228]
+        vmovaps ymm2, ymmword ptr [rsp+0x240]
+        vmovups ymm3, ymmword ptr [rsp+0x248]
         vblendvps ymm0, ymm0, ymm1, ymm8
         vblendvps ymm2, ymm2, ymm3, ymm8
-        vmovaps ymmword ptr [rsp+0x240], ymm0
-        vmovaps ymmword ptr [rsp+0x260], ymm2
+        vmovaps ymmword ptr [rsp+0x220], ymm0
+        vmovaps ymmword ptr [rsp+0x240], ymm2
         add     rbx, 64
         add     rdi, 16
         sub     rsi, 2
@@ -1678,16 +1685,16 @@ blake3_hash_many_avx2:
         je      4b
         vmovdqu xmm0, xmmword ptr [rcx]
         vmovdqu xmm1, xmmword ptr [rcx+0x10]
-        vmovd   xmm3, dword ptr [rsp+0x240]
-        vpinsrd xmm3, xmm3, dword ptr [rsp+0x260], 1
+        vmovd   xmm3, dword ptr [rsp+0x220]
+        vpinsrd xmm3, xmm3, dword ptr [rsp+0x240], 1
         vpinsrd xmm13, xmm3, dword ptr [BLAKE3_BLOCK_LEN+rip], 2
         vmovdqa xmm14, xmmword ptr [ROT16+rip]
         vmovdqa xmm15, xmmword ptr [ROT8+rip]
         mov     r8, qword ptr [rdi]
-        movzx   eax, byte ptr [rbp+0x40]
+        movzx   eax, byte ptr [rbp+0x80]
         or      eax, r13d
         xor     edx, edx
-.p2align  5
+.p2align 5
 2:
         mov     r14d, eax
         or      eax, r12d
@@ -1777,12 +1784,7 @@ blake3_hash_many_avx2:
         vmovdqu xmmword ptr [rbx+0x10], xmm1
         jmp     4b
 
-
-#ifdef __APPLE__
-.static_data
-#else
 .section .rodata
-#endif
 .p2align  6
 ADD0:
         .long  0, 1, 2, 3, 4, 5, 6, 7
