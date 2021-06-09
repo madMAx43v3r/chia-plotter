@@ -10,8 +10,8 @@ simply by increasing the number of "cores", ie. threads.
 
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
-<tmpdir> needs about 220G space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
-<tmpdir2> needs about 110G space and ideally is a RAM drive, it will handle about 75% of all writes.
+<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
+<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.
 
 Usage:
   chia_plot [OPTION...]
@@ -19,9 +19,8 @@ Usage:
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Log2 number of buckets (default = 7 (ie. 2^7 = 128))
-  -t, --tmpdir arg     Temporary directory, needs ~220G (default = $PWD)
-  -2, --tmpdir2 arg    Temporary directory 2, needs ~110G [RAM] (default =
-                       <tmpdir>)
+  -t, --tmpdir arg     Temporary directory, needs ~220 GiB (default = $PWD)
+  -2, --tmpdir2 arg    Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)
   -d, --finaldir arg   Final directory (default = <tmpdir>)
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
