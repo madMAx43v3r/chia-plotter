@@ -19,7 +19,7 @@ Usage:
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Log2 number of buckets (default = 7 (ie. 2^7 = 128))
-  -t, --tmpdir arg     Temporary directory, needs ~200G (default = $PWD)
+  -t, --tmpdir arg     Temporary directory, needs ~220G (default = $PWD)
   -2, --tmpdir2 arg    Temporary directory 2, needs ~110G [RAM] (default =
                        <tmpdir>)
   -d, --finaldir arg   Final directory (default = <tmpdir>)
