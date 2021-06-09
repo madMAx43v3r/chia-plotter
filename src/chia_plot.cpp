@@ -23,7 +23,7 @@
 	#include <processthreadsapi.h>
 	#define GETPID GetCurrentProcessId
 #else
-	// Possibly Darwin here
+	#define GETPID
 #endif
 
 
