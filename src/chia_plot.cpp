@@ -219,6 +219,7 @@ int main(int argc, char** argv)
 					const auto time = (get_wall_time_micros() - total_begin) / 1e6;
 					std::cout << "Copy to " << from_to.second << " finished, took " << time << " sec, "
 							<< ((bytes / time) / 1024 / 1024) << " MB/s avg." << std::endl;
+					break;
 				} catch(const std::exception& ex) {
 					std::cout << "Copy to " << from_to.second << " failed with: " << ex.what() << std::endl;
 					std::this_thread::sleep_for(std::chrono::minutes(5));
