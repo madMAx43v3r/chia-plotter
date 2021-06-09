@@ -22,7 +22,7 @@ Usage:
   -t, --tmpdir arg     Temporary directory, needs ~200G (default = $PWD)
   -2, --tmpdir2 arg    Temporary directory 2, needs ~110G [RAM] (default =
                        <tmpdir>)
-  -d, --finaldir arg   Final directory (default = tmpdir)
+  -d, --finaldir arg   Final directory (default = <tmpdir>)
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
       --help           Print help
