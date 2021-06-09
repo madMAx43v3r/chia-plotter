@@ -195,6 +195,13 @@ int main(int argc, char** argv)
 		return -2;
 	}
 	
+	if(num_plots >= 0) {
+		std::cout << "Number of Plots: " << num_plots << std::endl;
+	} else {
+		std::cout << "Number of Plots: infinite" << std::endl;
+	}
+	std::cout << "Final Directory: " << (final_dir.empty() ? tmp_dir : final_dir) << std::endl;
+	
 	Thread<std::pair<std::string, std::string>> copy_thread(
 		[](std::pair<std::string, std::string>& from_to) {
 			const auto total_begin = get_wall_time_micros();
