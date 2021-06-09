@@ -122,7 +122,11 @@ keeping most of the load off the CPUs.
 
 ## Install
 
+Ubuntu 20.04
 ```
+sudo apt install  -y libsodium-dev  libgmp3-dev  cmake g++ git
+git clone https://github.com/madMAx43v3r/chia-plotter.git 
+cd  chia-plotter
 git submodule update --init
 ./make_devel.sh
 ```
