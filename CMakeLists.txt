@@ -12,6 +12,8 @@ include_directories(
 	lib
 	include
 	lib/bls-signatures/src/
+	${CMAKE_BINARY_DIR}/_deps/relic-src/include
+	${CMAKE_BINARY_DIR}/_deps/relic-build/include
 )
 
 IF (WIN32)
