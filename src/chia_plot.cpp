@@ -18,6 +18,17 @@
 
 #include <string>
 
+#ifdef __linux__ 
+	#include <unistd.h>
+	#define GETPID getpid
+#elif _WIN32
+	#include <processthreadsapi.h>
+	#define GETPID GetCurrentProcessId
+#else
+	#define GETPID int(-1)
+#endif
+
+
 
 inline
 phase4::output_t create_plot(	const int num_threads,
@@ -28,6 +39,8 @@ phase4::output_t create_plot(	const int num_threads,
 								const std::string& tmp_dir_2)
 {
 	const auto total_begin = get_wall_time_micros();
+
+	std::cout << "Process ID is: " << GETPID() << std::endl;
 	
 	std::cout << "Number of Threads: " << num_threads << std::endl;
 	std::cout << "Number of Buckets: 2^" << log_num_buckets
