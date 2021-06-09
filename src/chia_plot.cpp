@@ -142,6 +142,10 @@ int main(int argc, char** argv)
 		std::cout << "Farmer Public Key (48 bytes) needs to be specified via -f <hex>, see `chia keys show`." << std::endl;
 		return -2;
 	}
+	if(tmp_dir.empty()) {
+		std::cout << "<tmpdir> needs to be specified via -t path/" << std::endl;
+		return -2;
+	}
 	if(tmp_dir2.empty()) {
 		tmp_dir2 = tmp_dir;
 	}
