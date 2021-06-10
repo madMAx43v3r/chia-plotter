@@ -98,9 +98,9 @@ Total plot creation time was 2804.06 sec
 
 ## How to Verify
 
-To make sure the plots are valid you can use the `ProofOfSpace` tool from `chiapos`:
+To make sure the plots are valid you can use the `ProofOfSpace` tool from [chiapos](https://github.com/Chia-Network/chiapos):
 
-```
+```bash
 git clone https://github.com/Chia-Network/chiapos.git
 cd chiapos && mkdir build && cd build && cmake .. && make -j8
 ./ProofOfSpace check -f plot-k32-???.plot [num_iterations]
@@ -122,16 +122,40 @@ keeping most of the load off the CPUs.
 
 ## Install
 
-Ubuntu 20.04
+---
+### CentOS 7
+```bash
+git clone https://github.com/dendil/chia-plotter.git
+cd chia-plotter
+
+git submodule update --init
+sudo yum install cmake3 gmp-devel libsodium gmp-static libsodium-static  -y
+# Install a package with repository for your system:
+# On CentOS, install package centos-release-scl available in CentOS repository:
+sudo yum centos-release-scl -y
+# Install the collection:
+sudo yum install devtoolset-7 -y
+# Start using software collections:
+scl enable devtoolset-7 bash
+./make_devel.sh
+./build/chia_plot  --help
 ```
+---
+### Ubuntu 20.04
+```bash
 sudo apt install  -y libsodium-dev  libgmp3-dev  cmake g++ git
+# Checkout the source and install
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd  chia-plotter
+
 git submodule update --init
 ./make_devel.sh
+./build/chia_plot  --help
 ```
 
 The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
+
+---
 
 ## Known Issues
 
