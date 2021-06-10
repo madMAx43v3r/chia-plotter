@@ -109,7 +109,11 @@ phase4::output_t create_plot(	const int num_threads,
 int main(int argc, char** argv)
 {
 	cxxopts::Options options("chia_plot",
-		"Multi-threaded pipelined Chia k32 plotter.\n\n"
+		"Multi-threaded pipelined Chia k32 plotter"
+#ifdef GIT_COMMIT_HASH
+		" - " GIT_COMMIT_HASH
+#endif
+		"\n\n"
 		"For <poolkey> and <farmerkey> see output of `chia keys show`.\n"
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
@@ -227,9 +231,12 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
-	
+	std::cout << "Multi-threaded pipelined Chia k32 plotter"; 
+	#ifdef GIT_COMMIT_HASH
+		std::cout << " - " << GIT_COMMIT_HASH;
+	#endif	
+	std::cout << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
-	
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
 	} else {

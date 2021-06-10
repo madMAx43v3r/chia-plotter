@@ -137,36 +137,41 @@ std::shared_ptr<typename DiskSort<T, Key>::WriteCache> DiskSort<T, Key>::add_cac
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read(Processor<std::vector<T>>* output,
+void DiskSort<T, Key>::read(Processor<std::pair<std::vector<T>, size_t>>* output,
 							int num_threads, int num_threads_read)
 {
 	if(num_threads_read < 0) {
 		num_threads_read = std::max(num_threads / 4, 2);
 	}
 	
-	ThreadPool<std::vector<T>, std::vector<T>> sort_pool(
-		[](std::vector<T>& input, std::vector<T>& out, size_t&) {
-			std::sort(input.begin(), input.end(),
+	ThreadPool<	std::pair<std::vector<T>, size_t>,
+				std::pair<std::vector<T>, size_t>> sort_pool(
+		[](std::pair<std::vector<T>, size_t>& input, std::pair<std::vector<T>, size_t>& out, size_t&) {
+			std::sort(input.first.begin(), input.first.end(),
 				[](const T& lhs, const T& rhs) -> bool {
 					return Key{}(lhs) < Key{}(rhs);
 				});
 			out = std::move(input);
 		}, output, num_threads, "Disk/sort");
 	
-	Thread<std::vector<std::vector<T>>> sort_thread(
-		[&sort_pool](std::vector<std::vector<T>>& input) {
+	Thread<std::vector<std::pair<std::vector<T>, size_t>>> sort_thread(
+		[&sort_pool](std::vector<std::pair<std::vector<T>, size_t>>& input) {
 			for(auto& block : input) {
 				sort_pool.take(block);
 			}
 		}, "Disk/sort");
 	
-	ThreadPool<size_t, std::vector<std::vector<T>>, read_buffer_t<T>> read_pool(
+	ThreadPool<	std::pair<size_t, size_t>,
+				std::vector<std::pair<std::vector<T>, size_t>>,
+				read_buffer_t<T>> read_pool(
 		std::bind(&DiskSort::read_bucket, this,
 				std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		&sort_thread, num_threads_read, "Disk/read");
 	
+	uint64_t offset = 0;
 	for(size_t i = 0; i < buckets.size(); ++i) {
-		read_pool.take_copy(i);
+		read_pool.take_copy(std::make_pair(i, offset));
+		offset += buckets[i].num_entries;
 	}
 	read_pool.close();
 	sort_thread.close();
@@ -174,11 +179,11 @@ void DiskSort<T, Key>::read(Processor<std::vector<T>>* output,
 }
 
 template<typename T, typename Key>
-void DiskSort<T, Key>::read_bucket(	size_t& index,
-									std::vector<std::vector<T>>& out,
+void DiskSort<T, Key>::read_bucket(	std::pair<size_t, size_t>& index,
+									std::vector<std::pair<std::vector<T>, size_t>>& out,
 									read_buffer_t<T>& buffer)
 {
-	auto& bucket = buckets[index];
+	auto& bucket = buckets[index.first];
 	bucket.open("rb");
 	
 	const int key_shift = bucket_key_shift - log_num_buckets;
@@ -217,8 +222,11 @@ void DiskSort<T, Key>::read_bucket(	size_t& index,
 	table.clear();
 	
 	out.reserve(sorted.size());
+	uint64_t offset = index.second;
 	for(auto& entry : sorted) {
-		out.emplace_back(std::move(entry.second));
+		const auto count = entry.second.size();
+		out.emplace_back(std::move(entry.second), offset);
+		offset += count;
 	}
 }
 
