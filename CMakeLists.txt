@@ -29,10 +29,10 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3.c
     ${BLAKE3_PATH}/blake3_portable.c
     ${BLAKE3_PATH}/blake3_dispatch.c
-    ${BLAKE3_PATH}/blake3_avx2_x86-64_windows_gnu.S
-    ${BLAKE3_PATH}/blake3_sse41_x86-64_windows_gnu.S
-    ${BLAKE3_PATH}/blake3_avx512_x86-64_windows_gnu.S
-    ${BLAKE3_PATH}/blake3_sse2_x86-64_windows_gnu.S
+    ${BLAKE3_PATH}/blake3_avx2.c
+    ${BLAKE3_PATH}/blake3_avx512.c
+    ${BLAKE3_PATH}/blake3_sse2.c
+    ${BLAKE3_PATH}/blake3_sse41.c
 )
 ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
 set(BLAKE3_SRC
@@ -90,6 +90,7 @@ if (MSVC)
 	add_library(uint128 STATIC uint128_t/uint128_t.cpp)
 	target_include_directories(uint128 PUBLIC uint128_t)
 
+	target_link_libraries(test_copy chia_plotter)
 	target_link_libraries(test_disk_sort chia_plotter uint128)
 	target_link_libraries(test_phase_1 chia_plotter uint128)
 	target_link_libraries(test_phase_2 chia_plotter uint128)
