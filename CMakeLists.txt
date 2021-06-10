@@ -12,49 +12,56 @@ else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 endif()
 
+set(BLAKE3_PATH lib/BLAKE3/c)
+set(FSE_PATH lib/FSE/lib)
+
 include_directories(
 	lib
 	include
-	lib/bls-signatures/src/
+	lib/bls-signatures/src
+	${BLAKE3_PATH}
+	${CMAKE_BINARY_DIR}/_deps/relic-src/include
+	${CMAKE_BINARY_DIR}/_deps/relic-build/include
 )
 
 IF (WIN32)
 set(BLAKE3_SRC
-    lib/b3/blake3.c
-    lib/b3/blake3_portable.c
-    lib/b3/blake3_dispatch.c
-    lib/b3/blake3_avx2.c
-    lib/b3/blake3_avx512.c
-    lib/b3/blake3_sse41.c
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
+    ${BLAKE3_PATH}/blake3_avx2.c
+    ${BLAKE3_PATH}/blake3_avx512.c
+    ${BLAKE3_PATH}/blake3_sse2.c
+    ${BLAKE3_PATH}/blake3_sse41.c
 )
 ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
 set(BLAKE3_SRC
-    lib/b3/blake3.c
-    lib/b3/blake3_portable.c
-    lib/b3/blake3_dispatch.c
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
 )
 ELSE()
 set(BLAKE3_SRC
-    lib/b3/blake3.c
-    lib/b3/blake3_portable.c
-    lib/b3/blake3_dispatch.c
-    lib/b3/blake3_avx2_x86-64_unix.S
-    lib/b3/blake3_avx512_x86-64_unix.S
-    lib/b3/blake3_sse41_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
+    ${BLAKE3_PATH}/blake3_avx2_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3_avx512_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3_sse41_x86-64_unix.S
+    ${BLAKE3_PATH}/blake3_sse2_x86-64_unix.S
 )
 ENDIF()
 
-set(FSE_LIB lib/FSE/lib)
-set(FSE_FILES
-    ${FSE_LIB}/fse_compress.c
-    ${FSE_LIB}/fse_decompress.c
-    ${FSE_LIB}/entropy_common.c
-    ${FSE_LIB}/hist.c
+set(FSE_SRC
+    ${FSE_PATH}/fse_compress.c
+    ${FSE_PATH}/fse_decompress.c
+    ${FSE_PATH}/entropy_common.c
+    ${FSE_PATH}/hist.c
 )
 
 add_library(blake3 STATIC ${BLAKE3_SRC})
 
-add_library(fse STATIC ${FSE_FILES})
+add_library(fse STATIC ${FSE_SRC})
 
 add_library(chia_plotter STATIC
 	lib/chacha8.c
@@ -66,6 +73,7 @@ else()
 	target_link_libraries(chia_plotter blake3 fse Threads::Threads)
 endif()
 
+add_executable(test_copy test/test_copy.cpp)
 add_executable(test_disk_sort test/test_disk_sort.cpp)
 
 add_executable(test_phase_1 test/test_phase_1.cpp)
@@ -82,6 +90,7 @@ if (MSVC)
 	add_library(uint128 STATIC uint128_t/uint128_t.cpp)
 	target_include_directories(uint128 PUBLIC uint128_t)
 
+	target_link_libraries(test_copy chia_plotter)
 	target_link_libraries(test_disk_sort chia_plotter uint128)
 	target_link_libraries(test_phase_1 chia_plotter uint128)
 	target_link_libraries(test_phase_2 chia_plotter uint128)
@@ -94,15 +103,16 @@ if (MSVC)
 
 else()
 	
-	target_link_libraries(test_disk_sort chia_plotter)
-	
-	target_link_libraries(test_phase_1 chia_plotter)
-	target_link_libraries(test_phase_2 chia_plotter)
-	target_link_libraries(test_phase_3 chia_plotter)
-	target_link_libraries(test_phase_4 chia_plotter)
-	
-	target_link_libraries(check_phase_1 chia_plotter)
-	
-	target_link_libraries(chia_plot chia_plotter bls)
+target_link_libraries(test_copy chia_plotter)
+target_link_libraries(test_disk_sort chia_plotter)
+
+target_link_libraries(test_phase_1 chia_plotter)
+target_link_libraries(test_phase_2 chia_plotter)
+target_link_libraries(test_phase_3 chia_plotter)
+target_link_libraries(test_phase_4 chia_plotter)
+
+target_link_libraries(check_phase_1 chia_plotter)
+
+target_link_libraries(chia_plot chia_plotter bls)
 
 endif()
