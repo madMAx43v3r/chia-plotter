@@ -4,9 +4,7 @@ FROM alpine:3.13.5 AS compiler
 
 WORKDIR /root
 
-RUN apk update && \
-  apk upgrade && \
-  apk --update add \
+RUN apk --no-cache add \
     gcc \
     g++ \
     build-base \
@@ -25,9 +23,7 @@ FROM alpine:3.13.5 AS runtime
 
 WORKDIR /root
 
-RUN apk update && \
-  apk upgrade && \
-  apk --update add \
+RUN apk --no-cache add \
     gmp-dev
 
 COPY --from=compiler /root/build /usr/lib/chia-plotter
