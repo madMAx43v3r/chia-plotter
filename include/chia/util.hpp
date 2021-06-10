@@ -224,8 +224,8 @@ namespace Util {
     inline uint8_t GetSizeBits(uint128_t value)
     {
         uint64_t r[2];
-        r[0] = bswap_64(value >> 64);
-        r[1] = bswap_64((uint64_t)value);
+        r[0] = value >> 64;
+        r[1] = value & ~0ull;
 		return hweight64(r[0]) + hweight64(r[1]);
         //uint8_t count = 0;
         //while (value) {
