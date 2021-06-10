@@ -203,23 +203,36 @@ namespace Util {
 
     static void IntTo16Bytes(uint8_t *result, const uint128_t input)
     {
-        uint64_t r = bswap_64(input >> 64);
-        memcpy(result, &r, sizeof(r));
-        r = bswap_64((uint64_t)input);
-        memcpy(result + 8, &r, sizeof(r));
+        uint64_t r[2];
+        r[0] = bswap_64(input >> 64);
+        r[1] = bswap_64((uint64_t)input);
+        memcpy(result, r, sizeof(r));
     }
 
+	inline uint64_t hweight64(uint64_t w)
+	{
+		uint64_t res = w - ((w >> 1) & 0x5555555555555555ull);
+		res = (res & 0x3333333333333333ull) + ((res >> 2) & 0x3333333333333333ull);
+		res = (res + (res >> 4)) & 0x0F0F0F0F0F0F0F0Full;
+		res = res + (res >> 8);
+		res = res + (res >> 16);
+		return (res + (res >> 32)) & 0x00000000000000FFull;
+	}
     /*
      * Retrieves the size of an integer, in Bits.
      */
     inline uint8_t GetSizeBits(uint128_t value)
     {
-        uint8_t count = 0;
-        while (value) {
-            count++;
-            value >>= 1;
-        }
-        return count;
+        uint64_t r[2];
+        r[0] = bswap_64(value >> 64);
+        r[1] = bswap_64((uint64_t)value);
+		return hweight64(r[0]) + hweight64(r[1]);
+        //uint8_t count = 0;
+        //while (value) {
+            //count++;
+            //value >>= 1;
+        //}
+        //return count;
     }
 
     // 'bytes' points to a big-endian 64 bit value (possibly truncated, if
@@ -237,8 +250,8 @@ namespace Util {
         uint64_t tmp;
 
         if (start_bit + num_bits > 64) {
-            bytes += start_bit / 8;
-            start_bit %= 8;
+            bytes += start_bit >>3 ;
+            start_bit &= 7;
         }
 
         tmp = Util::EightBytesToInt(bytes);
@@ -254,8 +267,8 @@ namespace Util {
     {
         uint32_t last_bit = start_bit + num_bits;
         uint64_t r = SliceInt64FromBytes(bytes, start_bit, num_bits);
-        if (start_bit % 8 + num_bits > 64)
-            r |= bytes[last_bit / 8] >> (8 - last_bit % 8);
+        if ((start_bit &7) + num_bits > 64)
+            r |= bytes[last_bit >>3] >> (8 - (last_bit &7));
         return r;
     }
 
@@ -289,8 +302,8 @@ namespace Util {
         uint32_t begin_bits,
         uint32_t take_bits)
     {
-        if ((begin_bits + take_bits) / 8 > len_bytes - 1) {
-            take_bits = len_bytes * 8 - begin_bits;
+        if ((begin_bits + take_bits) >>3 > len_bytes - 1) {
+            take_bits = (len_bytes <<3) - begin_bits;
         }
         return Util::SliceInt64FromBytes(bytes, begin_bits, take_bits);
     }
@@ -299,9 +312,9 @@ namespace Util {
     // total number of entries to be sorted.
     inline uint64_t RoundSize(uint64_t size)
     {
-        size *= 2;
+        size <<= 1;
         uint64_t result = 1;
-        while (result < size) result *= 2;
+        while (result < size) result <<= 1;
         return result + 50;
     }
 
@@ -314,8 +327,8 @@ namespace Util {
         uint32_t len,
         uint32_t bits_begin)
     {
-        uint32_t start_byte = bits_begin / 8;
-        uint8_t mask = ((1 << (8 - (bits_begin % 8))) - 1);
+        uint32_t start_byte = bits_begin >> 3;
+        uint8_t mask = ((1 << (8 - (bits_begin & 7))) - 1);
         if ((left_arr[start_byte] & mask) != (right_arr[start_byte] & mask)) {
             return (left_arr[start_byte] & mask) - (right_arr[start_byte] & mask);
         }
