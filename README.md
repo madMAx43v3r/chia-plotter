@@ -156,6 +156,52 @@ git submodule update --init
 
 The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
 
+## Running in a Docker container
+
+In some setups and scenarios, it could be useful to run your plotter inside a Docker container. This could be potentially useful while running `chia-plotter` in Windows.
+
+To do so, install Docker in your computer and them run the following command:
+
+```sh
+docker run \
+  -v <path-to-your-tmp-dir>:/mnt/harvester \
+  -v <path-to-your-final-dir>:/mnt/farm \
+  odelucca/chia-plotter \
+    -t /mnt/harvester/ \
+    -d /mnt/farm/ \
+    -p <pool-key> \
+    -f <farm-key> \
+    -r <number-of-CPU-cores>
+```
+> 💡 You can provide any of the plotter arguments after the image name (`odelucca/chia-plotter`)
+
+In a Linux benchmark, we were able to find that running in Docker has only 5% performance impact than running in native OS.
+
+For Windows users, you should check if your Docker configuration has any RAM or CPU limits. Since Docke runs inside HyperV, that could potentially constrain your hardware usage. In any case, you can set the RAM limits with the `-m` flag (after the `docker run` command).
+
+### Regarding multithread in Docker
+
+While running in Windows, you may need to proper configure your Docker to allow multi CPUs. You can do so by following [this article](https://www.thorsten-hans.com/docker-container-cpu-limits-explained/)
+
+In a nutshell, you could also pass the `--cpus` flag to your `docker run` command in order to achieve the same result.
+
+So, for example, the following command:
+```sh
+docker run \
+  -v <path-to-your-tmp-dir>:/mnt/harvester \
+  -v <path-to-your-final-dir>:/mnt/farm \
+  -m 8000 \
+  --cpus 8 \
+  odelucca/chia-plotter \
+    -t /mnt/harvester/ \
+    -d /mnt/farm/ \
+    -p <pool-key> \
+    -f <farm-key> \
+    -r 8
+```
+
+Would run your plotter with 8 CPUs and 8GB of RAM.
+
 ---
 
 ## Known Issues
