@@ -49,52 +49,48 @@ Number of Threads: 16
 Number of Sort Buckets: 2^7 (128)
 Working Directory:   /mnt/tmp3/chia/tmp/
 Working Directory 2: /mnt/tmp3/chia/tmp/ram/
-[P1] Table 1 took 18.2322 sec
-[P1] Table 2 took 152.806 sec, found 4294955136 matches
-[P1] Table 3 took 181.893 sec, found 4295004058 matches
-[P1] Lost 36189 matches due to 32-bit overflow.
-[P1] Table 4 took 207.631 sec, found 4295076024 matches
-[P1] Lost 108422 matches due to 32-bit overflow.
-[P1] Table 5 took 210.324 sec, found 4295073698 matches
-[P1] Lost 106662 matches due to 32-bit overflow.
-[P1] Table 6 took 205.312 sec, found 4294986463 matches
-[P1] Lost 19157 matches due to 32-bit overflow.
-[P1] Table 7 took 166.982 sec, found 4294910985 matches
-Phase 1 took 1143.2 sec
-[P2] max_table_size = 4295076024
-[P2] Table 7 scan took 16.6775 sec
-[P2] Table 7 rewrite took 40.4863 sec, dropped 0 entries (0 %)
-[P2] Table 6 scan took 47.6553 sec
-[P2] Table 6 rewrite took 66.2653 sec, dropped 581270438 entries (13.5337 %)
-[P2] Table 5 scan took 45.4674 sec
-[P2] Table 5 rewrite took 67.3295 sec, dropped 762045018 entries (17.7423 %)
-[P2] Table 4 scan took 44.4048 sec
-[P2] Table 4 rewrite took 62.1307 sec, dropped 828943971 entries (19.2999 %)
-[P2] Table 3 scan took 45.1361 sec
-[P2] Table 3 rewrite took 61.2604 sec, dropped 855078559 entries (19.9087 %)
-[P2] Table 2 scan took 46.5209 sec
-[P2] Table 2 rewrite took 61.3043 sec, dropped 865523252 entries (20.1521 %)
-Phase 2 took 635.101 sec
+[P1] Table 1 took 18.8022 sec
+[P1] Table 2 took 147.205 sec, found 4295074754 matches
+[P1] Table 3 took 176.34 sec, found 4295037895 matches
+[P1] Table 4 took 209.898 sec, found 4294984890 matches
+[P1] Table 5 took 214.792 sec, found 4295100396 matches
+[P1] Table 6 took 209.668 sec, found 4294984295 matches
+[P1] Table 7 took 169.413 sec, found 4294972949 matches
+Phase 1 took 1146.15 sec
+[P2] max_table_size = 4295100396
+[P2] Table 7 scan took 15.7779 sec
+[P2] Table 7 rewrite took 35.3033 sec, dropped 0 entries (0 %)
+[P2] Table 6 scan took 45.5338 sec
+[P2] Table 6 rewrite took 63.9984 sec, dropped 581281517 entries (13.534 %)
+[P2] Table 5 scan took 44.5098 sec
+[P2] Table 5 rewrite took 61.4229 sec, dropped 762079936 entries (17.743 %)
+[P2] Table 4 scan took 43.6594 sec
+[P2] Table 4 rewrite took 60.2593 sec, dropped 828850570 entries (19.2981 %)
+[P2] Table 3 scan took 56.0747 sec
+[P2] Table 3 rewrite took 68.8049 sec, dropped 855127091 entries (19.9097 %)
+[P2] Table 2 scan took 55.4185 sec
+[P2] Table 2 rewrite took 71.0217 sec, dropped 865651624 entries (20.1545 %)
+Phase 2 took 649.758 sec
 Wrote plot header with 268 bytes
-[P3-1] Table 2 took 80.6498 sec, wrote 3429431884 right entries
-[P3-2] Table 2 took 74.787 sec, wrote 3429431884 left entries, 3429431884 final
-[P3-1] Table 3 took 70.8236 sec, wrote 3439925499 right entries
-[P3-2] Table 3 took 77.8787 sec, wrote 3439925499 left entries, 3439925499 final
-[P3-1] Table 4 took 71.894 sec, wrote 3466132053 right entries
-[P3-2] Table 4 took 76.3172 sec, wrote 3466132053 left entries, 3466132053 final
-[P3-1] Table 5 took 72.6806 sec, wrote 3533028680 right entries
-[P3-2] Table 5 took 81.5741 sec, wrote 3533028680 left entries, 3533028680 final
-[P3-1] Table 6 took 77.1653 sec, wrote 3713716025 right entries
-[P3-2] Table 6 took 85.9674 sec, wrote 3713716025 left entries, 3713716025 final
-[P3-1] Table 7 took 75.5146 sec, wrote 4294910985 right entries
-[P3-2] Table 7 took 93.9135 sec, wrote 4294910985 left entries, 4294910985 final
-Phase 3 took 946.026 sec, wrote 21877145126 entries to final plot
-[P4] Starting to write C1 and C3 tables
-[P4] Finished writing C1 and C3 tables
+[P3-1] Table 2 took 81.9547 sec, wrote 3429423130 right entries
+[P3-2] Table 2 took 40.1714 sec, wrote 3429423130 left entries, 3429423130 final
+[P3-1] Table 3 took 70.6664 sec, wrote 3439910804 right entries
+[P3-2] Table 3 took 42.7598 sec, wrote 3439910804 left entries, 3439910804 final
+[P3-1] Table 4 took 72.7 sec, wrote 3466134320 right entries
+[P3-2] Table 4 took 43.5351 sec, wrote 3466134320 left entries, 3466134320 final
+[P3-1] Table 5 took 78.1118 sec, wrote 3533020460 right entries
+[P3-2] Table 5 took 42.9138 sec, wrote 3533020460 left entries, 3533020460 final
+[P3-1] Table 6 took 84.2833 sec, wrote 3713702778 right entries
+[P3-2] Table 6 took 45.0141 sec, wrote 3713702778 left entries, 3713702778 final
+[P3-1] Table 7 took 83.0243 sec, wrote 4294972949 right entries
+[P3-2] Table 7 took 50.5329 sec, wrote 4294967296 left entries, 4294967296 final
+Phase 3 took 743.208 sec, wrote 21877158788 entries to final plot
+[P4] Starting to write C1 and C3 tables  
+[P4] Finished writing C1 and C3 tables   
 [P4] Writing C2 table
 [P4] Finished writing C2 table
-Phase 4 took 79.6722 sec, final plot size is 108835267927 bytes
-Total plot creation time was 2804.06 sec
+Phase 4 took 81.4248 sec, final plot size is 108835558845 bytes
+Total plot creation time was 2620.62 sec 
 ```
 
 ## How to Verify
