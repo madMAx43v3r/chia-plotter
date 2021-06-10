@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
+find_package(Git)
+execute_process(
+  COMMAND ${GIT_EXECUTABLE} log -1 --format=%h
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+
 project(chia-plotter C CXX ASM)
 
 add_subdirectory(lib/bls-signatures)
