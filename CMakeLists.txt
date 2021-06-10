@@ -34,9 +34,7 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3.c
     ${BLAKE3_PATH}/blake3_portable.c
     ${BLAKE3_PATH}/blake3_dispatch.c
-    ${BLAKE3_PATH}/blake3_avx2_x86-64_windows_gnu.S
     ${BLAKE3_PATH}/blake3_sse41_x86-64_windows_gnu.S
-    ${BLAKE3_PATH}/blake3_avx512_x86-64_windows_gnu.S
     ${BLAKE3_PATH}/blake3_sse2_x86-64_windows_gnu.S
 )
 ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
