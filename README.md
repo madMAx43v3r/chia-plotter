@@ -1,6 +1,6 @@
 # chia-plotter (pipelined multi-threaded)
 
-This is a new implementation of a chia plotter which is desinged as a processing pipeline,
+This is a new implementation of a chia plotter which is designed as a processing pipeline,
 similar to how GPUs work, only the "cores" are normal software CPU threads.
 
 As a result this plotter is able to fully max out any storage device's bandwidth,
@@ -42,7 +42,7 @@ I developed this on my own time, even though I already filled all my HDDs (~50 T
 
 ## Results
 
-On a dual Xeon(R) E5-2650v2@2.60GHz R720 with 256GB RAM and a 3x800GB SATA SSD RAID0, using a 110G tmpfs for `<tmpdir2>`:
+On a dual Xeon<sup>(R)</sup> E5-2650v2<span>@</span>2.60GHz R720 with 256GB RAM and a 3x800GB SATA SSD RAID0, using a 110G tmpfs for `<tmpdir2>`:
 
 ```
 Number of Threads: 16
