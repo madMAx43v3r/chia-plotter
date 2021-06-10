@@ -31,8 +31,7 @@ Usage:
 Make sure to crank up `<threads>` if you have plenty of cores, the default is 4.
 Depending on the phase more threads will be launched, the setting is just a multiplier.
 
-RAM usage depends on `<threads>` and `<buckets>`.
-With default `<buckets>` and 4 threads it's ~2GB total, with 16 threads it's ~6GB total.
+RAM usage depends on `<threads>` and `<buckets>`. With default `<buckets>` it's about 1 GB per thread at most.
 
 ## How to Support
 
