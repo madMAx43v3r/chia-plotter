@@ -117,6 +117,7 @@ int main(int argc, char** argv)
 		"For <poolkey> and <farmerkey> see output of `chia keys show`.\n"
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
+		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
 	);
 	
 	std::string pool_key_str;
