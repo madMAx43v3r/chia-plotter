@@ -4,9 +4,13 @@ project(chia-plotter C CXX ASM)
 
 add_subdirectory(lib/bls-signatures)
 
-find_package(Threads REQUIRED)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
+if (MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)   
+else()
+	find_package(Threads REQUIRED)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
+endif()
 
 set(BLAKE3_PATH lib/BLAKE3/c)
 set(FSE_PATH lib/FSE/lib)
@@ -25,10 +29,10 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3.c
     ${BLAKE3_PATH}/blake3_portable.c
     ${BLAKE3_PATH}/blake3_dispatch.c
-    ${BLAKE3_PATH}/blake3_avx2_x86-64_windows_gnu.S
-    ${BLAKE3_PATH}/blake3_sse41_x86-64_windows_gnu.S
-    ${BLAKE3_PATH}/blake3_avx512_x86-64_windows_gnu.S
-    ${BLAKE3_PATH}/blake3_sse2_x86-64_windows_gnu.S
+    ${BLAKE3_PATH}/blake3_avx2.c
+    ${BLAKE3_PATH}/blake3_avx512.c
+    ${BLAKE3_PATH}/blake3_sse2.c
+    ${BLAKE3_PATH}/blake3_sse41.c
 )
 ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
 set(BLAKE3_SRC
@@ -63,8 +67,11 @@ add_library(chia_plotter STATIC
 	lib/chacha8.c
 	src/settings.cpp
 )
-
-target_link_libraries(chia_plotter blake3 fse Threads::Threads)
+if (MSVC)
+	target_link_libraries(chia_plotter blake3 fse)
+else()
+	target_link_libraries(chia_plotter blake3 fse Threads::Threads)
+endif()
 
 add_executable(test_copy test/test_copy.cpp)
 add_executable(test_disk_sort test/test_disk_sort.cpp)
@@ -78,6 +85,24 @@ add_executable(check_phase_1 test/check_phase_1.cpp)
 
 add_executable(chia_plot src/chia_plot.cpp)
 
+if (MSVC)
+
+	add_library(uint128 STATIC uint128_t/uint128_t.cpp)
+	target_include_directories(uint128 PUBLIC uint128_t)
+
+	target_link_libraries(test_copy chia_plotter)
+	target_link_libraries(test_disk_sort chia_plotter uint128)
+	target_link_libraries(test_phase_1 chia_plotter uint128)
+	target_link_libraries(test_phase_2 chia_plotter uint128)
+	target_link_libraries(test_phase_3 chia_plotter uint128)
+	target_link_libraries(test_phase_4 chia_plotter uint128)
+	target_link_libraries(check_phase_1 chia_plotter uint128)
+
+	target_link_libraries(chia_plot chia_plotter bls uint128)
+	set_target_properties(chia_plot PROPERTIES LINK_OPTIONS -NODEFAULTLIB:LIBCMT)
+
+else()
+	
 target_link_libraries(test_copy chia_plotter)
 target_link_libraries(test_disk_sort chia_plotter)
 
@@ -89,3 +114,5 @@ target_link_libraries(test_phase_4 chia_plotter)
 target_link_libraries(check_phase_1 chia_plotter)
 
 target_link_libraries(chia_plot chia_plotter bls)
+
+endif()

@@ -15,6 +15,7 @@
 #ifndef SRC_CPP_UTIL_HPP_
 #define SRC_CPP_UTIL_HPP_
 
+#include <chia/stdiox.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstring>
@@ -419,7 +420,7 @@ std::ifstream::pos_type get_file_size(const char* file_name)
 
 inline
 void fseek_set(FILE* file, uint64_t offset) {
-	if(fseek(file, offset, SEEK_SET)) {
+	if(FSEEK(file, offset, SEEK_SET)) {
 		throw std::runtime_error("fseek() failed");
 	}
 }

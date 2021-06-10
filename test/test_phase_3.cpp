@@ -4,7 +4,7 @@
  *  Created on: May 30, 2021
  *      Author: mad
  */
-
+#include <chia/stdiox.hpp>
 #include <chia/phase3.hpp>
 #include <chia/DiskSort.hpp>
 #include <chia/DiskTable.h>
@@ -16,6 +16,12 @@ using namespace phase3;
 
 int main(int argc, char** argv)
 {
+
+#ifdef _WIN32	
+	// the following line increases the number of open simultaneous files
+	int newmaxstdio = _setmaxstdio(8192);
+#endif
+
 	const int num_threads = argc > 1 ? atoi(argv[1]) : 4;
 	const int log_num_buckets = argc > 2 ? atoi(argv[2]) : 7;
 	
@@ -36,7 +42,7 @@ int main(int argc, char** argv)
 	
 	bitfield bitfield_1(table_1.num_entries);
 	{
-		FILE* file = fopen("test.p2.bitfield1.tmp", "rb");
+		FILE* file = FOPEN("test.p2.bitfield1.tmp", "rb");
 		if(!file) {
 			throw std::runtime_error("bitfield1 missing");
 		}
@@ -44,7 +50,7 @@ int main(int argc, char** argv)
 		fclose(file);
 	}
 	
-	FILE* plot_file = fopen("test.plot.tmp", "wb");
+	FILE* plot_file = FOPEN("test.plot.tmp", "wb");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}

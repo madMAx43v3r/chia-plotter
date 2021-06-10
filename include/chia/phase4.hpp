@@ -4,7 +4,7 @@
  *  Created on: Jun 3, 2021
  *      Author: mad
  */
-
+#include <chia/stdiox.hpp>
 #include <chia/phase4.h>
 #include <chia/DiskSort.hpp>
 
@@ -235,7 +235,7 @@ void compute(	const phase3::output_t& input, output_t& out,
 {
 	const auto total_begin = get_wall_time_micros();
 	
-	FILE* plot_file = fopen(input.plot_file_name.c_str(), "rb+");
+	FILE* plot_file = FOPEN(input.plot_file_name.c_str(), "rb+");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}

@@ -4,7 +4,7 @@
  *  Created on: Jun 5, 2021
  *      Author: mad
  */
-
+#include <chia/stdiox.hpp>
 #include <chia/phase1.hpp>
 #include <chia/phase2.hpp>
 #include <chia/phase3.hpp>
@@ -108,6 +108,12 @@ phase4::output_t create_plot(	const int num_threads,
 
 int main(int argc, char** argv)
 {
+
+#ifdef _WIN32	
+	// the following line increases the number of open simultaneous files
+	int newmaxstdio = _setmaxstdio(8192);
+#endif
+
 	cxxopts::Options options("chia_plot",
 		"Multi-threaded pipelined Chia k32 plotter.\n\n"
 		"For <poolkey> and <farmerkey> see output of `chia keys show`.\n"
@@ -197,6 +203,7 @@ int main(int argc, char** argv)
 		std::cout << "Invalid <buckets> parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
+
 	{
 		const std::string path = tmp_dir + ".chia_plot_tmp";
 		if(auto file = fopen(path.c_str(), "wb")) {
