@@ -8,6 +8,8 @@ simply by increasing the number of "cores", ie. threads.
 
 ## Usage
 
+Check discord for support: https://discord.gg/rj46Dc5c
+
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
 <tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
