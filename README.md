@@ -35,6 +35,9 @@ Depending on the phase more threads will be launched, the setting is just a mult
 
 RAM usage depends on `<threads>` and `<buckets>`. With default `<buckets>` it's about 1 GB per thread at most.
 
+### RAM disk setup on Linux
+`sudo mount -t tmpfs -o size=110G tmpfs /mnt/ram/`
+
 ## How to Support
 
 XCH: xch1w5c2vv5ak08pczeph7tp5xmkl5762pdf3pyjkg9z4ks4ed55j3psgay0zh
