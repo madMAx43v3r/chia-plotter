@@ -171,7 +171,7 @@ git submodule update --init
 The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
 
 ---
-### macOS Big Sur
+### macOS Catalina
 First you need to install a package manager called [Brew](https://brew.sh/) and [Xcode](https://apps.apple.com/app/xcode/id497799835) from the Apple App Store.
 ```bash
 brew install libsodium gmp cmake git autoconf automake libtool
