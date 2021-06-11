@@ -2,15 +2,18 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 project(chia-plotter C CXX ASM)
 
-add_subdirectory(lib/bls-signatures)
-
 
 if (MSVC)
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)   
 else()
 	find_package(Threads REQUIRED)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 endif()
+
+add_subdirectory(lib/bls-signatures)
+
 
 set(BLAKE3_PATH lib/BLAKE3/c)
 set(FSE_PATH lib/FSE/lib)
@@ -22,6 +25,7 @@ include_directories(
 	${BLAKE3_PATH}
 	${CMAKE_BINARY_DIR}/_deps/relic-src/include
 	${CMAKE_BINARY_DIR}/_deps/relic-build/include
+	${sodium_INCLUDE_DIR}
 )
 
 IF (WIN32)
@@ -29,10 +33,11 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3.c
     ${BLAKE3_PATH}/blake3_portable.c
     ${BLAKE3_PATH}/blake3_dispatch.c
-    ${BLAKE3_PATH}/blake3_avx2.c
-    ${BLAKE3_PATH}/blake3_avx512.c
+
     ${BLAKE3_PATH}/blake3_sse2.c
     ${BLAKE3_PATH}/blake3_sse41.c
+    ${BLAKE3_PATH}/blake3_avx2.c
+    ${BLAKE3_PATH}/blake3_avx512.c
 )
 ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
 set(BLAKE3_SRC
