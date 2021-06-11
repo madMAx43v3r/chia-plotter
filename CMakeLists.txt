@@ -17,7 +17,10 @@ message(STATUS "Architecture: ${TARGET_ARCH}")
 add_subdirectory(lib/bls-signatures)
 
 find_package(Threads REQUIRED)
+
+if(APPLE)
 find_package(sodium REQUIRED)
+endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 
