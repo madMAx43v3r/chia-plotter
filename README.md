@@ -117,6 +117,10 @@ keeping most of the load off the CPUs.
 - libsodium-dev
 
 ## Install
+---
+### Windows
+Binaries built by [stotiks](https://github.com/stotiks) can be found here:
+https://github.com/stotiks/chia-plotter/releases
 
 ---
 ### Arch Linux
