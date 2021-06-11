@@ -143,7 +143,7 @@ git submodule update --init
 sudo yum install cmake3 gmp-devel libsodium gmp-static libsodium-static  -y
 # Install a package with repository for your system:
 # On CentOS, install package centos-release-scl available in CentOS repository:
-sudo yum centos-release-scl -y
+sudo yum install centos-release-scl -y
 # Install the collection:
 sudo yum install devtoolset-7 -y
 # Start using software collections:
