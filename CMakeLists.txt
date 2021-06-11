@@ -98,4 +98,4 @@ target_link_libraries(test_phase_4 chia_plotter)
 
 target_link_libraries(check_phase_1 chia_plotter)
 
-target_link_libraries(chia_plot chia_plotter bls)
+target_link_libraries(chia_plot chia_plotter bls sodium)
