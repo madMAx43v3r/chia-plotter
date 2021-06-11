@@ -149,7 +149,9 @@ git clone https://github.com/dendil/chia-plotter.git
 cd chia-plotter
 
 git submodule update --init
+sudo yum install epel-release -y
 sudo yum install cmake3 gmp-devel libsodium gmp-static libsodium-static -y
+ln /usr/bin/cmake3 /usr/bin/cmake
 # Install a package with repository for your system:
 # On CentOS, install package centos-release-scl available in CentOS repository:
 sudo yum install centos-release-scl -y
