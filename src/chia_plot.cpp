@@ -173,33 +173,33 @@ int main(int argc, char** argv)
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
 	
 	if(pool_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <poolkey>: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
+		std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
 			<< "' (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
 		return -2;
 	}
 	if(farmer_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <farmerkey>: " << bls::Util::HexStr(farmer_key) << ", '" << farmer_key_str
+		std::cout << "Invalid farmerkey: " << bls::Util::HexStr(farmer_key) << ", '" << farmer_key_str
 			<< "' (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
 		return -2;
 	}
 	if(!tmp_dir.empty() && tmp_dir.find_last_of("/\\") != tmp_dir.size() - 1) {
-		std::cout << "Invalid <tmpdir>: " << tmp_dir << " (needs trailing '/' or '\\')" << std::endl;
+		std::cout << "Invalid tmpdir: " << tmp_dir << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
 	if(!tmp_dir2.empty() && tmp_dir2.find_last_of("/\\") != tmp_dir2.size() - 1) {
-		std::cout << "Invalid <tmpdir2>: " << tmp_dir2 << " (needs trailing '/' or '\\')" << std::endl;
+		std::cout << "Invalid tmpdir2: " << tmp_dir2 << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
 	if(!final_dir.empty() && final_dir.find_last_of("/\\") != final_dir.size() - 1) {
-		std::cout << "Invalid <finaldir>: " << final_dir << " (needs trailing '/' or '\\')" << std::endl;
+		std::cout << "Invalid finaldir: " << final_dir << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
 	if(num_threads < 1 || num_threads > 1024) {
-		std::cout << "Invalid <threads> parameter: " << num_threads << " (supported: [1..1024])" << std::endl;
+		std::cout << "Invalid threads parameter: " << num_threads << " (supported: [1..1024])" << std::endl;
 		return -2;
 	}
 	if(log_num_buckets < 4 || log_num_buckets > 16) {
-		std::cout << "Invalid <buckets> parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
+		std::cout << "Invalid buckets parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
 	{
