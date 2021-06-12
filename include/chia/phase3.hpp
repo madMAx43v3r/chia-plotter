@@ -38,11 +38,12 @@ void compute_stage1(int L_index, int num_threads,
 	std::condition_variable signal_1;
 	
 	bool L_is_end = false;
+	bool R_is_end = false;
 	std::list<merge_buffer_t> L_input;			// double buffer
 	std::atomic<uint64_t> R_num_write {0};
 	
 	Thread<std::pair<std::vector<entry_np>, size_t>> L_read(
-		[&mutex, &signal, &signal_1, &L_input, num_threads_merge]
+		[&mutex, &signal, &signal_1, &L_input, &R_is_end, num_threads_merge]
 		 (std::pair<std::vector<entry_np>, size_t>& input) {
 			merge_buffer_t tmp;
 			tmp.offset = input.second;
@@ -51,7 +52,7 @@ void compute_stage1(int L_index, int num_threads,
 				tmp.new_pos.push_back(entry.pos);
 			}
 			std::unique_lock<std::mutex> lock(mutex);
-			while(!L_input.empty() && L_input.back().copy_sync == 0) {
+			while(!L_input.empty() && L_input.back().copy_sync == 0 && !R_is_end) {
 				signal_1.wait(lock);	// wait for latest data to be processed by at least one thread
 			}
 			while(!L_input.empty() && L_input.front().copy_sync >= num_threads_merge) {
@@ -160,11 +161,16 @@ void compute_stage1(int L_index, int num_threads,
 		}, &R_add_2, num_threads_merge, "phase3/merge");
 	
 	std::thread R_sort_read(
-		[num_threads, L_table, R_sort, R_table, &R_read]() {
+		[&mutex, &signal_1, num_threads, L_table, R_sort, R_table, &R_read, &R_is_end]() {
 			if(R_table) {
 				R_table->read(&R_read, std::max(num_threads / 4, 2));
 			} else {
 				R_sort->read(&R_read, std::max(num_threads / (L_table ? 1 : 2), 1));
+			}
+			{
+				std::lock_guard<std::mutex> lock(mutex);
+				R_is_end = true;
+				signal_1.notify_all();
 			}
 		});
 	
