@@ -39,18 +39,21 @@ void compute_stage1(int L_index, int num_threads,
 	
 	bool L_is_end = false;
 	bool R_is_end = false;
+	uint64_t L_num_read = 0;
 	std::list<merge_buffer_t> L_input;			// double buffer
 	std::atomic<uint64_t> R_num_write {0};
 	
 	Thread<std::pair<std::vector<entry_np>, size_t>> L_read(
-		[&mutex, &signal, &signal_1, &L_input, &R_is_end, num_threads_merge]
+		[&mutex, &signal, &signal_1, &L_input, &L_num_read, &R_is_end, num_threads_merge]
 		 (std::pair<std::vector<entry_np>, size_t>& input) {
 			merge_buffer_t tmp;
-			tmp.offset = input.second;
+			tmp.offset = L_num_read;
 			tmp.new_pos.reserve(input.first.size());
 			for(const auto& entry : input.first) {
 				tmp.new_pos.push_back(entry.pos);
 			}
+			L_num_read += tmp.new_pos.size();
+			
 			std::unique_lock<std::mutex> lock(mutex);
 			while(!L_input.empty() && L_input.back().copy_sync == 0 && !R_is_end) {
 				signal_1.wait(lock);	// wait for latest data to be processed by at least one thread
