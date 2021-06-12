@@ -264,6 +264,7 @@ int main(int argc, char** argv)
 	
 	for(int i = 0; i < num_plots || num_plots < 0; ++i)
 	{
+		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
