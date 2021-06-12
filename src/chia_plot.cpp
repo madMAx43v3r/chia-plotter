@@ -264,6 +264,25 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
+	{
+		// check that we can open required amount of files
+		const int num_files_max = num_buckets + 20;
+		std::vector<std::pair<FILE*, std::string>> files;
+		for(int i = 0; i < num_files_max; ++i) {
+			const std::string path = tmp_dir + ".chia_plot_tmp." + std::to_string(i);
+			if(auto file = fopen(path.c_str(), "wb")) {
+				files.emplace_back(file, path);
+			} else {
+				std::cout << "Cannot open at least " << num_files_max
+						<< " files, please raise maximum open file limit in OS." << std::endl;
+				return -2;
+			}
+		}
+		for(const auto& entry : files) {
+			fclose(entry.first);
+			remove(entry.second.c_str());
+		}
+	}
 
 	if(num_plots > 1 || num_plots < 0) {
 		std::signal(SIGINT, interrupt_handler);
