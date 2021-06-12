@@ -186,12 +186,16 @@ brew install libsodium gmp cmake git autoconf automake libtool wget
 brew link cmake
 ```
 
-Confirm which directory to use before applying following line
+Confirm which directory you have on YOUR Mac before applying following commands
 ```
 wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /usr/local/opt/cmake/share/cmake/Modules/FindSodium.cmake
+```
  or
+``` 
 wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /opt/homebrew/Cellar/cmake/3.20.3/share/cmake/Modules/FindSodium.cmake
+```
 
+```
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd chia-plotter
 git submodule update --init
