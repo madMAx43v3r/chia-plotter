@@ -43,8 +43,11 @@ With the new default of 256 buckets it's about 0.5 GB per thread at most.
 ## How to Support
 
 XCH: xch1w5c2vv5ak08pczeph7tp5xmkl5762pdf3pyjkg9z4ks4ed55j3psgay0zh
+
 ETH: 0x97057cdf529867838d2a1f7f23ba62456764e0cd
+
 LTC: MNUnszsX2srv5EJpu9YYHAXb19MqUpuBjD
+
 BTC: 15GSE5ymStxXMvJ58hyosEVm4FXFxUyJZg
 
 ## Results
