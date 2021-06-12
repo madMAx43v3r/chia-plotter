@@ -25,41 +25,53 @@ void compute_stage1(int L_index, int num_threads,
 					DiskTable<S>* R_table = nullptr)
 {
 	const auto begin = get_wall_time_micros();
+	const int num_threads_merge = std::max(num_threads / 4, 1);
+	
+	struct merge_buffer_t {
+		uint64_t offset = 0;					// position offset at buffer[0]
+		std::vector<uint32_t> new_pos;			// new_pos buffer
+		int copy_sync = 0;						// copy counter
+	};
 	
 	std::mutex mutex;
 	std::condition_variable signal;
+	std::condition_variable signal_1;
 	
 	bool L_is_end = false;
-	bool R_is_waiting = false;
-	uint64_t L_offset = 0;				// position offset at L_buffer[0]
-	uint64_t L_position = 0;			// lowest position needed
-	std::vector<uint32_t> L_buffer;		// new_pos buffer
+	bool R_is_end = false;
+	uint64_t L_num_read = 0;
+	std::list<merge_buffer_t> L_input;			// double buffer
 	std::atomic<uint64_t> R_num_write {0};
 	
 	Thread<std::pair<std::vector<entry_np>, size_t>> L_read(
-		[&mutex, &signal, &L_buffer, &L_offset, &L_position, &R_is_waiting]
+		[&mutex, &signal, &signal_1, &L_input, &L_num_read, &R_is_end, num_threads_merge]
 		 (std::pair<std::vector<entry_np>, size_t>& input) {
-			std::unique_lock<std::mutex> lock(mutex);
-			while(!R_is_waiting) {
-				signal.wait(lock);
-			}
-			if(L_position > L_offset) {
-				// delete old data
-				const auto count = std::min<uint64_t>(L_position - L_offset, L_buffer.size());
-				L_offset += count;
-				L_buffer.erase(L_buffer.begin(), L_buffer.begin() + count);
-			}
+			merge_buffer_t tmp;
+			tmp.offset = L_num_read;
+			tmp.new_pos.reserve(input.first.size());
 			for(const auto& entry : input.first) {
-				L_buffer.push_back(entry.pos);
+				tmp.new_pos.push_back(entry.pos);
 			}
+			L_num_read += tmp.new_pos.size();
+			
+			std::unique_lock<std::mutex> lock(mutex);
+			while(!L_input.empty() && L_input.back().copy_sync == 0 && !R_is_end) {
+				signal_1.wait(lock);	// wait for latest data to be processed by at least one thread
+			}
+			while(!L_input.empty() && L_input.front().copy_sync >= num_threads_merge) {
+				L_input.pop_front();	// delete data which has already been copied by all threads
+			}
+			L_input.emplace_back(std::move(tmp));
 			lock.unlock();
 			signal.notify_all();
 		}, "phase3/buffer");
 	
-	Thread<std::pair<std::vector<T>, size_t>> L_read_1(
-		[L_used, &L_read](std::pair<std::vector<T>, size_t>& input) {
-			std::vector<entry_np> out;
-			out.reserve(input.first.size());
+	ThreadPool<std::pair<std::vector<T>, size_t>, std::pair<std::vector<entry_np>, size_t>> L_read_1(
+		[L_used](std::pair<std::vector<T>, size_t>& input,
+				 std::pair<std::vector<entry_np>, size_t>& out, size_t&)
+		{
+			out.first.reserve(input.first.size());
+			out.second = input.second;
 			size_t offset = 0;
 			for(const auto& entry : input.first) {
 				if(!L_used->get(input.second + (offset++))) {
@@ -67,11 +79,9 @@ void compute_stage1(int L_index, int num_threads,
 				}
 				entry_np tmp;
 				tmp.pos = get_new_pos<T>{}(entry);
-				out.push_back(tmp);
+				out.first.push_back(tmp);
 			}
-			std::pair<std::vector<entry_np>, size_t> pair(std::move(out), input.second);
-			L_read.take(pair);
-		}, "phase3/filter_1");
+		}, &L_read, std::max(num_threads / 4, 1), "phase3/filter");
 	
 	typedef DiskSortLP::WriteCache WriteCache;
 	
@@ -90,47 +100,81 @@ void compute_stage1(int L_index, int num_threads,
 			R_num_write += input.size();
 		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
-	Thread<std::pair<std::vector<S>, size_t>> R_read(
-		[&mutex, &signal, &L_offset, &L_position, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2]
-		 (std::pair<std::vector<S>, size_t>& input) {
-			std::vector<entry_kpp> out;
+	ThreadPool<std::pair<std::vector<S>, size_t>, std::vector<entry_kpp>, merge_buffer_t> R_read(
+		[&mutex, &signal, &signal_1, &L_input, &L_is_end] (
+			std::pair<std::vector<S>, size_t>& input,
+			std::vector<entry_kpp>& out,
+			merge_buffer_t& L_buffer)
+		{
 			out.reserve(input.first.size());
-			std::unique_lock<std::mutex> lock(mutex);
+			uint64_t L_position = 0;
 			for(const auto& entry : input.first) {
 				uint64_t pos[2];
 				pos[0] = entry.pos;
 				pos[1] = uint64_t(entry.pos) + entry.off;
-				if(pos[0] < L_offset) {
-					throw std::logic_error("buffer underflow");
+				if(pos[0] < L_buffer.offset) {
+					throw std::logic_error("input not sorted");
 				}
-				while(L_buffer.size() <= pos[1] - L_offset && !L_is_end) {
-					R_is_waiting = true;
-					L_position = pos[0];
-					signal.notify_all();
-					signal.wait(lock);
-					R_is_waiting = false;
+				L_position = pos[0];
+				pos[0] -= L_buffer.offset;
+				pos[1] -= L_buffer.offset;
+				
+				while(L_buffer.new_pos.size() <= pos[1]) {
+					{
+						std::unique_lock<std::mutex> lock(mutex);
+						while(true) {
+							bool do_wait = true;
+							for(auto& buffer : L_input) {
+								if(buffer.offset >= L_buffer.offset + L_buffer.new_pos.size()) {
+									L_buffer.new_pos.insert(L_buffer.new_pos.end(),
+															buffer.new_pos.begin(), buffer.new_pos.end());
+									buffer.copy_sync++;
+									do_wait = false;
+								}
+							}
+							if(do_wait && !L_is_end) {
+								signal.wait(lock);		// wait for new input
+							} else {
+								break;
+							}
+						}
+					}
+					signal_1.notify_all();	// notify copy_sync change
+					if(L_is_end) {
+						break;
+					}
 				}
-				pos[0] -= L_offset;
-				pos[1] -= L_offset;
-				if(std::max(pos[0], pos[1]) >= L_buffer.size()) {
-					throw std::logic_error("position out of bounds (" + std::to_string(L_offset)
+				if(std::max(pos[0], pos[1]) >= L_buffer.new_pos.size()) {
+					throw std::logic_error("position out of bounds (" + std::to_string(L_buffer.offset)
 						+ " + max(" + std::to_string(pos[0]) + "," + std::to_string(pos[1]) + "))");
 				}
 				entry_kpp tmp;
 				tmp.key = get_sort_key<S>{}(entry);
-				tmp.pos[0] = L_buffer[pos[0]];
-				tmp.pos[1] = L_buffer[pos[1]];
+				tmp.pos[0] = L_buffer.new_pos[pos[0]];
+				tmp.pos[1] = L_buffer.new_pos[pos[1]];
 				out.push_back(tmp);
 			}
-			R_add_2.take(out);
-		}, "phase3/merge");
+			if(L_position > L_buffer.offset) {
+				// delete old data
+				const auto count = std::min<uint64_t>(	L_position - L_buffer.offset,
+														L_buffer.new_pos.size());
+				L_buffer.offset += count;
+				L_buffer.new_pos.erase(L_buffer.new_pos.begin(), L_buffer.new_pos.begin() + count);
+			}
+		}, &R_add_2, num_threads_merge, "phase3/merge");
 	
 	std::thread R_sort_read(
-		[num_threads, L_table, R_sort, R_table, &R_read]() {
+		[&mutex, &signal_1, num_threads, L_table, R_sort, R_table, &R_read, &R_is_end]() {
 			if(R_table) {
 				R_table->read(&R_read, std::max(num_threads / 4, 2));
 			} else {
 				R_sort->read(&R_read, std::max(num_threads / (L_table ? 1 : 2), 1));
+			}
+			R_read.close();
+			{
+				std::lock_guard<std::mutex> lock(mutex);
+				R_is_end = true;
+				signal_1.notify_all();
 			}
 		});
 	
@@ -147,7 +191,6 @@ void compute_stage1(int L_index, int num_threads,
 		signal.notify_all();
 	}
 	R_sort_read.join();
-	R_read.close();
 	R_add_2.close();
 	
 	R_sort_2->finish();
