@@ -33,15 +33,17 @@ bool gracefully_exit = false;
 
 static void interrupt_handler(int sig) {
     if (!gracefully_exit) {
-	std::cout << "*******************************************************************************************************************************" << std::endl;
-    	std::cout << "**********              The crafting of plots will stop after the creation and copy of the current plot              ************" << std::endl;
-    	std::cout << "************              If you want to resume, press ctrl-c or send another TERM signal to process               **************" << std::endl;
-	std::cout << "**********************************************************************************************************************************" << std::endl << std::endl;
+    	std::cout << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << "**  The crafting of plots will stop after the creation and copy of the current plot.  **" << std::endl;
+    	std::cout << "**          If you want to resume, press Ctrl-C or send another TERM signal.          **" << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
     	gracefully_exit = true;
     } else {
-	std::cout << "********************************************************" << std::endl;
-    	std::cout << "************ The crafting of plots will resume ***********" << std::endl;
-	std::cout << "**********************************************************" << std::endl << std::endl;
+    	std::cout << std::endl;
+    	std::cout << "**********************************************************" << std::endl;
+    	std::cout << "**********  The crafting of plots will resume.  **********" << std::endl;
+    	std::cout << "**********************************************************" << std::endl;
     	gracefully_exit = false;
     }
 }
@@ -147,7 +149,7 @@ int main(int argc, char** argv)
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
 		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
-		"For multiple or infinite plots you may press CTRL-C or send a TERM signal to process for gracefull termination.\n"
+		"In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.\n"
 	);
 	
 	std::string pool_key_str;
@@ -189,7 +191,7 @@ int main(int argc, char** argv)
 		return -2;
 	}
 	if(tmp_dir.empty()) {
-		std::cout << "<tmpdir> needs to be specified via -t path/" << std::endl;
+		std::cout << "tmpdir needs to be specified via -t path/" << std::endl;
 		return -2;
 	}
 	if(tmp_dir2.empty()) {
@@ -238,7 +240,7 @@ int main(int argc, char** argv)
 			fclose(file);
 			remove(path.c_str());
 		} else {
-			std::cout << "Failed to write to <tmpdir> directory: '" << tmp_dir << "'" << std::endl;
+			std::cout << "Failed to write to tmpdir directory: '" << tmp_dir << "'" << std::endl;
 			return -2;
 		}
 	}
@@ -248,7 +250,7 @@ int main(int argc, char** argv)
 			fclose(file);
 			remove(path.c_str());
 		} else {
-			std::cout << "Failed to write to <tmpdir2> directory: '" << tmp_dir2 << "'" << std::endl;
+			std::cout << "Failed to write to tmpdir2 directory: '" << tmp_dir2 << "'" << std::endl;
 			return -2;
 		}
 	}
@@ -258,12 +260,12 @@ int main(int argc, char** argv)
 			fclose(file);
 			remove(path.c_str());
 		} else {
-			std::cout << "Failed to write to <finaldir> directory: '" << final_dir << "'" << std::endl;
+			std::cout << "Failed to write to finaldir directory: '" << final_dir << "'" << std::endl;
 			return -2;
 		}
 	}
 
-	if ( num_plots > 1 || num_plots < 0) {
+	if(num_plots > 1 || num_plots < 0) {
 		std::signal(SIGINT, interrupt_handler);
 		std::signal(SIGTERM, interrupt_handler);
 	}
@@ -301,7 +303,7 @@ int main(int argc, char** argv)
 	for(int i = 0; i < num_plots || num_plots < 0; ++i)
 	{
 		if (gracefully_exit) {
-			std::cout << std::endl << "Plotted process terminated, waiting for copy/rename operations to finish..." << std::endl;
+			std::cout << std::endl << "Process has been interrupted, waiting for copy/rename operations to finish ..." << std::endl;
 			break;
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
