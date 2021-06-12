@@ -256,7 +256,7 @@ So, for example, the following command:
 docker run \
   -v <path-to-your-tmp-dir>:/mnt/harvester \
   -v <path-to-your-final-dir>:/mnt/farm \
-  -m 8000 \
+  -m 8G \
   --cpus 8 \
   odelucca/chia-plotter \
     -t /mnt/harvester/ \
