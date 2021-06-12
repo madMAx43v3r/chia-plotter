@@ -40,6 +40,8 @@ With the new default of 256 buckets it's about 0.5 GB per thread at most.
 ### RAM disk setup on Linux
 `sudo mount -t tmpfs -o size=110G tmpfs /mnt/ram/`
 
+Note: 128 GiB System RAM minimum required for RAM disk.
+
 ## How to Support
 
 XCH: xch1w5c2vv5ak08pczeph7tp5xmkl5762pdf3pyjkg9z4ks4ed55j3psgay0zh
