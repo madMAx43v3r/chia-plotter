@@ -184,10 +184,24 @@ git submodule update --init
 The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
 
 ---
-### macOS Catalina
-First you need to install a package manager called [Brew](https://brew.sh/) and [Xcode](https://apps.apple.com/app/xcode/id497799835) from the Apple App Store.
+### macOS
+First you need to install a package manager called [Brew](https://brew.sh/) and [Xcode](https://apps.apple.com/app/xcode/id497799835) OR [CommandLineTools](https://developer.apple.com/download/).
 ```bash
+# Alternative way to download CommandLineTools on Terminal:
+xcode-select --install
+
 brew install libsodium gmp cmake git autoconf automake libtool wget
+
+# If you downloaded Xcode run these:
+sudo ln -s /usr/local/include/gmp.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+sudo ln -s /usr/local/include/sodium.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+sudo ln -s /usr/local/include/sodium /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+
+# If you downloaded CommandLineTools run these:
+sudo ln -s /usr/local/include/gmp.h /Library/Developer/CommandLineTools/usr/include
+sudo ln -s /usr/local/include/sodium.h /Library/Developer/CommandLineTools/usr/include
+sudo ln -s /usr/local/include/sodium /Library/Developer/CommandLineTools/usr/include
+
 brew link cmake
 ```
 
