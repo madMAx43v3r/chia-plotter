@@ -185,7 +185,7 @@ First you need to install a package manager called [Brew](https://brew.sh/) and 
 # Alternative way to download CommandLineTools on Terminal:
 xcode-select --install
 
-brew install libsodium gmp cmake git autoconf automake libtool
+brew install libsodium gmp cmake git autoconf automake libtool wget
 
 # If you downloaded Xcode run these:
 sudo ln -s /usr/local/include/gmp.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
