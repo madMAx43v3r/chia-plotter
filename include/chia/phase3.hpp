@@ -52,7 +52,7 @@ void compute_stage1(int L_index, int num_threads,
 			}
 			std::unique_lock<std::mutex> lock(mutex);
 			while(!L_input.empty() && L_input.back().copy_sync == 0) {
-				signal_1.wait(lock);
+				signal_1.wait(lock);	// wait for latest data to be processed by at least one thread
 			}
 			while(!L_input.empty() && L_input.front().copy_sync >= num_threads_merge) {
 				L_input.pop_front();	// delete data which has already been copied by all threads
@@ -97,7 +97,7 @@ void compute_stage1(int L_index, int num_threads,
 		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
 	ThreadPool<std::pair<std::vector<S>, size_t>, std::vector<entry_kpp>, merge_buffer_t> R_read(
-		[&mutex, &signal, &signal_1, &L_input, &L_is_end, &R_add_2] (
+		[&mutex, &signal, &signal_1, &L_input, &L_is_end] (
 			std::pair<std::vector<S>, size_t>& input,
 			std::vector<entry_kpp>& out,
 			merge_buffer_t& L_buffer)
