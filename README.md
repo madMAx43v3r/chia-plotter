@@ -180,9 +180,23 @@ The binaries will end up in `build/`, you can copy them elsewhere freely (on the
 
 ---
 ### macOS Big Sur
-First you need to install a package manager called [Brew](https://brew.sh/) and [Xcode](https://apps.apple.com/app/xcode/id497799835) from the Apple App Store.
+First you need to install a package manager called [Brew](https://brew.sh/) and [Xcode](https://apps.apple.com/app/xcode/id497799835) OR [CommandLineTools](https://developer.apple.com/download/).
 ```bash
-brew install libsodium gmp cmake git autoconf automake libtool wget
+# Alternative way to download CommandLineTools on Terminal:
+xcode-select --install
+
+brew install libsodium gmp cmake git autoconf automake libtool
+
+# If you downloaded Xcode run these:
+sudo ln -s /usr/local/include/gmp.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+sudo ln -s /usr/local/include/sodium.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+sudo ln -s /usr/local/include/sodium /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+
+# If you downloaded CommandLineTools run these:
+sudo ln -s /usr/local/include/gmp.h /Library/Developer/CommandLineTools/usr/include
+sudo ln -s /usr/local/include/sodium.h /Library/Developer/CommandLineTools/usr/include
+sudo ln -s /usr/local/include/sodium /Library/Developer/CommandLineTools/usr/include
+
 brew link cmake
 wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /usr/local/opt/cmake/share/cmake/Modules/FindSodium.cmake
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
