@@ -15,6 +15,7 @@ For <poolkey> and <farmerkey> see output of `chia keys show`.
 <tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
 <tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.
 Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.
+In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.
 
 Usage:
   chia_plot [OPTION...]
@@ -164,6 +165,10 @@ scl enable devtoolset-7 bash
 ./build/chia_plot --help
 ```
 ---
+### Clear Linux
+Read [install file](doc/install_clearlinux.md)
+
+---
 ### Ubuntu 20.04
 ```bash
 sudo apt install -y libsodium-dev libgmp3-dev cmake g++ git
@@ -179,7 +184,7 @@ git submodule update --init
 The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
 
 ---
-### macOS Big Sur
+### macOS
 First you need to install a package manager called [Brew](https://brew.sh/) and [Xcode](https://apps.apple.com/app/xcode/id497799835) OR [CommandLineTools](https://developer.apple.com/download/).
 ```bash
 # Alternative way to download CommandLineTools on Terminal:
@@ -198,7 +203,18 @@ sudo ln -s /usr/local/include/sodium.h /Library/Developer/CommandLineTools/usr/i
 sudo ln -s /usr/local/include/sodium /Library/Developer/CommandLineTools/usr/include
 
 brew link cmake
+```
+
+Confirm which directory you have on YOUR Mac before applying following commands
+```
 wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /usr/local/opt/cmake/share/cmake/Modules/FindSodium.cmake
+```
+ or
+``` 
+wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /opt/homebrew/Cellar/cmake/3.20.3/share/cmake/Modules/FindSodium.cmake
+```
+
+```
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd chia-plotter
 git submodule update --init
