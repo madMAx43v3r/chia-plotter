@@ -80,7 +80,7 @@ phase4::output_t create_plot(	const int num_threads,
 	std::cout << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
 	std::cout << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
 	
-	vector<uint8_t> seed(32);
+	vector<uint8_t> seed(33);
 	randombytes_buf(seed.data(), seed.size());
 	
 	bls::AugSchemeMPL MPL;
@@ -102,7 +102,7 @@ phase4::output_t create_plot(	const int num_threads,
 		}
 		bls::Util::Hash256(params.id.data(), bytes.data(), bytes.size());
 	}
-	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M")
+	const std::string plot_name = "plot-k33-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
 	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
@@ -140,7 +140,7 @@ int main(int argc, char** argv)
 {
 
 	cxxopts::Options options("chia_plot",
-		"Multi-threaded pipelined Chia k32 plotter"
+		"Multi-threaded pipelined Chia k33 plotter"
 #ifdef GIT_COMMIT_HASH
 		" - " GIT_COMMIT_HASH
 #endif
@@ -270,7 +270,7 @@ int main(int argc, char** argv)
 		std::signal(SIGTERM, interrupt_handler);
 	}
 	
-	std::cout << "Multi-threaded pipelined Chia k32 plotter"; 
+	std::cout << "Multi-threaded pipelined Chia k33 plotter"; 
 	#ifdef GIT_COMMIT_HASH
 		std::cout << " - " << GIT_COMMIT_HASH;
 	#endif	
