@@ -135,7 +135,7 @@ https://github.com/stotiks/chia-plotter/releases
 ---
 ### Arch Linux
 ```bash
-sudo pamac install cmake gmp libgmp-static libsodium libsodium-static gcc10
+sudo pamac install cmake libsodium libsodium-static gcc10
 # Checkout the source and install
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd chia-plotter
@@ -155,7 +155,7 @@ cd chia-plotter
 
 git submodule update --init
 sudo yum install epel-release -y
-sudo yum install cmake3 gmp-devel libsodium gmp-static libsodium-static -y
+sudo yum install cmake3 libsodium libsodium-static -y
 ln /usr/bin/cmake3 /usr/bin/cmake
 # Install a package with repository for your system:
 # On CentOS, install package centos-release-scl available in CentOS repository:
@@ -174,7 +174,7 @@ Read [install file](doc/install_clearlinux.md)
 ---
 ### Ubuntu 20.04
 ```bash
-sudo apt install -y libsodium-dev libgmp3-dev cmake g++ git
+sudo apt install -y libsodium-dev cmake g++ git
 # Checkout the source and install
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd chia-plotter
@@ -193,15 +193,13 @@ First you need to install a package manager called [Brew](https://brew.sh/) and 
 # Alternative way to download CommandLineTools on Terminal:
 xcode-select --install
 
-brew install libsodium gmp cmake git autoconf automake libtool wget
+brew install libsodium cmake git autoconf automake libtool wget
 
 # If you downloaded Xcode run these:
-sudo ln -s /usr/local/include/gmp.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
 sudo ln -s /usr/local/include/sodium.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
 sudo ln -s /usr/local/include/sodium /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
 
 # If you downloaded CommandLineTools run these:
-sudo ln -s /usr/local/include/gmp.h /Library/Developer/CommandLineTools/usr/include
 sudo ln -s /usr/local/include/sodium.h /Library/Developer/CommandLineTools/usr/include
 sudo ln -s /usr/local/include/sodium /Library/Developer/CommandLineTools/usr/include
 
