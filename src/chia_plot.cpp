@@ -17,6 +17,7 @@
 #include <cxxopts.hpp>
 
 #include <string>
+#include <csignal>
 
 #ifdef __linux__ 
 	#include <unistd.h>
@@ -28,6 +29,22 @@
 	#define GETPID() int(-1)
 #endif
 
+bool gracefully_exit = false;
+
+static void interrupt_handler(int sig) {
+    if (!gracefully_exit) {
+	std::cout << "*******************************************************************************************************************************" << std::endl;
+    	std::cout << "**********              The crafting of plots will stop after the creation and copy of the current plot              ************" << std::endl;
+    	std::cout << "************              If you want to resume, press ctrl-c or send another TERM signal to process               **************" << std::endl;
+	std::cout << "**********************************************************************************************************************************" << std::endl << std::endl;
+    	gracefully_exit = true;
+    } else {
+	std::cout << "********************************************************" << std::endl;
+    	std::cout << "************ The crafting of plots will resume ***********" << std::endl;
+	std::cout << "**********************************************************" << std::endl << std::endl;
+    	gracefully_exit = false;
+    }
+}
 
 inline
 phase4::output_t create_plot(	const int num_threads,
@@ -119,6 +136,7 @@ phase4::output_t create_plot(	const int num_threads,
 
 int main(int argc, char** argv)
 {
+
 	cxxopts::Options options("chia_plot",
 		"Multi-threaded pipelined Chia k32 plotter"
 #ifdef GIT_COMMIT_HASH
@@ -129,6 +147,7 @@ int main(int argc, char** argv)
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
 		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
+		"For multiple or infinite plots you may press CTRL-C or send a TERM signal to process for gracefull termination.\n"
 	);
 	
 	std::string pool_key_str;
@@ -182,7 +201,7 @@ int main(int argc, char** argv)
 	const auto pool_key = hex_to_bytes(pool_key_str);
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
-	
+
 	if(pool_key.size() != bls::G1Element::SIZE) {
 		std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
 			<< "' (needs to be " << bls::G1Element::SIZE << " bytes, see `chia keys show`)" << std::endl;
@@ -243,6 +262,12 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
+
+	if ( num_plots > 1 || num_plots < 0) {
+		std::signal(SIGINT, interrupt_handler);
+		std::signal(SIGTERM, interrupt_handler);
+	}
+	
 	std::cout << "Multi-threaded pipelined Chia k32 plotter"; 
 	#ifdef GIT_COMMIT_HASH
 		std::cout << " - " << GIT_COMMIT_HASH;
@@ -275,6 +300,10 @@ int main(int argc, char** argv)
 	
 	for(int i = 0; i < num_plots || num_plots < 0; ++i)
 	{
+		if (gracefully_exit) {
+			std::cout << std::endl << "Plotted process terminated, waiting for copy/rename operations to finish..." << std::endl;
+			break;
+		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
