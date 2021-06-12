@@ -62,10 +62,12 @@ void compute_stage1(int L_index, int num_threads,
 			signal.notify_all();
 		}, "phase3/buffer");
 	
-	Thread<std::pair<std::vector<T>, size_t>> L_read_1(
-		[L_used, &L_read](std::pair<std::vector<T>, size_t>& input) {
-			std::vector<entry_np> out;
-			out.reserve(input.first.size());
+	ThreadPool<std::pair<std::vector<T>, size_t>, std::pair<std::vector<entry_np>, size_t>> L_read_1(
+		[L_used](std::pair<std::vector<T>, size_t>& input,
+				 std::pair<std::vector<entry_np>, size_t>& out, size_t&)
+		{
+			out.first.reserve(input.first.size());
+			out.second = input.second;
 			size_t offset = 0;
 			for(const auto& entry : input.first) {
 				if(!L_used->get(input.second + (offset++))) {
@@ -73,11 +75,9 @@ void compute_stage1(int L_index, int num_threads,
 				}
 				entry_np tmp;
 				tmp.pos = get_new_pos<T>{}(entry);
-				out.push_back(tmp);
+				out.first.push_back(tmp);
 			}
-			std::pair<std::vector<entry_np>, size_t> pair(std::move(out), input.second);
-			L_read.take(pair);
-		}, "phase3/filter_1");
+		}, &L_read, std::max(num_threads / 4, 1), "phase3/filter");
 	
 	typedef DiskSortLP::WriteCache WriteCache;
 	
