@@ -381,7 +381,7 @@ uint64_t compute_matches(	int R_index, int num_threads,
 			}
 		}, "phase1/slice");
 	
-	L_sort->read(&read_thread, std::max(num_threads / 2, 2), std::max(num_threads / 4, 2));
+	L_sort->read(&read_thread, std::max(num_threads / 2, 2));
 	
 	read_thread.close();
 	match_pool.close();

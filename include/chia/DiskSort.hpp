@@ -141,7 +141,7 @@ void DiskSort<T, Key>::read(Processor<std::pair<std::vector<T>, size_t>>* output
 							int num_threads, int num_threads_read)
 {
 	if(num_threads_read < 0) {
-		num_threads_read = std::max(num_threads / 4, 2);
+		num_threads_read = std::max(num_threads / 2, 2);
 	}
 	
 	ThreadPool<	std::pair<std::vector<T>, size_t>,
