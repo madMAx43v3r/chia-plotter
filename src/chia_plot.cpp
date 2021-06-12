@@ -44,9 +44,20 @@ phase4::output_t create_plot(	const int num_threads,
 	std::cout << "Number of Buckets: 2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
 	
-	const bls::G1Element pool_key = bls::G1Element::FromByteVector(pool_key_bytes);
-	const bls::G1Element farmer_key = bls::G1Element::FromByteVector(farmer_key_bytes);
-	
+	bls::G1Element pool_key;
+	bls::G1Element farmer_key;
+	try {
+		pool_key = bls::G1Element::FromByteVector(pool_key_bytes);
+	} catch(std::exception& ex) {
+		std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key_bytes) << std::endl;
+		throw;
+	}
+	try {
+		farmer_key = bls::G1Element::FromByteVector(farmer_key_bytes);
+	} catch(std::exception& ex) {
+		std::cout << "Invalid farmerkey: " << bls::Util::HexStr(farmer_key_bytes) << std::endl;
+		throw;
+	}
 	std::cout << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
 	std::cout << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
 	
