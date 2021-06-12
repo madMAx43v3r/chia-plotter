@@ -30,27 +30,20 @@ void compute_stage1(int L_index, int num_threads,
 	std::condition_variable signal;
 	
 	bool L_is_end = false;
-	bool R_is_waiting = false;
 	uint64_t L_offset = 0;				// position offset at L_buffer[0]
-	uint64_t L_position = 0;			// lowest position needed
 	std::vector<uint32_t> L_buffer;		// new_pos buffer
+	std::vector<uint32_t> L_buffer_1;	// double buffer
 	std::atomic<uint64_t> R_num_write {0};
 	
 	Thread<std::pair<std::vector<entry_np>, size_t>> L_read(
-		[&mutex, &signal, &L_buffer, &L_offset, &L_position, &R_is_waiting]
+		[&mutex, &signal, &L_buffer_1]
 		 (std::pair<std::vector<entry_np>, size_t>& input) {
 			std::unique_lock<std::mutex> lock(mutex);
-			while(!R_is_waiting) {
+			while(!L_buffer_1.empty()) {
 				signal.wait(lock);
 			}
-			if(L_position > L_offset) {
-				// delete old data
-				const auto count = std::min<uint64_t>(L_position - L_offset, L_buffer.size());
-				L_offset += count;
-				L_buffer.erase(L_buffer.begin(), L_buffer.begin() + count);
-			}
 			for(const auto& entry : input.first) {
-				L_buffer.push_back(entry.pos);
+				L_buffer_1.push_back(entry.pos);
 			}
 			lock.unlock();
 			signal.notify_all();
@@ -91,24 +84,33 @@ void compute_stage1(int L_index, int num_threads,
 		}, nullptr, std::max(num_threads / 2, 1), "phase3/add");
 	
 	Thread<std::pair<std::vector<S>, size_t>> R_read(
-		[&mutex, &signal, &L_offset, &L_position, &L_buffer, &L_is_end, &R_is_waiting, &R_add_2]
+		[&mutex, &signal, &L_offset, &L_buffer, &L_buffer_1, &L_is_end, &R_add_2]
 		 (std::pair<std::vector<S>, size_t>& input) {
 			std::vector<entry_kpp> out;
 			out.reserve(input.first.size());
-			std::unique_lock<std::mutex> lock(mutex);
+			uint64_t L_position = 0;
 			for(const auto& entry : input.first) {
 				uint64_t pos[2];
 				pos[0] = entry.pos;
 				pos[1] = uint64_t(entry.pos) + entry.off;
 				if(pos[0] < L_offset) {
-					throw std::logic_error("buffer underflow");
+					throw std::logic_error("input not sorted");
 				}
-				while(L_buffer.size() <= pos[1] - L_offset && !L_is_end) {
-					R_is_waiting = true;
-					L_position = pos[0];
-					signal.notify_all();
-					signal.wait(lock);
-					R_is_waiting = false;
+				L_position = pos[0];
+				
+				while(L_buffer.size() <= pos[1] - L_offset) {
+					{
+						std::unique_lock<std::mutex> lock(mutex);
+						if(L_buffer_1.empty() && !L_is_end) {
+							signal.wait(lock);
+						}
+						L_buffer.insert(L_buffer.end(), L_buffer_1.begin(), L_buffer_1.end());
+						L_buffer_1.clear();
+					}
+					signal.notify_all();	// notify L_buffer_1 empty again
+					if(L_is_end) {
+						break;
+					}
 				}
 				pos[0] -= L_offset;
 				pos[1] -= L_offset;
@@ -121,6 +123,12 @@ void compute_stage1(int L_index, int num_threads,
 				tmp.pos[0] = L_buffer[pos[0]];
 				tmp.pos[1] = L_buffer[pos[1]];
 				out.push_back(tmp);
+			}
+			if(L_position > L_offset) {
+				// delete old data
+				const auto count = std::min<uint64_t>(L_position - L_offset, L_buffer.size());
+				L_offset += count;
+				L_buffer.erase(L_buffer.begin(), L_buffer.begin() + count);
 			}
 			R_add_2.take(out);
 		}, "phase3/merge");
