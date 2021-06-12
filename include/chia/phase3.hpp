@@ -167,6 +167,7 @@ void compute_stage1(int L_index, int num_threads,
 			} else {
 				R_sort->read(&R_read, std::max(num_threads / (L_table ? 1 : 2), 1));
 			}
+			R_read.close();
 			{
 				std::lock_guard<std::mutex> lock(mutex);
 				R_is_end = true;
@@ -187,7 +188,6 @@ void compute_stage1(int L_index, int num_threads,
 		signal.notify_all();
 	}
 	R_sort_read.join();
-	R_read.close();
 	R_add_2.close();
 	
 	R_sort_2->finish();
