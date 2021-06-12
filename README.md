@@ -164,6 +164,10 @@ scl enable devtoolset-7 bash
 ./build/chia_plot --help
 ```
 ---
+### Clear Linux
+Read [install file](doc/install_clearlinux.md)
+
+---
 ### Ubuntu 20.04
 ```bash
 sudo apt install -y libsodium-dev libgmp3-dev cmake g++ git
