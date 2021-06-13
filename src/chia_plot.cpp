@@ -106,7 +106,7 @@ phase4::output_t create_plot(	const int num_threads,
 }
 
 
-int main(int argc, char** argv)
+int _main(int argc, char** argv)
 {
 
 #ifdef _WIN32	
@@ -278,3 +278,36 @@ int main(int argc, char** argv)
 }
 
 
+#if _WIN32
+
+void handle_eptr(std::exception_ptr eptr)
+{
+	try {
+		if (eptr) {
+			std::rethrow_exception(eptr);
+		}
+	}
+	catch (const std::exception& e) {
+		std::cout << "Caught exception \"" << e.what() << "\"\n";
+	}
+}
+
+
+int main(int argc, char** argv)
+{
+	std::exception_ptr eptr;
+	try {
+		return _main(argc, argv);
+	}
+	catch (...) {
+		eptr = std::current_exception();
+	}
+	handle_eptr(eptr);
+}
+
+#else
+int main(int argc, char** argv)
+{
+	return _main(argc, argv);
+}
+#endif
