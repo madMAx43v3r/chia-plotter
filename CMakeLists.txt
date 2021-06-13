@@ -1,7 +1,18 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
+find_package(Git)
+execute_process(
+  COMMAND ${GIT_EXECUTABLE} log -1 --format=%h
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+
 project(chia-plotter C CXX ASM)
 
+set(TARGET_ARCH ${CMAKE_HOST_SYSTEM_PROCESSOR})
+message(STATUS "Architecture: ${TARGET_ARCH}")
 
 if (MSVC)
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
@@ -9,6 +20,11 @@ if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)   
 else()
 	find_package(Threads REQUIRED)
+	
+	if(APPLE)
+		find_package(sodium REQUIRED)
+	endif()
+
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 endif()
 
@@ -28,6 +44,12 @@ include_directories(
 	${sodium_INCLUDE_DIR}
 )
 
+if (MSVC)
+	include_directories(
+		${sodium_INCLUDE_DIR}
+	)	
+endif()
+
 #add_definitions(-DBLAKE3_NO_SSE2=true)
 #add_definitions(-DBLAKE3_NO_SSE41=true)
 #add_definitions(-DBLAKE3_NO_AVX2=true)
@@ -44,13 +66,7 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3_avx2.c
     ${BLAKE3_PATH}/blake3_avx512.c
 )
-ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
-set(BLAKE3_SRC
-    ${BLAKE3_PATH}/blake3.c
-    ${BLAKE3_PATH}/blake3_portable.c
-    ${BLAKE3_PATH}/blake3_dispatch.c
-)
-ELSE()
+ELSEIF(TARGET_ARCH STREQUAL "x86_64")
 set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3.c
     ${BLAKE3_PATH}/blake3_portable.c
@@ -59,6 +75,12 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3_avx512_x86-64_unix.S
     ${BLAKE3_PATH}/blake3_sse41_x86-64_unix.S
     ${BLAKE3_PATH}/blake3_sse2_x86-64_unix.S
+)
+ELSE()
+set(BLAKE3_SRC
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
 )
 ENDIF()
 
@@ -123,6 +145,7 @@ target_link_libraries(test_phase_4 chia_plotter)
 
 target_link_libraries(check_phase_1 chia_plotter)
 
-target_link_libraries(chia_plot chia_plotter bls)
+target_link_libraries(chia_plot chia_plotter bls sodium)
 
 endif()
+
