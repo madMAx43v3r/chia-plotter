@@ -132,7 +132,7 @@ if (MSVC)
 	target_link_libraries(check_phase_1 chia_plotter uint128)
 
 	target_link_libraries(chia_plot chia_plotter bls uint128)
-	set_target_properties(chia_plot PROPERTIES LINK_OPTIONS -NODEFAULTLIB:LIBCMT)
+	set_target_properties(chia_plot PROPERTIES LINK_OPTIONS -NODEFAULTLIB:MSVCRT)
 
 else()
 	
