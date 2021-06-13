@@ -144,6 +144,12 @@ int _main(int argc, char** argv)
 #ifdef GIT_COMMIT_HASH
 		" - " GIT_COMMIT_HASH
 #endif
+
+#ifdef CHIA_PLOT_BUILD_INFO
+		"\n"
+		CHIA_PLOT_BUILD_INFO
+#endif
+
 		"\n\n"
 		"For <poolkey> and <farmerkey> see output of `chia keys show`.\n"
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
@@ -151,7 +157,7 @@ int _main(int argc, char** argv)
 		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
 		"In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.\n"
 	);
-	
+
 	std::string pool_key_str;
 	std::string farmer_key_str;
 	std::string tmp_dir;
@@ -293,6 +299,11 @@ int _main(int argc, char** argv)
 	#ifdef GIT_COMMIT_HASH
 		std::cout << " - " << GIT_COMMIT_HASH;
 	#endif	
+
+	#ifdef CHIA_PLOT_BUILD_INFO
+		std::cout << std::endl << CHIA_PLOT_BUILD_INFO;
+	#endif
+
 	std::cout << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
 	if(num_plots >= 0) {
@@ -360,6 +371,7 @@ int main(int argc, char** argv)
 {
 	std::exception_ptr eptr;
 	try {
+		_setmaxstdio(8192);
 		return _main(argc, argv);
 	}
 	catch (...) {
@@ -371,7 +383,6 @@ int main(int argc, char** argv)
 #else
 int main(int argc, char** argv)
 {
-	_setmaxstdio(8192);
 	return _main(argc, argv);
 }
 #endif

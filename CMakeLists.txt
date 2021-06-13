@@ -16,9 +16,10 @@ message(STATUS "Architecture: ${TARGET_ARCH}")
 
 if (MSVC)
 
+    add_definitions(-DCHIA_PLOT_BUILD_INFO="${CHIA_PLOT_BUILD_INFO}")    
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)   
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
 	find_package(Threads REQUIRED)
 	
