@@ -15,6 +15,7 @@ set(TARGET_ARCH ${CMAKE_HOST_SYSTEM_PROCESSOR})
 message(STATUS "Architecture: ${TARGET_ARCH}")
 
 if (MSVC)
+
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)   
@@ -41,7 +42,6 @@ include_directories(
 	${BLAKE3_PATH}
 	${CMAKE_BINARY_DIR}/_deps/relic-src/include
 	${CMAKE_BINARY_DIR}/_deps/relic-build/include
-	${sodium_INCLUDE_DIR}
 )
 
 if (MSVC)
