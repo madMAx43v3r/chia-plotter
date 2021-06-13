@@ -224,6 +224,11 @@ git submodule update --init
 ./make_devel.sh
 ./build/chia_plot --help
 ```
+If a maximum open file limit error occurs (as default OS setting is 256, which is too low for default bucket size of `256`), run this before starting the plotter
+```
+ulimit -n 3000
+```
+This file limit change will only affect the current session.
 
 ## Running in a Docker container
 
