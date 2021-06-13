@@ -28,6 +28,11 @@ include_directories(
 	${sodium_INCLUDE_DIR}
 )
 
+#add_definitions(-DBLAKE3_NO_SSE2=true)
+#add_definitions(-DBLAKE3_NO_SSE41=true)
+#add_definitions(-DBLAKE3_NO_AVX2=true)
+#add_definitions(-DBLAKE3_NO_AVX512=true)
+
 IF (WIN32)
 set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3.c
