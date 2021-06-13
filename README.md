@@ -170,6 +170,10 @@ scl enable devtoolset-7 bash
 ./build/chia_plot --help
 ```
 ---
+
+### CentOS 8
+How to install chia-Plotter on CentOS 8
+
 ### Clear Linux
 Read [install file](doc/install_clearlinux.md)
 
