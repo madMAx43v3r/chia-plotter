@@ -130,8 +130,9 @@ phase4::output_t create_plot(	const int num_threads,
 	phase4::output_t out_4;
 	phase4::compute(out_3, out_4, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
 	
+	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
 	std::cout << "Total plot creation time was "
-			<< (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+			<< time_secs << " sec (" << time_secs / 60. << " min)" << std::endl;
 	return out_4;
 }
 
