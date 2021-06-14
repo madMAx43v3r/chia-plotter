@@ -11,9 +11,16 @@ add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 
 project(chia-plotter C CXX ASM)
 
+set(TARGET_ARCH ${CMAKE_HOST_SYSTEM_PROCESSOR})
+message(STATUS "Architecture: ${TARGET_ARCH}")
+
 add_subdirectory(lib/bls-signatures)
 
 find_package(Threads REQUIRED)
+
+if(APPLE)
+find_package(sodium REQUIRED)
+endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function")
 
@@ -37,13 +44,7 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3_sse41_x86-64_windows_gnu.S
     ${BLAKE3_PATH}/blake3_sse2_x86-64_windows_gnu.S
 )
-ELSEIF(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
-set(BLAKE3_SRC
-    ${BLAKE3_PATH}/blake3.c
-    ${BLAKE3_PATH}/blake3_portable.c
-    ${BLAKE3_PATH}/blake3_dispatch.c
-)
-ELSE()
+ELSEIF(TARGET_ARCH STREQUAL "x86_64")
 set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3.c
     ${BLAKE3_PATH}/blake3_portable.c
@@ -52,6 +53,12 @@ set(BLAKE3_SRC
     ${BLAKE3_PATH}/blake3_avx512_x86-64_unix.S
     ${BLAKE3_PATH}/blake3_sse41_x86-64_unix.S
     ${BLAKE3_PATH}/blake3_sse2_x86-64_unix.S
+)
+ELSE()
+set(BLAKE3_SRC
+    ${BLAKE3_PATH}/blake3.c
+    ${BLAKE3_PATH}/blake3_portable.c
+    ${BLAKE3_PATH}/blake3_dispatch.c
 )
 ENDIF()
 
@@ -95,4 +102,4 @@ target_link_libraries(test_phase_4 chia_plotter)
 
 target_link_libraries(check_phase_1 chia_plotter)
 
-target_link_libraries(chia_plot chia_plotter bls)
+target_link_libraries(chia_plot chia_plotter bls sodium)
