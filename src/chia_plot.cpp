@@ -19,6 +19,10 @@
 #include <string>
 #include <csignal>
 
+#ifndef _WIN32
+#include <sys/resource.h>
+#endif
+
 #ifdef __linux__ 
 	#include <unistd.h>
 	#define GETPID getpid
@@ -265,9 +269,22 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
+	const int num_files_max = (1 << log_num_buckets) + 20;
+	
+#ifndef _WIN32
+	{
+		// try to increase the open file limit
+		::rlimit the_limit;
+		the_limit.rlim_cur = num_files_max + 10;
+		the_limit.rlim_max = num_files_max + 10;
+		if(setrlimit(RLIMIT_NOFILE, &the_limit)) {
+			std::cout << "Warning: setrlimit() failed!" << std::endl;
+		}
+	}
+#endif
+	
 	{
 		// check that we can open required amount of files
-		const int num_files_max = (1 << log_num_buckets) + 20;
 		std::vector<std::pair<FILE*, std::string>> files;
 		for(int i = 0; i < num_files_max; ++i) {
 			const std::string path = tmp_dir + ".chia_plot_tmp." + std::to_string(i);
