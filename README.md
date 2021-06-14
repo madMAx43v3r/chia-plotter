@@ -251,7 +251,7 @@ docker run \
 
 In a Linux benchmark, we were able to find that running in Docker has only 5% performance impact than running in native OS.
 
-For Windows users, you should check if your Docker configuration has any RAM or CPU limits. Since Docke runs inside HyperV, that could potentially constrain your hardware usage. In any case, you can set the RAM limits with the `-m` flag (after the `docker run` command).
+For Windows users, you should check if your Docker configuration has any RAM or CPU limits. Since Docker runs inside HyperV, that could potentially constrain your hardware usage. In any case, you can set the RAM limits with the `-m` flag (after the `docker run` command).
 
 ### Regarding multithread in Docker
 
