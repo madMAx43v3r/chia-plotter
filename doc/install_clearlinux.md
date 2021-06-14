@@ -13,12 +13,11 @@ sudo swupd bundle-add zip
 # Use gcc10 during build
 export CC=gcc-10
 export CXX=g++-10
-git submodule update --init
 
 
 # Install gmp
 cd /tmp
-wget https://gmplib.org/download/gmp/gmp-6.2.1.tar.lz
+wget https://gmplib.org/download/gmp/gmp-6.2.1.tar.xz
 tar -xvf gmp-6.2.1.tar.xz
 cd gmp-6.2.1
 ./configure
@@ -41,6 +40,7 @@ sudo make install
 cd ~/
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd ~/chia-plotter/
+git submodule update --init
 
 ./make_devel.sh
 ./build/chia_plot  --help
