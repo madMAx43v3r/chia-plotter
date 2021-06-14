@@ -267,7 +267,7 @@ int main(int argc, char** argv)
 	}
 	{
 		// check that we can open required amount of files
-		const int num_files_max = num_buckets + 20;
+		const int num_files_max = (1 << log_num_buckets) + 20;
 		std::vector<std::pair<FILE*, std::string>> files;
 		for(int i = 0; i < num_files_max; ++i) {
 			const std::string path = tmp_dir + ".chia_plot_tmp." + std::to_string(i);
