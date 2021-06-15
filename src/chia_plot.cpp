@@ -52,12 +52,6 @@ static void interrupt_handler(int sig) {
 	std::cout << "**              !!!!!! If you want to quit press Ctrl-C TWICE !!!!!!                  **" << std::endl;
     	std::cout << "****************************************************************************************" << std::endl;
     	gracefully_exit = true;
-    } else {
-    	std::cout << std::endl;
-    	std::cout << "**********************************************************" << std::endl;
-    	std::cout << "**********  The crafting of plots will resume.  **********" << std::endl;
-    	std::cout << "**********************************************************" << std::endl;
-    	gracefully_exit = false;
     }
 }
 
@@ -163,7 +157,8 @@ int main(int argc, char** argv)
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
 		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
-		"In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.\n"
+		"In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished or double Ctrl-c to terminate immediatelly.\n"
+		
 	);
 	
 	std::string pool_key_str;
