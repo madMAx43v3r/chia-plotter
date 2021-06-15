@@ -34,13 +34,22 @@
 #endif
 
 bool gracefully_exit = false;
+static int64_t interrupt_timestamp=0;
 
 static void interrupt_handler(int sig) {
+
+   if ( ( (get_wall_time_micros()-interrupt_timestamp) / 1e6) <= 1 ) {
+                 std::cout << "Double CTRL-C pressed, exiting now!!!" << std::endl;
+                 exit(-4);
+        } else
+                interrupt_timestamp=get_wall_time_micros();
+
     if (!gracefully_exit) {
     	std::cout << std::endl;
     	std::cout << "****************************************************************************************" << std::endl;
     	std::cout << "**  The crafting of plots will stop after the creation and copy of the current plot.  **" << std::endl;
     	std::cout << "**          If you want to resume, press Ctrl-C or send another TERM signal.          **" << std::endl;
+	std::cout << "**              !!!!!! If you want to quit press Ctrl-C TWICE !!!!!!                  **" << std::endl;
     	std::cout << "****************************************************************************************" << std::endl;
     	gracefully_exit = true;
     } else {

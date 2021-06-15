@@ -16,6 +16,7 @@ For <poolkey> and <farmerkey> see output of `chia keys show`.
 <tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.
 Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.
 In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.
+Press Ctrl-C twice within 2 seconds to terminate instantly.
 
 Usage:
   chia_plot [OPTION...]
