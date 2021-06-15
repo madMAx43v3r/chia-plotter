@@ -189,6 +189,25 @@ git submodule update --init
 The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
 
 ---
+### Debian 10 ("buster")
+
+Make sure to add buster-backports to your sources.list otherwise the installation will fail because an older cmake version. See the [debian backport documentation](https://backports.debian.org/Instructions/) for reference.
+
+```bash
+# Install cmake 3.16 from buster-backports
+sudo apt install -t buster-backports cmake
+sudo apt install -y libsodium-dev g++ git
+# Checkout the source and install
+git clone https://github.com/madMAx43v3r/chia-plotter.git 
+cd chia-plotter
+
+git submodule update --init
+./make_devel.sh
+./build/chia_plot --help
+```
+The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
+
+---
 ### macOS
 First you need to install a package manager called [Brew](https://brew.sh/) and [Xcode](https://apps.apple.com/app/xcode/id497799835) OR [CommandLineTools](https://developer.apple.com/download/).
 ```bash
