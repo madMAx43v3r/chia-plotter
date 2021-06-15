@@ -272,7 +272,7 @@ int main(int argc, char** argv)
 	const int num_files_max = (1 << log_num_buckets) + 20;
 	
 #ifndef _WIN32
-	{
+	if(false) {
 		// try to increase the open file limit
 		::rlimit the_limit;
 		the_limit.rlim_cur = num_files_max + 10;
