@@ -269,7 +269,7 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
-	const int num_files_max = (1 << log_num_buckets) + 20;
+	const int num_files_max = (1 << log_num_buckets) + 2 * num_threads + 32;
 	
 #ifndef _WIN32
 	if(false) {
