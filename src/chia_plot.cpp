@@ -165,6 +165,7 @@ int main(int argc, char** argv)
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
+	bool tmptoggle;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
@@ -175,6 +176,7 @@ int main(int argc, char** argv)
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
+		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle)->default_value("false"))(
 		"help", "Print help");
 	
 	if(argc <= 1) {
@@ -344,6 +346,10 @@ int main(int argc, char** argv)
 			break;
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
+		if (tmptoggle && (i % 2 == 1)) {
+			tmp_dir.swap(tmp_dir2);
+		}
+
 		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
