@@ -46,7 +46,7 @@ void compute_table(	int R_index, int num_threads,
 		R_input.read(&pool, num_threads_read);
 		pool.close();
 		
-		std::cout << "[P2] Table " << R_index << " scan took "
+		std::cout << get_curr_datetime() << " [P2] Table " << R_index << " scan took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
 	}
 	const auto begin = get_wall_time_micros();
@@ -116,7 +116,7 @@ void compute_table(	int R_index, int num_threads,
 	if(R_file) {
 		R_file->flush();
 	}
-	std::cout << "[P2] Table " << R_index << " rewrite took "
+	std::cout << get_curr_datetime() << " [P2] Table " << R_index << " rewrite took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", dropped " << R_table.num_entries - num_written << " entries"
 				<< " (" << 100 * (1 - double(num_written) / R_table.num_entries) << " %)" << std::endl;
@@ -138,7 +138,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	for(const auto& table : input.table) {
 		max_table_size = std::max(max_table_size, table.num_entries);
 	}
-	std::cout << "[P2] max_table_size = " << max_table_size << std::endl;
+	std::cout << get_curr_datetime() << " [P2] max_table_size = " << max_table_size << std::endl;
 	
 	auto curr_bitfield = std::make_shared<bitfield>(max_table_size);
 	auto next_bitfield = std::make_shared<bitfield>(max_table_size);
@@ -167,7 +167,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	out.table_7 = table_7.get_info();
 	out.bitfield_1 = next_bitfield;
 	
-	std::cout << "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+	std::cout << get_curr_datetime() << " Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
 }
 
 

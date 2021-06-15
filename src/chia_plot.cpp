@@ -62,9 +62,9 @@ phase4::output_t create_plot(	const int num_threads,
 {
 	const auto total_begin = get_wall_time_micros();
 
-	std::cout << "Process ID: " << GETPID() << std::endl;
-	std::cout << "Number of Threads: " << num_threads << std::endl;
-	std::cout << "Number of Buckets: 2^" << log_num_buckets
+	std::cout << get_curr_datetime() << " Process ID: " << GETPID() << std::endl;
+	std::cout << get_curr_datetime() << " Number of Threads: " << num_threads << std::endl;
+	std::cout << get_curr_datetime() << " Number of Buckets: 2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
 	
 	bls::G1Element pool_key;
@@ -72,17 +72,17 @@ phase4::output_t create_plot(	const int num_threads,
 	try {
 		pool_key = bls::G1Element::FromByteVector(pool_key_bytes);
 	} catch(std::exception& ex) {
-		std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key_bytes) << std::endl;
+		std::cout << get_curr_datetime() << " Invalid poolkey: " << bls::Util::HexStr(pool_key_bytes) << std::endl;
 		throw;
 	}
 	try {
 		farmer_key = bls::G1Element::FromByteVector(farmer_key_bytes);
 	} catch(std::exception& ex) {
-		std::cout << "Invalid farmerkey: " << bls::Util::HexStr(farmer_key_bytes) << std::endl;
+		std::cout << get_curr_datetime() << " Invalid farmerkey: " << bls::Util::HexStr(farmer_key_bytes) << std::endl;
 		throw;
 	}
-	std::cout << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
-	std::cout << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
+	std::cout << get_curr_datetime() << " Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
+	std::cout << get_curr_datetime() << " Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
 	
 	vector<uint8_t> seed(32);
 	randombytes_buf(seed.data(), seed.size());
@@ -109,9 +109,9 @@ phase4::output_t create_plot(	const int num_threads,
 	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
-	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
-	std::cout << "Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
-	std::cout << "Plot Name: " << plot_name << std::endl;
+	std::cout << get_curr_datetime() << " Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
+	std::cout << get_curr_datetime() << " Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
+	std::cout << get_curr_datetime() << " Plot Name: " << plot_name << std::endl;
 	
 	// memo = bytes(pool_public_key) + bytes(farmer_public_key) + bytes(local_master_sk)
 	params.memo.insert(params.memo.end(), pool_key_bytes.begin(), pool_key_bytes.end());
@@ -135,7 +135,7 @@ phase4::output_t create_plot(	const int num_threads,
 	phase4::compute(out_3, out_4, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
 	
 	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
-	std::cout << "Total plot creation time was "
+	std::cout << get_curr_datetime() << " Total plot creation time was "
 			<< time_secs << " sec (" << time_secs / 60. << " min)" << std::endl;
 	return out_4;
 }
@@ -312,11 +312,11 @@ int main(int argc, char** argv)
 		std::cout << " - " << GIT_COMMIT_HASH;
 	#endif	
 	std::cout << std::endl;
-	std::cout << "Final Directory: " << final_dir << std::endl;
+	std::cout << get_curr_datetime() << " Final Directory: " << final_dir << std::endl;
 	if(num_plots >= 0) {
-		std::cout << "Number of Plots: " << num_plots << std::endl;
+		std::cout << get_curr_datetime() << " Number of Plots: " << num_plots << std::endl;
 	} else {
-		std::cout << "Number of Plots: infinite" << std::endl;
+		std::cout << get_curr_datetime() << " Number of Plots: infinite" << std::endl;
 	}
 	
 	Thread<std::pair<std::string, std::string>> copy_thread(
@@ -327,11 +327,11 @@ int main(int argc, char** argv)
 					const auto bytes = final_copy(from_to.first, from_to.second);
 					
 					const auto time = (get_wall_time_micros() - total_begin) / 1e6;
-					std::cout << "Copy to " << from_to.second << " finished, took " << time << " sec, "
+					std::cout << get_curr_datetime() << " Copy to " << from_to.second << " finished, took " << time << " sec, "
 							<< ((bytes / time) / 1024 / 1024) << " MB/s avg." << std::endl;
 					break;
 				} catch(const std::exception& ex) {
-					std::cout << "Copy to " << from_to.second << " failed with: " << ex.what() << std::endl;
+					std::cout << get_curr_datetime() << " Copy to " << from_to.second << " failed with: " << ex.what() << std::endl;
 					std::this_thread::sleep_for(std::chrono::minutes(5));
 				}
 			}
@@ -343,13 +343,13 @@ int main(int argc, char** argv)
 			std::cout << std::endl << "Process has been interrupted, waiting for copy/rename operations to finish ..." << std::endl;
 			break;
 		}
-		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
+		std::cout << get_curr_datetime() << " Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
 		{
 			const auto dst_path = final_dir + out.params.plot_name + ".plot";
-			std::cout << "Started copy to " << dst_path << std::endl;
+			std::cout << get_curr_datetime() << " Started copy to " << dst_path << std::endl;
 			copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
 		}
 	}

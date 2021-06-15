@@ -376,6 +376,16 @@ namespace Util {
 }
 
 inline
+std::string get_curr_datetime()
+{
+    time_t now;
+    time(&now);
+    char buf[sizeof "YYYY-MM-ddTHH:mm:ssZ"];
+    strftime(buf, sizeof buf, "%FT%TZ", gmtime(&now));
+    return std::string( buf );
+}
+
+inline
 int64_t get_wall_time_micros() {
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
