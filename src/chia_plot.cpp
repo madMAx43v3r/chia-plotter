@@ -254,7 +254,7 @@ int main(int argc, char** argv)
 		}
 	}
 	else if(puzzle_hash.size() != 32) {
-		std::cout << "Invalid puzzle: " << bls::Util::HexStr(puzzle_hash) << ", '" << pool_key_str
+		std::cout << "Invalid puzzle: " << bls::Util::HexStr(puzzle_hash) << ", '" << puzzle_hash_str
 			<< "' (needs to be 32 bytes, see ?)" << std::endl;
 		return -2;
 	}
