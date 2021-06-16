@@ -195,7 +195,7 @@ void compute_stage1(int L_index, int num_threads,
 	
 	R_sort_2->finish();
 	
-	std::cout << "[P3-1] Table " << L_index + 1 << " took "
+	std::cout << get_curr_datetime() << " [P3-1] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", wrote " << R_num_write << " right entries" << std::endl;
 }
@@ -261,7 +261,7 @@ uint32_t WriteHeader(
 	num_bytes += fwrite((pointers), 8, 10, file) * 8;
 
 	fflush(file);
-	std::cout << "Wrote plot header with " << num_bytes << " bytes" << std::endl;
+	std::cout << get_curr_datetime() << " Wrote plot header with " << num_bytes << " bytes" << std::endl;
 	return num_bytes;
 }
 
@@ -460,9 +460,9 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	Encoding::ANSFree(kRValues[L_index - 1]);
 	
 	if(L_num_write < R_num_read) {
-//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
+//		std::cout << get_curr_datetime() << " [P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
 	}
-	std::cout << "[P3-2] Table " << L_index + 1 << " took "
+	std::cout << get_curr_datetime() << " [P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", wrote " << L_num_write << " left entries"
 				<< ", " << num_written_final << " final" << std::endl;
@@ -559,7 +559,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	out.num_written_7 = num_written_final_7;
 	out.final_pointer_7 = final_pointers[7];
 	
-	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
+	std::cout << get_curr_datetime() << " Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
 			", wrote " << num_written_final << " entries to final plot" << std::endl;
 }
 
