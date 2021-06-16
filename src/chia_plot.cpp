@@ -67,7 +67,7 @@ phase4::output_t create_plot(	const int num_threads,
 
 	std::cout << "Process ID: " << GETPID() << std::endl;
 	std::cout << "Number of Threads: " << num_threads << std::endl;
-	std::cout << "Number of Buckets: 2^" << log_num_buckets
+	std::cout << "Number of Buckets P1:    2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
 	std::cout << "Number of Buckets P3+P4: 2^" << log_num_buckets_3
 			<< " (" << (1 << log_num_buckets_3) << ")" << std::endl;
