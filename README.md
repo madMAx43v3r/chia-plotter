@@ -152,7 +152,7 @@ git submodule update --init
 ---
 ### CentOS 7
 ```bash
-git clone https://github.com/dendil/chia-plotter.git
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 
 git submodule update --init
