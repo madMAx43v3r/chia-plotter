@@ -57,6 +57,7 @@ static void interrupt_handler(int sig)
 inline
 phase4::output_t create_plot(	const int num_threads,
 								const int log_num_buckets,
+								const int log_num_buckets_3,
 								const vector<uint8_t>& pool_key_bytes,
 								const vector<uint8_t>& farmer_key_bytes,
 								const std::string& tmp_dir,
@@ -68,6 +69,8 @@ phase4::output_t create_plot(	const int num_threads,
 	std::cout << "Number of Threads: " << num_threads << std::endl;
 	std::cout << "Number of Buckets: 2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
+	std::cout << "Number of Buckets P3+P4: 2^" << log_num_buckets_3
+			<< " (" << (1 << log_num_buckets_3) << ")" << std::endl;
 	
 	bls::G1Element pool_key;
 	bls::G1Element farmer_key;
@@ -128,13 +131,13 @@ phase4::output_t create_plot(	const int num_threads,
 	phase1::compute(params, out_1, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase2::output_t out_2;
-	phase2::compute(out_1, out_2, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase3::output_t out_3;
-	phase3::compute(out_2, out_3, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase4::output_t out_4;
-	phase4::compute(out_3, out_4, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
 	std::cout << "Total plot creation time was "
@@ -168,11 +171,13 @@ int main(int argc, char** argv)
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
+	int num_buckets_3 = 0;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
+		"v, buckets3", "Number of buckets for phase 3+4 (default = buckets)", cxxopts::value<int>(num_buckets_3))(
 		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
@@ -208,9 +213,13 @@ int main(int argc, char** argv)
 	if(final_dir.empty()) {
 		final_dir = tmp_dir;
 	}
+	if(num_buckets_3 <= 0) {
+		num_buckets_3 = num_buckets;
+	}
 	const auto pool_key = hex_to_bytes(pool_key_str);
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
+	const int log_num_buckets_3 = num_buckets_3 >= 16 ? int(log2(num_buckets_3)) : num_buckets_3;
 
 	if(pool_key.size() != bls::G1Element::SIZE) {
 		std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
@@ -347,7 +356,9 @@ int main(int argc, char** argv)
 			break;
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
-		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
+		const auto out = create_plot(
+				num_threads, log_num_buckets, log_num_buckets_3,
+				pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
 		{
