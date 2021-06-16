@@ -346,9 +346,6 @@ int main(int argc, char** argv)
 			break;
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
-		if (tmptoggle && (i % 2 == 1)) {
-			tmp_dir.swap(tmp_dir2);
-		}
 
 		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
@@ -357,6 +354,9 @@ int main(int argc, char** argv)
 			const auto dst_path = final_dir + out.params.plot_name + ".plot";
 			std::cout << "Started copy to " << dst_path << std::endl;
 			copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
+		}
+		if (tmptoggle) {
+			tmp_dir.swap(tmp_dir2);
 		}
 	}
 	copy_thread.close();
