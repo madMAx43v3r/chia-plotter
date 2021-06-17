@@ -29,6 +29,7 @@ Usage:
   -d, --finaldir arg   Final directory (default = <tmpdir>)
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
+  -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
       --help           Print help
 ```
 

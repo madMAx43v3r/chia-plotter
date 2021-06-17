@@ -172,6 +172,7 @@ int main(int argc, char** argv)
 	int num_threads = 4;
 	int num_buckets = 256;
 	int num_buckets_3 = 0;
+  bool tmptoggle = false;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
@@ -183,6 +184,7 @@ int main(int argc, char** argv)
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
+		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
 		"help", "Print help");
 	
 	if(argc <= 1) {
@@ -365,6 +367,9 @@ int main(int argc, char** argv)
 			const auto dst_path = final_dir + out.params.plot_name + ".plot";
 			std::cout << "Started copy to " << dst_path << std::endl;
 			copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
+		}
+		if (tmptoggle) {
+			tmp_dir.swap(tmp_dir2);
 		}
 	}
 	copy_thread.close();
