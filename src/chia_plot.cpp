@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 	int num_threads = 4;
 	int num_buckets = 256;
 	int num_buckets_3 = 0;
-  bool tmptoggle = false;
+	bool tmptoggle = false;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
