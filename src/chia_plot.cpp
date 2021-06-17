@@ -138,7 +138,7 @@ phase4::output_t create_plot(	const int num_threads,
 
 int _main(int argc, char** argv)
 {
-	std::cout << std::endl << "Multi-threaded pipelined Chia k32 plotter";
+	std::cout << "Multi-threaded pipelined Chia k32 plotter";
 	#ifdef GIT_COMMIT_HASH
 		std::cout << " - " << GIT_COMMIT_HASH;
 	#endif	
