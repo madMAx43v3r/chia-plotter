@@ -15,7 +15,7 @@ For <poolkey> and <farmerkey> see output of `chia keys show`.
 <tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
 <tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.
 Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.
-In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.
+In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished or double Ctrl-c to terminate immediatelly\
 
 Usage:
   chia_plot [OPTION...]
@@ -23,6 +23,7 @@ Usage:
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Number of buckets (default = 256)
+  -v, --buckets3 arg   Number of buckets for phase 3+4 (default = buckets)
   -t, --tmpdir arg     Temporary directory, needs ~220 GiB (default = $PWD)
   -2, --tmpdir2 arg    Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)
   -d, --finaldir arg   Final directory (default = <tmpdir>)
@@ -137,23 +138,30 @@ https://github.com/stotiks/chia-plotter/releases
 
 ---
 ### Arch Linux
+
+First, install dependencies from pacman:
 ```bash
-sudo pamac install cmake libsodium libsodium-static gcc10
-# Checkout the source and install
-git clone https://github.com/madMAx43v3r/chia-plotter.git 
+sudo pacman -S cmake libsodium gmp gcc10
+```
+Then, get and compile the project:
+```bash
+# Checkout the source
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 
 # Use gcc10 during build
 export CC=gcc-10
 export CXX=g++-10
+# Init submodules
 git submodule update --init
+# Compile
 ./make_devel.sh
 ./build/chia_plot --help
 ```
 ---
 ### CentOS 7
 ```bash
-git clone https://github.com/dendil/chia-plotter.git
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 
 git submodule update --init
