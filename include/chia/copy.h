@@ -17,6 +17,10 @@
 #include <cstdio>
 #include <cstdint>
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 
 inline
 uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
@@ -30,6 +34,7 @@ uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 		throw std::runtime_error("fopen() failed");
 	}
 	uint64_t total_bytes = 0;
+	uint64_t buffered_bytes = 0;
 	std::vector<uint8_t> buffer(g_read_chunk_size);
 	while(true) {
 		const auto num_bytes = fread(buffer.data(), 1, buffer.size(), src);
@@ -37,8 +42,15 @@ uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 			throw std::runtime_error("fwrite() failed");
 		}
 		total_bytes += num_bytes;
+		buffered_bytes += num_bytes;
 		if(num_bytes < buffer.size()) {
 			break;
+		}
+		if(buffered_bytes >= 1024 * 1024 * 1024) {
+#ifndef _WIN32
+			fsync(fileno(dst));
+#endif
+			buffered_bytes = 0;
 		}
 	}
 	if(fclose(dst)) {
