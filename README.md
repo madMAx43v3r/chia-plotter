@@ -129,6 +129,7 @@ keeping most of the load off the CPUs.
 
 - cmake (>=3.14)
 - libsodium-dev
+- make
 
 ## Install
 ---
@@ -185,7 +186,7 @@ Read [install file](doc/install_clearlinux.md)
 ---
 ### Ubuntu 20.04
 ```bash
-sudo apt install -y libsodium-dev cmake g++ git
+sudo apt install -y libsodium-dev cmake g++ git make
 # Checkout the source and install
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd chia-plotter
@@ -206,6 +207,7 @@ Make sure to add buster-backports to your sources.list otherwise the installatio
 # Install cmake 3.16 from buster-backports
 sudo apt install -t buster-backports cmake
 sudo apt install -y libsodium-dev g++ git
+sudo apt install -y make
 # Checkout the source and install
 git clone https://github.com/madMAx43v3r/chia-plotter.git 
 cd chia-plotter
