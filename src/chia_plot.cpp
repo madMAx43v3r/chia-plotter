@@ -17,6 +17,7 @@
 #include <cxxopts.hpp>
 
 #include <string>
+#include <csignal>
 
 #ifdef __linux__ 
 	#include <unistd.h>
@@ -28,6 +29,24 @@
 	#define GETPID() int(-1)
 #endif
 
+bool gracefully_exit = false;
+
+static void interrupt_handler(int sig) {
+    if (!gracefully_exit) {
+    	std::cout << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << "**  The crafting of plots will stop after the creation and copy of the current plot.  **" << std::endl;
+    	std::cout << "**          If you want to resume, press Ctrl-C or send another TERM signal.          **" << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	gracefully_exit = true;
+    } else {
+    	std::cout << std::endl;
+    	std::cout << "**********************************************************" << std::endl;
+    	std::cout << "**********  The crafting of plots will resume.  **********" << std::endl;
+    	std::cout << "**********************************************************" << std::endl;
+    	gracefully_exit = false;
+    }
+}
 
 inline
 phase4::output_t create_plot(	const int num_threads,
@@ -44,9 +63,20 @@ phase4::output_t create_plot(	const int num_threads,
 	std::cout << "Number of Buckets: 2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
 	
-	const bls::G1Element pool_key = bls::G1Element::FromByteVector(pool_key_bytes);
-	const bls::G1Element farmer_key = bls::G1Element::FromByteVector(farmer_key_bytes);
-	
+	bls::G1Element pool_key;
+	bls::G1Element farmer_key;
+	try {
+		pool_key = bls::G1Element::FromByteVector(pool_key_bytes);
+	} catch(std::exception& ex) {
+		std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key_bytes) << std::endl;
+		throw;
+	}
+	try {
+		farmer_key = bls::G1Element::FromByteVector(farmer_key_bytes);
+	} catch(std::exception& ex) {
+		std::cout << "Invalid farmerkey: " << bls::Util::HexStr(farmer_key_bytes) << std::endl;
+		throw;
+	}
 	std::cout << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
 	std::cout << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
 	
@@ -108,19 +138,24 @@ phase4::output_t create_plot(	const int num_threads,
 
 int _main(int argc, char** argv)
 {
+	std::cout << std::endl << "Multi-threaded pipelined Chia k32 plotter";
+	#ifdef GIT_COMMIT_HASH
+		std::cout << " - " << GIT_COMMIT_HASH;
+	#endif	
 
-#ifdef _WIN32	
-	// the following line increases the number of open simultaneous files
-	int newmaxstdio = _setmaxstdio(8192);
-#endif
+	#ifdef CHIA_PLOT_BUILD_INFO
+		std::cout << std::endl << CHIA_PLOT_BUILD_INFO;
+	#endif
+	std::cout << std::endl << std::endl;
 
 	cxxopts::Options options("chia_plot",
-		"Multi-threaded pipelined Chia k32 plotter.\n\n"
 		"For <poolkey> and <farmerkey> see output of `chia keys show`.\n"
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
+		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
+		"In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.\n"
 	);
-	
+
 	std::string pool_key_str;
 	std::string farmer_key_str;
 	std::string tmp_dir;
@@ -128,12 +163,12 @@ int _main(int argc, char** argv)
 	std::string final_dir;
 	int num_plots = 1;
 	int num_threads = 4;
-	int num_buckets = 128;
+	int num_buckets = 256;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
-		"u, buckets", "Number of buckets (default = 128)", cxxopts::value<int>(num_buckets))(
+		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
 		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
@@ -160,7 +195,7 @@ int _main(int argc, char** argv)
 		return -2;
 	}
 	if(tmp_dir.empty()) {
-		std::cout << "<tmpdir> needs to be specified via -t path/" << std::endl;
+		std::cout << "tmpdir needs to be specified via -t path/" << std::endl;
 		return -2;
 	}
 	if(tmp_dir2.empty()) {
@@ -174,43 +209,42 @@ int _main(int argc, char** argv)
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
 	
 	if(pool_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <poolkey>: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
-			<< "' (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
+		std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
+			<< "' (needs to be " << bls::G1Element::SIZE << " bytes, see `chia keys show`)" << std::endl;
 		return -2;
 	}
 	if(farmer_key.size() != bls::G1Element::SIZE) {
-		std::cout << "Invalid <farmerkey>: " << bls::Util::HexStr(farmer_key) << ", '" << farmer_key_str
-			<< "' (needs to be " << bls::G1Element::SIZE << " bytes)" << std::endl;
+		std::cout << "Invalid farmerkey: " << bls::Util::HexStr(farmer_key) << ", '" << farmer_key_str
+			<< "' (needs to be " << bls::G1Element::SIZE << " bytes, see `chia keys show`)" << std::endl;
 		return -2;
 	}
 	if(!tmp_dir.empty() && tmp_dir.find_last_of("/\\") != tmp_dir.size() - 1) {
-		std::cout << "Invalid <tmpdir>: " << tmp_dir << " (needs trailing '/' or '\\')" << std::endl;
+		std::cout << "Invalid tmpdir: " << tmp_dir << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
 	if(!tmp_dir2.empty() && tmp_dir2.find_last_of("/\\") != tmp_dir2.size() - 1) {
-		std::cout << "Invalid <tmpdir2>: " << tmp_dir2 << " (needs trailing '/' or '\\')" << std::endl;
+		std::cout << "Invalid tmpdir2: " << tmp_dir2 << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
 	if(!final_dir.empty() && final_dir.find_last_of("/\\") != final_dir.size() - 1) {
-		std::cout << "Invalid <finaldir>: " << final_dir << " (needs trailing '/' or '\\')" << std::endl;
+		std::cout << "Invalid finaldir: " << final_dir << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
 	if(num_threads < 1 || num_threads > 1024) {
-		std::cout << "Invalid <threads> parameter: " << num_threads << " (supported: [1..1024])" << std::endl;
+		std::cout << "Invalid threads parameter: " << num_threads << " (supported: [1..1024])" << std::endl;
 		return -2;
 	}
 	if(log_num_buckets < 4 || log_num_buckets > 16) {
-		std::cout << "Invalid <buckets> parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
+		std::cout << "Invalid buckets parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
-
 	{
 		const std::string path = tmp_dir + ".chia_plot_tmp";
 		if(auto file = fopen(path.c_str(), "wb")) {
 			fclose(file);
 			remove(path.c_str());
 		} else {
-			std::cout << "Failed to write to <tmpdir> directory: '" << tmp_dir << "'" << std::endl;
+			std::cout << "Failed to write to tmpdir directory: '" << tmp_dir << "'" << std::endl;
 			return -2;
 		}
 	}
@@ -220,7 +254,7 @@ int _main(int argc, char** argv)
 			fclose(file);
 			remove(path.c_str());
 		} else {
-			std::cout << "Failed to write to <tmpdir2> directory: '" << tmp_dir2 << "'" << std::endl;
+			std::cout << "Failed to write to tmpdir2 directory: '" << tmp_dir2 << "'" << std::endl;
 			return -2;
 		}
 	}
@@ -230,13 +264,36 @@ int _main(int argc, char** argv)
 			fclose(file);
 			remove(path.c_str());
 		} else {
-			std::cout << "Failed to write to <finaldir> directory: '" << final_dir << "'" << std::endl;
+			std::cout << "Failed to write to finaldir directory: '" << final_dir << "'" << std::endl;
 			return -2;
 		}
 	}
+	{
+		// check that we can open required amount of files
+		const int num_files_max = num_buckets + 20;
+		std::vector<std::pair<FILE*, std::string>> files;
+		for(int i = 0; i < num_files_max; ++i) {
+			const std::string path = tmp_dir + ".chia_plot_tmp." + std::to_string(i);
+			if(auto file = fopen(path.c_str(), "wb")) {
+				files.emplace_back(file, path);
+			} else {
+				std::cout << "Cannot open at least " << num_files_max
+						<< " files, please raise maximum open file limit in OS." << std::endl;
+			return -2;
+		}
+	}
+		for(const auto& entry : files) {
+			fclose(entry.first);
+			remove(entry.second.c_str());
+		}
+	}
+	
+	if(num_plots > 1 || num_plots < 0) {
+		std::signal(SIGINT, interrupt_handler);
+		std::signal(SIGTERM, interrupt_handler);
+	}
 	
 	std::cout << "Final Directory: " << final_dir << std::endl;
-	
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
 	} else {
@@ -263,6 +320,11 @@ int _main(int argc, char** argv)
 	
 	for(int i = 0; i < num_plots || num_plots < 0; ++i)
 	{
+		if (gracefully_exit) {
+			std::cout << std::endl << "Process has been interrupted, waiting for copy/rename operations to finish ..." << std::endl;
+			break;
+		}
+		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(num_threads, log_num_buckets, pool_key, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
@@ -297,6 +359,7 @@ int main(int argc, char** argv)
 {
 	std::exception_ptr eptr;
 	try {
+		_setmaxstdio(8192);
 		return _main(argc, argv);
 	}
 	catch (...) {
