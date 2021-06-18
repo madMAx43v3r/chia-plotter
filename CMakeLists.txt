@@ -11,6 +11,11 @@ add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 
 project(chia-plotter C CXX ASM)
 
+if(NOT CHIA_PLOT_BUILD_TESTS)
+    set(CHIA_PLOT_BUILD_TESTS true)
+endif()
+
+
 set(TARGET_ARCH ${CMAKE_HOST_SYSTEM_PROCESSOR})
 message(STATUS "Architecture: ${TARGET_ARCH}")
 set(ENV{RELIC_MAIN} "1")
@@ -101,21 +106,24 @@ add_library(chia_plotter STATIC
 	lib/chacha8.c
 	src/settings.cpp
 )
+
 if (MSVC)
 	target_link_libraries(chia_plotter blake3 fse)
 else()
 	target_link_libraries(chia_plotter blake3 fse Threads::Threads)
 endif()
 
-add_executable(test_copy test/test_copy.cpp)
-add_executable(test_disk_sort test/test_disk_sort.cpp)
+if(CHIA_PLOT_BUILD_TESTS)
+	add_executable(test_copy test/test_copy.cpp)
+	add_executable(test_disk_sort test/test_disk_sort.cpp)
 
-add_executable(test_phase_1 test/test_phase_1.cpp)
-add_executable(test_phase_2 test/test_phase_2.cpp)
-add_executable(test_phase_3 test/test_phase_3.cpp)
-add_executable(test_phase_4 test/test_phase_4.cpp)
+	add_executable(test_phase_1 test/test_phase_1.cpp)
+	add_executable(test_phase_2 test/test_phase_2.cpp)
+	add_executable(test_phase_3 test/test_phase_3.cpp)
+	add_executable(test_phase_4 test/test_phase_4.cpp)
 
-add_executable(check_phase_1 test/check_phase_1.cpp)
+	add_executable(check_phase_1 test/check_phase_1.cpp)
+endif()
 
 add_executable(chia_plot src/chia_plot.cpp)
 
@@ -124,30 +132,34 @@ if (MSVC)
 	add_library(uint128 STATIC uint128_t/uint128_t.cpp)
 	target_include_directories(uint128 PUBLIC uint128_t)
 
-	target_link_libraries(test_copy chia_plotter)
-	target_link_libraries(test_disk_sort chia_plotter uint128)
-	target_link_libraries(test_phase_1 chia_plotter uint128)
-	target_link_libraries(test_phase_2 chia_plotter uint128)
-	target_link_libraries(test_phase_3 chia_plotter uint128)
-	target_link_libraries(test_phase_4 chia_plotter uint128)
-	target_link_libraries(check_phase_1 chia_plotter uint128)
+	if(CHIA_PLOT_BUILD_TESTS)
+		target_link_libraries(test_copy chia_plotter)
+		target_link_libraries(test_disk_sort chia_plotter uint128)
+		target_link_libraries(test_phase_1 chia_plotter uint128)
+		target_link_libraries(test_phase_2 chia_plotter uint128)
+		target_link_libraries(test_phase_3 chia_plotter uint128)
+		target_link_libraries(test_phase_4 chia_plotter uint128)
+		target_link_libraries(check_phase_1 chia_plotter uint128)
+	endif()
 
 	target_link_libraries(chia_plot chia_plotter bls uint128)
 	set_target_properties(chia_plot PROPERTIES LINK_OPTIONS -NODEFAULTLIB:MSVCRT)
 
 else()
-	
-target_link_libraries(test_copy chia_plotter)
-target_link_libraries(test_disk_sort chia_plotter)
 
-target_link_libraries(test_phase_1 chia_plotter)
-target_link_libraries(test_phase_2 chia_plotter)
-target_link_libraries(test_phase_3 chia_plotter)
-target_link_libraries(test_phase_4 chia_plotter)
+	if(CHIA_PLOT_BUILD_TESTS)	
+		target_link_libraries(test_copy chia_plotter)
+		target_link_libraries(test_disk_sort chia_plotter)
 
-target_link_libraries(check_phase_1 chia_plotter)
+		target_link_libraries(test_phase_1 chia_plotter)
+		target_link_libraries(test_phase_2 chia_plotter)
+		target_link_libraries(test_phase_3 chia_plotter)
+		target_link_libraries(test_phase_4 chia_plotter)
 
-target_link_libraries(chia_plot chia_plotter bls sodium)
+		target_link_libraries(check_phase_1 chia_plotter)
+	endif()	
+
+	target_link_libraries(chia_plot chia_plotter bls sodium)
 
 endif()
 
