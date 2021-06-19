@@ -250,7 +250,11 @@ int main(int argc, char** argv)
 		return -2;
 	}
 	if(log_num_buckets < 4 || log_num_buckets > 16) {
-		std::cout << "Invalid buckets parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
+		std::cout << "Invalid buckets parameter -u: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
+		return -2;
+	}
+	if (log_num_buckets_3 < 4 || log_num_buckets_3 > 16) {
+		std::cout << "Invalid buckets parameter -v: 2^" << log_num_buckets_3 << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
 	{
@@ -283,7 +287,7 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
-	const int num_files_max = (1 << log_num_buckets) + 2 * num_threads + 32;
+	const int num_files_max = (1 << std::max(log_num_buckets, log_num_buckets_3)) + 2 * num_threads + 32;
 	
 #ifndef _WIN32
 	if(false) {
