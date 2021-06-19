@@ -8,7 +8,7 @@ simply by increasing the number of "cores", ie. threads.
 
 ## Usage
 
-Check discord for support: https://discord.gg/rj46Dc5c
+Check discord for support: https://discord.gg/YJ4GSMMY
 
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
