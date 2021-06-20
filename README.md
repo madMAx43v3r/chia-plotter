@@ -329,7 +329,6 @@ Would run your plotter with 8 CPUs and 8GB of RAM.
 
 ## Known Issues
 
-- Doesn't compile with gcc-11, use a lower version.
 - Needs at least cmake 3.14 (because of bls-signatures)
 
 ## How to install latest cmake on 18.04
