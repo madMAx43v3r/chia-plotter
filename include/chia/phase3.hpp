@@ -474,7 +474,8 @@ void compute(	phase2::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				std::ofstream& log_file)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -558,9 +559,16 @@ void compute(	phase2::output_t& input, output_t& out,
 	out.sort_7 = L_sort_np;
 	out.num_written_7 = num_written_final_7;
 	out.final_pointer_7 = final_pointers[7];
-	
-	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
-			", wrote " << num_written_final << " entries to final plot" << std::endl;
+
+	std::ostringstream console_buffer;
+        console_buffer << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
+                        ", wrote " << num_written_final << " entries to final plot";
+	 std::cout << console_buffer.str() <<std::endl;
+	 if (log_file.is_open()) {
+                std::string  log_buffer = get_date_string_ex("%Y-%m-%d-%H:%M:%S ",false,-1) + console_buffer.str();
+		log_file << log_buffer << std::endl;
+        }
+
 }
 
 
