@@ -8,14 +8,14 @@ simply by increasing the number of "cores", ie. threads.
 
 ## Usage
 
-Check discord for support: https://discord.gg/rj46Dc5c
+Check discord for support: https://discord.gg/YJ4GSMMY
 
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
 <tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')
 <tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.
 Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.
-In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished.
+In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished or double Ctrl-c to terminate immediatelly\
 
 Usage:
   chia_plot [OPTION...]
@@ -23,11 +23,13 @@ Usage:
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Number of buckets (default = 256)
+  -v, --buckets3 arg   Number of buckets for phase 3+4 (default = buckets)
   -t, --tmpdir arg     Temporary directory, needs ~220 GiB (default = $PWD)
   -2, --tmpdir2 arg    Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)
   -d, --finaldir arg   Final directory (default = <tmpdir>)
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
+  -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
       --help           Print help
 ```
 
@@ -136,23 +138,30 @@ https://github.com/stotiks/chia-plotter/releases
 
 ---
 ### Arch Linux
+
+First, install dependencies from pacman:
 ```bash
-sudo pamac install cmake libsodium libsodium-static gcc10
-# Checkout the source and install
-git clone https://github.com/madMAx43v3r/chia-plotter.git 
+sudo pacman -S cmake libsodium gmp gcc10
+```
+Then, get and compile the project:
+```bash
+# Checkout the source
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 
 # Use gcc10 during build
 export CC=gcc-10
 export CXX=g++-10
+# Init submodules
 git submodule update --init
+# Compile
 ./make_devel.sh
 ./build/chia_plot --help
 ```
 ---
 ### CentOS 7
 ```bash
-git clone https://github.com/dendil/chia-plotter.git
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 
 git submodule update --init
@@ -171,7 +180,28 @@ scl enable devtoolset-7 bash
 ```
 ---
 ### Clear Linux
-Read [install file](doc/install_clearlinux.md)
+```bash
+sudo swupd update
+sudo swupd bundle-add c-basic devpkg-libsodium git wget
+
+echo PATH=$PATH:/usr/local/bin/ # for statically compiled cmake if not already in your PATH
+
+# Install libsodium
+cd /tmp
+wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz
+tar -xvf LATEST.tar.gz
+cd libsodium-stable
+./configure
+make && make check
+sudo make install
+# Checkout the source and install
+cd ~/
+git clone https://github.com/madMAx43v3r/chia-plotter.git 
+cd ~/chia-plotter
+git submodule update --init
+./make_devel.sh
+./build/chia_plot --help
+```
 
 ---
 ### Ubuntu 20.04
@@ -186,6 +216,25 @@ git submodule update --init
 ./build/chia_plot --help
 ```
 
+The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
+
+---
+### Debian 10 ("buster")
+
+Make sure to add buster-backports to your sources.list otherwise the installation will fail because an older cmake version. See the [debian backport documentation](https://backports.debian.org/Instructions/) for reference.
+
+```bash
+# Install cmake 3.16 from buster-backports
+sudo apt install -t buster-backports cmake
+sudo apt install -y libsodium-dev g++ git
+# Checkout the source and install
+git clone https://github.com/madMAx43v3r/chia-plotter.git 
+cd chia-plotter
+
+git submodule update --init
+./make_devel.sh
+./build/chia_plot --help
+```
 The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
 
 ---
@@ -251,7 +300,7 @@ docker run \
 
 In a Linux benchmark, we were able to find that running in Docker has only 5% performance impact than running in native OS.
 
-For Windows users, you should check if your Docker configuration has any RAM or CPU limits. Since Docke runs inside HyperV, that could potentially constrain your hardware usage. In any case, you can set the RAM limits with the `-m` flag (after the `docker run` command).
+For Windows users, you should check if your Docker configuration has any RAM or CPU limits. Since Docker runs inside HyperV, that could potentially constrain your hardware usage. In any case, you can set the RAM limits with the `-m` flag (after the `docker run` command).
 
 ### Regarding multithread in Docker
 
