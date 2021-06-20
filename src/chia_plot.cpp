@@ -292,7 +292,7 @@ int _main(int argc, char** argv)
 		}
 	}
 	const int num_files_max = (1 << std::max(log_num_buckets, log_num_buckets_3)) + 2 * num_threads + 32;
-
+	
 #if _WIN32
 	_setmaxstdio(num_files_max + 10);
 	//_setmaxstdio(8192);
