@@ -39,6 +39,8 @@ Depending on the phase more threads will be launched, the setting is just a mult
 RAM usage depends on `<threads>` and `<buckets>`.
 With the new default of 256 buckets it's about 0.5 GB per thread at most.
 
+`-G option` Will alternate the tempdir used while plotting to give each one, tmpdir and tmpdir2, equal usage. The first plot creation will use tmpdir and tempdir2 as expected. The next run, if -n equals 2 or more, will swap the order to tmpdir2 and tmpdir. The next run swaps again to tmpdir and tmpdir2. This will occur until the number of plots created is reached or until stopped.
+
 ### RAM disk setup on Linux
 `sudo mount -t tmpfs -o size=110G tmpfs /mnt/ram/`
 
@@ -61,7 +63,7 @@ On a dual Xeon<sup>(R)</sup> E5-2650v2<span>@</span>2.60GHz R720 with 256GB RAM 
 ```
 Number of Threads: 16
 Number of Buckets: 2^8 (256)
-Working Directory:   /mnt/tmp3/chia/tmp/ 
+Working Directory:   /mnt/tmp3/chia/tmp/
 Working Directory 2: /mnt/tmp3/chia/tmp/ram/
 [P1] Table 1 took 17.2488 sec
 [P1] Table 2 took 145.011 sec, found 4294911201 matches
@@ -99,12 +101,12 @@ Wrote plot header with 268 bytes
 [P3-1] Table 7 took 83.2586 sec, wrote 4294486972 right entries
 [P3-2] Table 7 took 56.3803 sec, wrote 4294486972 left entries, 4294486972 final
 Phase 3 took 733.323 sec, wrote 21875928379 entries to final plot
-[P4] Starting to write C1 and C3 tables  
-[P4] Finished writing C1 and C3 tables   
+[P4] Starting to write C1 and C3 tables
+[P4] Finished writing C1 and C3 tables
 [P4] Writing C2 table
 [P4] Finished writing C2 table
 Phase 4 took 84.6697 sec, final plot size is 108828428322 bytes
-Total plot creation time was 2530.76 sec 
+Total plot creation time was 2530.76 sec
 ```
 
 ## How to Verify
@@ -187,7 +189,7 @@ Read [install file](doc/install_clearlinux.md)
 ```bash
 sudo apt install -y libsodium-dev cmake g++ git
 # Checkout the source and install
-git clone https://github.com/madMAx43v3r/chia-plotter.git 
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 
 git submodule update --init
@@ -207,7 +209,7 @@ Make sure to add buster-backports to your sources.list otherwise the installatio
 sudo apt install -t buster-backports cmake
 sudo apt install -y libsodium-dev g++ git
 # Checkout the source and install
-git clone https://github.com/madMAx43v3r/chia-plotter.git 
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 
 git submodule update --init
@@ -241,12 +243,12 @@ Confirm which directory you have on YOUR Mac before applying following commands
 wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /usr/local/opt/cmake/share/cmake/Modules/FindSodium.cmake
 ```
  or
-``` 
+```
 wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /opt/homebrew/Cellar/cmake/3.20.3/share/cmake/Modules/FindSodium.cmake
 ```
 
 ```
-git clone https://github.com/madMAx43v3r/chia-plotter.git 
+git clone https://github.com/madMAx43v3r/chia-plotter.git
 cd chia-plotter
 git submodule update --init
 ./make_devel.sh
