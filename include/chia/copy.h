@@ -17,7 +17,7 @@
 
 #include <cstdio>
 #include <cstdint>
-
+#include <filesystem>
 
 inline
 uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
@@ -60,6 +60,9 @@ uint64_t final_copy(const std::string& src_path, const std::string& dst_path)
 	if(rename(src_path.c_str(), tmp_dst_path.c_str())) {
 		// try manual copy
 		total_bytes = copy_file(src_path, tmp_dst_path);
+	}
+	else {
+		total_bytes = std::filesystem::file_size(tmp_dst_path.c_str());
 	}
 	remove(src_path.c_str());
 	rename(tmp_dst_path.c_str(), dst_path.c_str());
