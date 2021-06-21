@@ -40,6 +40,8 @@ Depending on the phase more threads will be launched, the setting is just a mult
 RAM usage depends on `<threads>` and `<buckets>`.
 With the new default of 256 buckets it's about 0.5 GB per thread at most.
 
+`-G` option will alternate the temp dirs used while plotting to give each one, tmpdir and tmpdir2, equal usage. The first plot creation will use tmpdir and tmpdir2 as expected. The next run, if -n equals 2 or more, will swap the order to tmpdir2 and tmpdir. The next run swaps again to tmpdir and tmpdir2. This will occur until the number of plots created is reached or until stopped.
+
 ### RAM disk setup on Linux
 `sudo mount -t tmpfs -o size=110G tmpfs /mnt/ram/`
 

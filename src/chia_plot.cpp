@@ -11,6 +11,7 @@
 #include <chia/phase4.hpp>
 #include <chia/util.hpp>
 #include <chia/copy.h>
+#include <chia/cpuid.h>
 
 #include <bls.hpp>
 #include <sodium.h>
@@ -36,6 +37,7 @@
 
 bool gracefully_exit = false;
 int64_t interrupt_timestamp = 0;
+
 
 static void interrupt_handler(int sig)
 {	
@@ -216,6 +218,7 @@ int main(int argc, char** argv)
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
 		"l, logdir", "Directory to hold the log files", cxxopts::value<std::string>(log_dir))(
+		"hwinfo", "Print information regarding underlying hardware")(
 		"help", "Print help");
 	
 	if(argc <= 1) {
@@ -228,6 +231,29 @@ int main(int argc, char** argv)
 		std::cout << options.help({""}) << std::endl;
 		return 0;
 	}
+	if (args.count("hwinfo")) {
+		CPUInfo cinfo;
+		int num_threads = std::thread::hardware_concurrency();
+		int num_cpus = 1;
+		if ( num_threads == cinfo.logicalCpus() * 2) {
+			num_cpus = 2;
+		} else if ( num_threads == cinfo.logicalCpus() * 4) {
+			num_cpus = 4;
+		}
+		std::cout << "CPU Info          : " << cinfo.model()  <<  " (" << cinfo.vendor() << ")" << std::endl;
+		std::cout << "Logical CPUs      : " << cinfo.logicalCpus() * num_cpus << std::endl;
+		std::cout << "Core CPUs         : " << cinfo.cores() * num_cpus << std::endl;
+		std::cout << "HyperThreading    : " << (cinfo.isHyperThreaded() ? "true" : "false") << std::endl;
+		std::cout << "AVX               : " << (cinfo.isAVX() ? "true" : "false") << std::endl;
+		std::cout << "AVX2              : " << (cinfo.isAVX2() ? "true" : "false") << std::endl;
+		std::cout << "AVX512            : " << (cinfo.isAVX512() ? "true" : "false") << std::endl;
+		std::cout << "SSE41             : " << (cinfo.isSSE41() ? "true" : "false") << std::endl;
+		std::cout << "SSE42             : " << (cinfo.isSSE42() ? "true" : "false") << std::endl;
+		std::cout << "SSE               : " << (cinfo.isSSE() ? "true" : "false") << std::endl;
+		std::cout << "SSE3              : " << (cinfo.isSSE3() ? "true" : "false") << std::endl;
+		std::cout << "SSE2              : " << (cinfo.isSSE2() ? "true" : "false") << std::endl;
+		return 0;
+        }
 	if(pool_key_str.empty()) {
 		std::cout << "Pool Public Key (48 bytes) needs to be specified via -p <hex>, see `chia keys show`." << std::endl;
 		return -2;
