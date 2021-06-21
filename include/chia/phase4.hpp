@@ -246,7 +246,8 @@ void compute(	const phase3::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				std::ofstream& log_file)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -264,9 +265,15 @@ void compute(	const phase3::output_t& input, output_t& out,
 	out.plot_file_name = tmp_dir + plot_name + ".plot";
 	
 	std::rename(input.plot_file_name.c_str(), out.plot_file_name.c_str());
-	
-	std::cout << "Phase 4 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
-			", final plot size is " << out.plot_size << " bytes" << std::endl;
+
+	std::ostringstream console_buffer;
+        console_buffer <<  "Phase 4 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
+                        ", final plot size is " << out.plot_size << " bytes";
+	std::cout << console_buffer.str() << std::endl;
+	if (log_file.is_open()) {
+                std::string  log_buffer = get_date_string_ex("%Y-%m-%d-%H:%M:%S ",false,-1) + console_buffer.str();
+		log_file << log_buffer << std::endl;
+        }
 }
 
 

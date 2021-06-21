@@ -30,6 +30,7 @@ Usage:
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
   -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
+  -l, --logdir         Directory to hold the log files
       --help           Print help
 ```
 

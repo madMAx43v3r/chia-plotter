@@ -20,6 +20,7 @@
 #include <string>
 #include <csignal>
 
+
 #ifndef _WIN32
 #include <sys/resource.h>
 #endif
@@ -63,17 +64,20 @@ phase4::output_t create_plot(	const int num_threads,
 								const vector<uint8_t>& pool_key_bytes,
 								const vector<uint8_t>& farmer_key_bytes,
 								const std::string& tmp_dir,
-								const std::string& tmp_dir_2)
+								const std::string& tmp_dir_2,
+								const std::string& log_dir)
 {
 	const auto total_begin = get_wall_time_micros();
+	std::ofstream log_file;
+	std::ostringstream console_buffer;
 
-	std::cout << "Process ID: " << GETPID() << std::endl;
-	std::cout << "Number of Threads: " << num_threads << std::endl;
-	std::cout << "Number of Buckets P1:    2^" << log_num_buckets
+	console_buffer << "Process ID: " << GETPID() << std::endl;
+	console_buffer << "Number of Threads: " << num_threads << std::endl;
+	console_buffer << "Number of Buckets P1:    2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
-	std::cout << "Number of Buckets P3+P4: 2^" << log_num_buckets_3
+	console_buffer << "Number of Buckets P3+P4: 2^" << log_num_buckets_3
 			<< " (" << (1 << log_num_buckets_3) << ")" << std::endl;
-	
+
 	bls::G1Element pool_key;
 	bls::G1Element farmer_key;
 	try {
@@ -88,8 +92,8 @@ phase4::output_t create_plot(	const int num_threads,
 		std::cout << "Invalid farmerkey: " << bls::Util::HexStr(farmer_key_bytes) << std::endl;
 		throw;
 	}
-	std::cout << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
-	std::cout << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
+	console_buffer << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
+	console_buffer << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
 	
 	vector<uint8_t> seed(32);
 	randombytes_buf(seed.data(), seed.size());
@@ -116,9 +120,9 @@ phase4::output_t create_plot(	const int num_threads,
 	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
-	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
-	std::cout << "Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
-	std::cout << "Plot Name: " << plot_name << std::endl;
+	console_buffer << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
+	console_buffer << "Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
+	console_buffer << "Plot Name: " << plot_name << std::endl;
 	
 	// memo = bytes(pool_public_key) + bytes(farmer_public_key) + bytes(local_master_sk)
 	params.memo.insert(params.memo.end(), pool_key_bytes.begin(), pool_key_bytes.end());
@@ -128,22 +132,47 @@ phase4::output_t create_plot(	const int num_threads,
 		params.memo.insert(params.memo.end(), bytes.begin(), bytes.end());
 	}
 	params.plot_name = plot_name;
-	
+	if (log_dir != std::string("")) {
+		const std::string log_file_name = log_dir + plot_name + ".log";
+		log_file.open(log_file_name, std::ios::trunc | std::ios::out);
+		if (log_file.is_open()) {
+			console_buffer << "Logfile Name: " << log_file_name << std::endl;
+			//std::cout << "Logfile Name: " << log_file_name << std::endl;
+			log_file << console_buffer.str() << std::endl;
+			std::cout << console_buffer.str();
+			console_buffer.str("");
+			console_buffer.clear();
+		}
+	} else {
+		std::cout << console_buffer.str();
+		console_buffer.str("");
+		console_buffer.clear();
+	}
 	phase1::output_t out_1;
-	phase1::compute(params, out_1, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase1::compute(params, out_1, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2, log_file);
 	
 	phase2::output_t out_2;
-	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, log_file);
 	
 	phase3::output_t out_3;
-	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, log_file);
 	
 	phase4::output_t out_4;
-	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, log_file);
 	
 	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
-	std::cout << "Total plot creation time was "
+	console_buffer << "Total plot creation time was "
 			<< time_secs << " sec (" << time_secs / 60. << " min)" << std::endl;
+	std::cout << console_buffer.str();
+	if (log_dir != std::string("")) {
+		if (log_file.is_open()) {
+			std::string  log_buffer = get_date_string_ex("%Y-%m-%d-%H:%M:%S ",false,-1) + console_buffer.str();
+			log_file << log_buffer << std::endl;
+			console_buffer.str("");
+			console_buffer.clear();
+			log_file.close();
+		}
+	}
 	return out_4;
 }
 
@@ -170,6 +199,7 @@ int main(int argc, char** argv)
 	std::string tmp_dir;
 	std::string tmp_dir2;
 	std::string final_dir;
+	std::string log_dir;
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
@@ -187,6 +217,7 @@ int main(int argc, char** argv)
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
+		"l, logdir", "Directory to hold the log files", cxxopts::value<std::string>(log_dir))(
 		"hwinfo", "Print information regarding underlying hardware")(
 		"help", "Print help");
 	
@@ -271,6 +302,9 @@ int main(int argc, char** argv)
 		std::cout << "Invalid finaldir: " << final_dir << " (needs trailing '/' or '\\')" << std::endl;
 		return -2;
 	}
+	if (!log_dir.empty() && log_dir.find_last_of("/\\") != log_dir.size() - 1) {
+		std::cout << "Invalid logdir:: " << log_dir << " (needs trailing '/' or '\\')" << std::endl;
+	}
 	if(num_threads < 1 || num_threads > 1024) {
 		std::cout << "Invalid threads parameter: " << num_threads << " (supported: [1..1024])" << std::endl;
 		return -2;
@@ -312,6 +346,16 @@ int main(int argc, char** argv)
 			std::cout << "Failed to write to finaldir directory: '" << final_dir << "'" << std::endl;
 			return -2;
 		}
+	}
+	if (!log_dir.empty()) {
+		const std::string path = log_dir + ".chia_log";
+                if(auto file = fopen(path.c_str(),"w")) {
+                        fclose(file);
+                        remove(path.c_str());
+                } else {
+                        std::cout << "Failed to write to logdir directory:" << log_dir << std::endl;
+                        return -2;
+                }
 	}
 	const int num_files_max = (1 << std::max(log_num_buckets, log_num_buckets_3)) + 2 * num_threads + 32;
 	
@@ -390,7 +434,7 @@ int main(int argc, char** argv)
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(
 				num_threads, log_num_buckets, log_num_buckets_3,
-				pool_key, farmer_key, tmp_dir, tmp_dir2);
+				pool_key, farmer_key, tmp_dir, tmp_dir2, log_dir);
 		
 		if(final_dir != tmp_dir)
 		{

@@ -453,7 +453,8 @@ void compute(	const input_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				std::ofstream& log_file)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -503,8 +504,14 @@ void compute(	const input_t& input, output_t& out,
 	out.table[4] = tmp_5.get_info();
 	out.table[5] = tmp_6.get_info();
 	out.table[6] = tmp_7.get_info();
-	
-	std::cout << "Phase 1 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+
+	std::ostringstream console_buffer;	
+	console_buffer << "Phase 1 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec";
+	std::cout << console_buffer.str() << std::endl;
+	if (log_file.is_open()) { 
+		std::string  log_buffer = get_date_string_ex("%Y-%m-%d-%H:%M:%S ",false,-1) + console_buffer.str();
+		log_file << log_buffer << std::endl;
+	} else std::cout << "LOG PROB PH1" << std::endl;
 }
 
 

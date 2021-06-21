@@ -127,7 +127,8 @@ void compute(	const phase1::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				std::ofstream& log_file)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -166,8 +167,16 @@ void compute(	const phase1::output_t& input, output_t& out,
 	out.table_1 = input.table[0];
 	out.table_7 = table_7.get_info();
 	out.bitfield_1 = next_bitfield;
+
+	std::ostringstream console_buffer;
+        console_buffer <<  "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec";
+	std::cout << console_buffer.str() << std::endl;
+	if (log_file.is_open()) {
+                std::string  log_buffer = get_date_string_ex("%Y-%m-%d-%H:%M:%S ",false,-1) + console_buffer.str();
+		log_file << log_buffer << std::endl;
+        }
+
 	
-	std::cout << "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
 }
 
 
