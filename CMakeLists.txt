@@ -14,6 +14,7 @@ project(chia-plotter C CXX ASM)
 set(TARGET_ARCH ${CMAKE_HOST_SYSTEM_PROCESSOR})
 message(STATUS "Architecture: ${TARGET_ARCH}")
 
+set(ENV{RELIC_MAIN} "1")
 add_subdirectory(lib/bls-signatures)
 
 find_package(Threads REQUIRED)
