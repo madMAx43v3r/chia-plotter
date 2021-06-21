@@ -11,6 +11,7 @@
 #include <chia/phase4.hpp>
 #include <chia/util.hpp>
 #include <chia/copy.h>
+#include <chia/cpuid.h>
 
 #include <bls.hpp>
 #include <sodium.h>
@@ -35,6 +36,10 @@
 
 bool gracefully_exit = false;
 int64_t interrupt_timestamp = 0;
+int maxThreads = std::thread::hardware_concurrency();
+int maxCores = 0;
+int mPier = 0;
+
 
 static void interrupt_handler(int sig)
 {	
@@ -173,6 +178,7 @@ int main(int argc, char** argv)
 	int num_buckets = 256;
 	int num_buckets_3 = 0;
 	bool tmptoggle = false;
+	CPUInfo cinfo;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
@@ -185,6 +191,7 @@ int main(int argc, char** argv)
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
+		"hwinfo", "Print information regarding underlying hardware")(
 		"help", "Print help");
 	
 	if(argc <= 1) {
@@ -192,11 +199,33 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	const auto args = options.parse(argc, argv);
+	if ( maxThreads == cinfo.logicalCpus() * 2)
+                mPier=2;
+        else if ( maxThreads == cinfo.logicalCpus() * 4)
+                mPier=4;
+        else
+                mPier=1;
+	maxCores=cinfo.cores() * mPier;
 	
 	if(args.count("help")) {
 		std::cout << options.help({""}) << std::endl;
 		return 0;
 	}
+	if (args.count("hwinfo")) {
+                std::cout << "CPU Info          : " << cinfo.model()  <<  " (" << cinfo.vendor() << ")" << std::endl;
+                std::cout << "Logical CPUs      : " << cinfo.logicalCpus() * mPier << std::endl;
+                std::cout << "Core CPUs         : " << cinfo.cores() * mPier << std::endl;
+                std::cout << "HyperThreading    : " << (cinfo.isHyperThreaded() ? "true" : "false") << std::endl;
+                std::cout << "AVX               : " << (cinfo.isAVX() ? "true" : "false") << std::endl;
+                std::cout << "AVX2              : " << (cinfo.isAVX2() ? "true" : "false") << std::endl;
+                std::cout << "AVX512            : " << (cinfo.isAVX512() ? "true" : "false") << std::endl;
+                std::cout << "SSE41             : " << (cinfo.isSSE41() ? "true" : "false") << std::endl;
+                std::cout << "SSE42             : " << (cinfo.isSSE42() ? "true" : "false") << std::endl;
+                std::cout << "SSE               : " << (cinfo.isSSE() ? "true" : "false") << std::endl;
+                std::cout << "SSE3              : " << (cinfo.isSSE3() ? "true" : "false") << std::endl;
+                std::cout << "SSE2              : " << (cinfo.isSSE2() ? "true" : "false") << std::endl;
+                return 0;
+        }
 	if(pool_key_str.empty()) {
 		std::cout << "Pool Public Key (48 bytes) needs to be specified via -p <hex>, see `chia keys show`." << std::endl;
 		return -2;
