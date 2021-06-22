@@ -398,6 +398,9 @@ int main(int argc, char** argv)
 			std::cout << "Started copy to " << dst_path << std::endl;
 			copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
 		}
+		else if(tmptoggle) {
+			final_dir = tmp_dir2;
+		}
 		if (tmptoggle) {
 			tmp_dir.swap(tmp_dir2);
 		}
