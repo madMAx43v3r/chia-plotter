@@ -15,8 +15,6 @@ RUN apk --no-cache add \
     git
 
 COPY . .
-
-RUN git submodule update --init
 RUN /bin/sh ./make_devel.sh
 
 # Runtime image
