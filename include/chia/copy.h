@@ -17,10 +17,17 @@
 #include <cstdio>
 #include <cstdint>
 
+#include <filesystem>
+namespace fs = std::filesystem;
 
 inline
 uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 {
+	int plotsize = 109000000000
+	fs::space_info tmp = fs::space(dst_path);
+	if(tmp.available < plotsize) {
+		throw std::runtime_error("Destination does not have enough available disk space left");
+	}
 	FILE* src = fopen(src_path.c_str(), "rb");
 	if(!src) {
 		throw std::runtime_error("fopen() failed");
