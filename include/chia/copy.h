@@ -78,7 +78,8 @@ uint64_t final_copy(const std::string& src_path, const std::string& dst_path, co
 		total_bytes = copy_file(src_path, tmp_dst_path, tmp_dst2_path);
 	}
 	remove(src_path.c_str());
-	rename(tmp_dst_path.c_str(), dst_path.c_str(), tmp_dst2_path.c_str(), dst2_path.c_str());
+	rename(tmp_dst_path.c_str(), dst_path.c_str());
+	rename(tmp_dst2_path.c_str(), dst2_path.c_str());
 	return total_bytes;
 }
 
