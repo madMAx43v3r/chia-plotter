@@ -26,7 +26,7 @@ inline
 uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 {
 	#ifdef __linux__
-		int plotsize = 109000000000
+		const uint64_t plotsize = 109000000000 // rough plot size placeholder
 		fs::space_info tmp = fs::space(dst_path);
 		if(tmp.available < plotsize) {
 			throw std::runtime_error("Destination does not have enough available disk space left");
