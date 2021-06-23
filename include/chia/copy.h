@@ -23,14 +23,18 @@
 #endif
 
 inline
-uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
+uint64_t copy_file(const std::string& src_path, const std::string& dst_path, const std::string& dst2_path)
 {
 	#ifdef __linux__
-		const uint64_t plotsize = 109000000000 // rough plot size placeholder
+		const uint64_t plotsize = 109000000000 // rough plot size placeholder, later pass real size through
 		fs::space_info tmp = fs::space(dst_path);
 		if(tmp.available < plotsize) {
-			throw std::runtime_error("Destination does not have enough available disk space left");
-			// some code to switch to alternative destination dirs could be here
+			fs::space_info tmp2 = fs::space(dst_path2);
+			if(tmp2.available < plotsize) {
+				throw std::runtime_error("All destinations have run out of disk space");
+			}
+			dst_path = dst2_path;
+			throw std::runtime_error("Destination does not have enough available disk space left, switching to alternate destination");
 		}
 	#endif
 	FILE* src = fopen(src_path.c_str(), "rb");
