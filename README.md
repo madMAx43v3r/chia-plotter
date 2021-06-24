@@ -152,20 +152,15 @@ https://github.com/stotiks/chia-plotter/releases
 
   First, install dependencies from pacman:
   ```bash
-  sudo pacman -S cmake libsodium gmp gcc10
+  sudo pacman -S cmake libsodium gmp gcc11
   ```
   Then, clone and compile the project:
   ```bash
-  # Checkout the source
+  # Checkout the source and install
   git clone https://github.com/madMAx43v3r/chia-plotter.git
   cd chia-plotter
 
-  # Use gcc10 during build
-  export CC=gcc-10
-  export CXX=g++-10
-  # Init submodules
   git submodule update --init
-  # Compile
   ./make_devel.sh
   ./build/chia_plot --help
   ```
