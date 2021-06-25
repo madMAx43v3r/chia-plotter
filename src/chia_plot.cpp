@@ -345,8 +345,12 @@ int main(int argc, char** argv)
 					const auto bytes = final_copy(from_to.first, from_to.second);
 					
 					const auto time = (get_wall_time_micros() - total_begin) / 1e6;
-					std::cout << "Copy to " << from_to.second << " finished, took " << time << " sec, "
+					if(time > 1) {
+						std::cout << "Copy to " << from_to.second << " finished, took " << time << " sec, "
 							<< ((bytes / time) / 1024 / 1024) << " MB/s avg." << std::endl;
+					} else {
+						std::cout << "Renamed final plot to " << from_to.second << std::endl;
+					}
 					break;
 				} catch(const std::exception& ex) {
 					std::cout << "Copy to " << from_to.second << " failed with: " << ex.what() << std::endl;
