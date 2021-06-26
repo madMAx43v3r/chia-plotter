@@ -276,9 +276,9 @@ inline
 void WritePark(
     uint128_t first_line_point,
     const std::vector<uint8_t>& park_deltas,
-    const std::vector<uint64_t>& park_stubs,
+    const ParkBits& park_stubs_bits,
     uint8_t k,
-	uint8_t table_index,
+    uint8_t table_index,
     uint8_t* park_buffer,
     const uint64_t park_buffer_size)
 {
@@ -290,11 +290,6 @@ void WritePark(
     Util::IntTo16Bytes(index, first_line_point);
     index += CalculateLinePointSize(k);
 
-    // We use ParkBits instead of Bits since it allows storing more data
-    ParkBits park_stubs_bits;
-    for (uint64_t stub : park_stubs) {
-        park_stubs_bits.AppendValue(stub, (k - kStubMinusBits));
-    }
     uint32_t stubs_size = CalculateStubsSize(k);
     uint32_t stubs_valid_size = cdiv(park_stubs_bits.GetSize(), 8);
     park_stubs_bits.ToBytes(index);
@@ -386,7 +381,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 					throw std::logic_error("empty park input");
 				}
 				std::vector<uint8_t> deltas(points.size() - 1);
-				std::vector<uint64_t> stubs(points.size() - 1);
+				ParkBits stub_bits;
 				for(size_t i = 0; i < points.size() - 1; ++i) {
 					const auto big_delta = points[i + 1] - points[i];
 					const auto stub = big_delta & ((1ull << (k - kStubMinusBits)) - 1);
@@ -395,7 +390,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 						throw std::logic_error("small_delta >= 256 (" + std::to_string(uint64_t(small_delta)) + ")");
 					}
 					deltas[i] = small_delta;
-					stubs[i] = stub;
+					stub_bits.AppendValue(stub, (k - kStubMinusBits));
 				}
 				park_out_t tmp;
 				tmp.offset = L_final_begin + park.index * park_size_bytes;
@@ -403,7 +398,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 				WritePark(
 					points[0],
 					deltas,
-					stubs,
+					stub_bits,
 					k,
 					L_index,
 					tmp.buffer.data(),
