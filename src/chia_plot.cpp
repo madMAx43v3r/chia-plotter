@@ -168,7 +168,6 @@ int main(int argc, char** argv)
 	std::string tmp_dir;
 	std::string tmp_dir2;
 	std::string final_dir;
-	std::string z;
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
