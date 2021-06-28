@@ -172,6 +172,7 @@ int main(int argc, char** argv)
 	int num_threads = 4;
 	int num_buckets = 256;
 	int num_buckets_3 = 0;
+	bool waitforcopy = false;
 	bool tmptoggle = false;
 	
 	options.allow_unrecognised_options().add_options()(
@@ -182,6 +183,7 @@ int main(int argc, char** argv)
 		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
+		"w, waitforcopy", "Wait for copy to start next plot", cxxopts::value<bool>(waitforcopy))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
@@ -375,6 +377,9 @@ int main(int argc, char** argv)
 			const auto dst_path = final_dir + out.params.plot_name + ".plot";
 			std::cout << "Started copy to " << dst_path << std::endl;
 			copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
+			if(waitforcopy) {
+				copy_thread.wait();
+			}
 		}
 		else if(tmptoggle) {
 			final_dir = tmp_dir2;
@@ -387,5 +392,3 @@ int main(int argc, char** argv)
 	
 	return 0;
 }
-
-

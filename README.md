@@ -27,6 +27,7 @@ Usage:
   -t, --tmpdir arg     Temporary directory, needs ~220 GiB (default = $PWD)
   -2, --tmpdir2 arg    Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)
   -d, --finaldir arg   Final directory (default = <tmpdir>)
+  -w, --waitforcopy    Wait for copy to start next plot
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
   -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
