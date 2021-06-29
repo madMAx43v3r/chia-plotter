@@ -1,5 +1,16 @@
 #include "chacha8.h"
 
+#include <string.h>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#elif defined(__GNUC__) && defined(__x86_64__)
+__inline static unsigned int __attribute__((__always_inline__, __artificial__, __gnu_inline__)) _rotl(unsigned int value, int count)
+{
+    // count &= 31;
+    return (value << count) | (value >> (-count & 31));
+}
+#endif
+
 #define U32TO32_LITTLE(v) (v)
 #define U8TO32_LITTLE(p) (*(const uint32_t *)(p))
 #define U32TO8_LITTLE(p, v) (((uint32_t *)(p))[0] = U32TO32_LITTLE(v))
@@ -9,16 +20,6 @@
 #define XOR(v, w) ((v) ^ (w))
 #define PLUS(v, w) ((v) + (w))
 #define PLUSONE(v) (PLUS((v), 1))
-
-#define QUARTERROUND(a, b, c, d) \
-    a = PLUS(a, b);              \
-    d = ROTATE(XOR(d, a), 16);   \
-    c = PLUS(c, d);              \
-    b = ROTATE(XOR(b, c), 12);   \
-    a = PLUS(a, b);              \
-    d = ROTATE(XOR(d, a), 8);    \
-    c = PLUS(c, d);              \
-    b = ROTATE(XOR(b, c), 7)
 
 static const char sigma[16] = "expand 32-byte k";
 static const char tau[16] = "expand 16-byte k";
@@ -54,7 +55,91 @@ void chacha8_keysetup(struct chacha8_ctx *x, const uint8_t *k, uint32_t kbits, c
     }
 }
 
-void chacha8_get_keystream(const struct chacha8_ctx *x, uint64_t pos, uint32_t n_blocks, uint8_t *c)
+#if defined(_MSC_VER) || defined(__GNUC__) && defined(__x86_64__)
+
+typedef struct {
+    uint32_t a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p;
+} BLOCK;
+
+#define QROUND(a, b, c, d)       \
+    d = _rotl(d ^ (a += b), 16); \
+    b = _rotl(b ^ (c += d), 12); \
+    d = _rotl(d ^ (a += b), 8);  \
+    b = _rotl(b ^ (c += d), 7)
+#define FROUND                  \
+    QROUND(x.d, x.h, x.l, x.p); \
+    QROUND(x.c, x.g, x.k, x.o); \
+    QROUND(x.b, x.f, x.j, x.n); \
+    QROUND(x.a, x.e, x.i, x.m); \
+    QROUND(x.a, x.f, x.k, x.p); \
+    QROUND(x.b, x.g, x.l, x.m); \
+    QROUND(x.c, x.h, x.i, x.n); \
+    QROUND(x.d, x.e, x.j, x.o)
+#define FFINAL  \
+    x.a += j.a; \
+    x.b += j.b; \
+    x.c += j.c; \
+    x.d += j.d; \
+    x.e += j.e; \
+    x.f += j.f; \
+    x.g += j.g; \
+    x.h += j.h; \
+    x.i += j.i; \
+    x.j += j.j; \
+    x.k += j.k; \
+    x.l += j.l; \
+    x.m += j.m; \
+    x.n += j.n; \
+    x.o += j.o; \
+    x.p += j.p
+
+void chacha8_get_keystream(
+    const struct chacha8_ctx *ctx,
+    uint64_t pos,
+    uint32_t n_blocks,
+    uint8_t *c)
+{
+    BLOCK x;
+    BLOCK j;
+
+    if (!n_blocks)
+        return;
+
+    memcpy(&j, ctx, sizeof(BLOCK));
+    j.m = pos;
+    j.n = pos >> 32;
+
+_BLOCK_LOOP:
+
+    memcpy(&x, &j, sizeof(BLOCK));
+
+    FROUND;
+    FROUND;
+    FROUND;
+    FROUND;
+    FFINAL;
+
+    memcpy(c, &x, sizeof(BLOCK));
+
+    if (--n_blocks) {
+        c += 64, j.n += !++j.m;
+        goto _BLOCK_LOOP;
+    }
+}
+
+//#else
+
+#define QUARTERROUND(a, b, c, d) \
+    a = PLUS(a, b);              \
+    d = ROTATE(XOR(d, a), 16);   \
+    c = PLUS(c, d);              \
+    b = ROTATE(XOR(b, c), 12);   \
+    a = PLUS(a, b);              \
+    d = ROTATE(XOR(d, a), 8);    \
+    c = PLUS(c, d);              \
+    b = ROTATE(XOR(b, c), 7)
+
+void chacha8_get_keystream_cst(const struct chacha8_ctx *x, uint64_t pos, uint32_t n_blocks, uint8_t *c)
 {
     uint32_t x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15;
     uint32_t j0, j1, j2, j3, j4, j5, j6, j7, j8, j9, j10, j11, j12, j13, j14, j15;
@@ -147,3 +232,5 @@ void chacha8_get_keystream(const struct chacha8_ctx *x, uint64_t pos, uint32_t n
         c += 64;
     }
 }
+
+#endif
