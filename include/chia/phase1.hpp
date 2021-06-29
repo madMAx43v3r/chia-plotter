@@ -10,6 +10,7 @@
 
 #include <chia/phase1.h>
 #include <chia/ThreadPool.h>
+#include <chia/DiskSort.hpp>
 #include <chia/DiskTable.h>
 #include <chia/bits.hpp>
 
@@ -456,19 +457,19 @@ void compute(	const input_t& input, output_t& out,
 				const std::string tmp_dir_2)
 {
 	const auto total_begin = get_wall_time_micros();
-	
+
 	initialize();
-	
+
 	const std::string prefix = tmp_dir + plot_name + ".p1.";
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".p1.";
 	
 	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, prefix_2 + "t1");
 	compute_f1(input.id.data(), num_threads, &sort_1);
-	
+
 	DiskTable<tmp_entry_1> tmp_1(prefix + "table1.tmp");
 	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, prefix_2 + "t2");
 	compute_table<entry_1, entry_2, tmp_entry_1>(
-			2, num_threads, &sort_1, &sort_2, &tmp_1);
+		2, num_threads, &sort_1, &sort_2, &tmp_1);
 	
 	DiskTable<tmp_entry_x> tmp_2(prefix + "table2.tmp");
 	DiskSort3 sort_3(32 + kExtraBits, log_num_buckets, prefix_2 + "t3");
