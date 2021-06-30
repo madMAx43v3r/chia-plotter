@@ -260,7 +260,11 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	if(contract_addr_str.empty() && pool_key_str.empty()) {
-		std::cout << "Pool Public Key or Pool Contract Address needs to be specified via -p or -c, see `chia_plot --help`." << std::endl;
+		std::cout << "Pool Public Key (for solo farming) or Pool Contract Address (for pool farming) needs to be specified via -p or -c, see `chia_plot --help`." << std::endl;
+		return -2;
+	}
+	if(!contract_addr_str.empty() && !pool_key_str.empty()) {
+		std::cout << "Choose either Pool Public Key (for solo farming) or Pool Contract Address (for pool farming), see `chia_plot --help`." << std::endl;
 		return -2;
 	}
 	if(farmer_key_str.empty()) {
@@ -295,11 +299,16 @@ int main(int argc, char** argv)
 		}
 	}
 	else {
-		puzzle_hash = bech32_address_decode(contract_addr_str);
-		if(puzzle_hash.size() != 32) {
-			std::cout << "Invalid puzzle hash (pool contract address): "
+		try {
+			puzzle_hash = bech32_address_decode(contract_addr_str);
+			if(puzzle_hash.size() != 32) {
+				throw std::logic_error("pool puzzle hash needs to be 32 bytes");
+			}
+		}
+		catch(std::exception& ex) {
+			std::cout << "Invalid contract (address): 0x"
 					<< bls::Util::HexStr(puzzle_hash) << ", '" << contract_addr_str
-				<< "' (needs to be 32 bytes, see `chia plotnft show`)" << std::endl;
+					<< "' (" << ex.what() << ", see `chia plotnft show`)" << std::endl;
 			return -2;
 		}
 	}
