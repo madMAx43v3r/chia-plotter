@@ -61,8 +61,8 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr)
 	if(res.encoding != bech32::Bech32m) {
 		throw std::logic_error("invalid contract address (!Bech32m): " + addr);
 	}
-	if(res.hrp != "txch") {
-		throw std::logic_error("invalid contract address (" + res.hrp + " != txch): " + addr);
+	if(res.hrp != "xch" && res.hrp != "txch") {
+		throw std::logic_error("invalid contract address (" + res.hrp + " != xch): " + addr);
 	}
 	if(res.dp.size() != 52) {
 		throw std::logic_error("invalid contract address (size != 52): " + addr);
