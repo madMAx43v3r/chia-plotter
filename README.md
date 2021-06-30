@@ -124,6 +124,15 @@ cd chiapos && mkdir build && cd build && cmake .. && make -j8
 ./ProofOfSpace check -f plot-k32-???.plot [num_iterations]
 ```
 
+## How to update to latest version
+
+```bash
+cd chia-plotter
+git checkout master
+git pull
+git submodule update --init
+```
+
 ## Future Plans
 
 I do have some history with GPU mining, back in 2014 I was the first to open source [a XPM GPU miner,](https://github.com/madMAx43v3r/xpmclient)
