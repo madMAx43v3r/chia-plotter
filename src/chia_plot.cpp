@@ -256,7 +256,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	if(contract_addr_str.empty() && pool_key_str.empty()) {
-		std::cout << "Pool Contract Address (64 chars) or Pool Puzzle Hash (32 bytes) needs to be specified via -p or -c, see `chia_plot --help`." << std::endl;
+		std::cout << "Pool Public Key or Pool Contract Address needs to be specified via -p or -c, see `chia_plot --help`." << std::endl;
 		return -2;
 	}
 	if(farmer_key_str.empty()) {
