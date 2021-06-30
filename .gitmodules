@@ -4,3 +4,6 @@
 [submodule "lib/BLAKE3"]
 	path = lib/BLAKE3
 	url = https://github.com/BLAKE3-team/BLAKE3.git
+[submodule "lib/libbech32"]
+	path = lib/libbech32
+	url = https://github.com/dcdpr/libbech32.git

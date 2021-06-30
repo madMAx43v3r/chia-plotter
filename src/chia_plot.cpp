@@ -15,6 +15,7 @@
 #include <bls.hpp>
 #include <sodium.h>
 #include <cxxopts.hpp>
+#include <libbech32.h>
 
 #include <string>
 #include <csignal>
@@ -52,6 +53,27 @@ static void interrupt_handler(int sig)
     	std::cout << "****************************************************************************************" << std::endl;
     	gracefully_exit = true;
     }
+}
+
+std::vector<uint8_t> bech32_address_decode(const std::string& addr) {
+	const auto res = bech32::decode(addr);
+	if(res.hrp != "xch") {
+		throw std::logic_error("invalid contract address (!xch): " + addr);
+	}
+	if(res.dp.size() != 52) {
+		throw std::logic_error("invalid contract address (size != 52): " + addr);
+	}
+	Bits bits;
+	for(int i = 0; i < 51; ++i) {
+		bits.AppendValue(res.dp[i], 5);
+	}
+	bits.AppendValue(res.dp[51] >> 4, 1);
+	if(bits.GetSize() != 32 * 8) {
+		throw std::logic_error("invalid contract address (bits != 256): " + addr);
+	}
+	std::vector<uint8_t> hash(32);
+	bits.ToBytes(hash.data());
+	return hash;
 }
 
 inline
@@ -192,7 +214,7 @@ int main(int argc, char** argv)
 	);
 	
 	std::string pool_key_str;
-	std::string puzzle_hash_str;
+	std::string contract_addr_str;
 	std::string farmer_key_str;
 	std::string tmp_dir;
 	std::string tmp_dir2;
@@ -209,7 +231,7 @@ int main(int argc, char** argv)
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
-		"z, puzzle", "Pool Puzzle Hash (32 bytes)", cxxopts::value<std::string>(puzzle_hash_str))(
+		"c, contract", "Pool Contract Address (64 chars)", cxxopts::value<std::string>(contract_addr_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"help", "Print help");
 	
@@ -223,8 +245,8 @@ int main(int argc, char** argv)
 		std::cout << options.help({""}) << std::endl;
 		return 0;
 	}
-	if(puzzle_hash_str.empty() && pool_key_str.empty()) {
-		std::cout << "Pool Public Key (48 bytes) or Pool Puzzle Hash (32 bytes) needs to be specified via -p or -z, see `chia_plot --help`." << std::endl;
+	if(contract_addr_str.empty() && pool_key_str.empty()) {
+		std::cout << "Pool Contract Address (64 chars) or Pool Puzzle Hash (32 bytes) needs to be specified via -p or -c, see `chia_plot --help`." << std::endl;
 		return -2;
 	}
 	if(farmer_key_str.empty()) {
@@ -242,7 +264,7 @@ int main(int argc, char** argv)
 		final_dir = tmp_dir;
 	}
 	const auto pool_key = hex_to_bytes(pool_key_str);
-	const auto puzzle_hash = hex_to_bytes(puzzle_hash_str);
+	const auto puzzle_hash = bech32_address_decode(contract_addr_str);
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
 
@@ -254,8 +276,9 @@ int main(int argc, char** argv)
 		}
 	}
 	else if(puzzle_hash.size() != 32) {
-		std::cout << "Invalid puzzle: " << bls::Util::HexStr(puzzle_hash) << ", '" << puzzle_hash_str
-			<< "' (needs to be 32 bytes, see ?)" << std::endl;
+		std::cout << "Invalid puzzle hash (pool contract address): "
+				<< bls::Util::HexStr(puzzle_hash) << ", '" << contract_addr_str
+			<< "' (needs to be 32 bytes, see `chia plotnft show`)" << std::endl;
 		return -2;
 	}
 	if(farmer_key.size() != bls::G1Element::SIZE) {
