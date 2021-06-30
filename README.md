@@ -51,7 +51,7 @@ Note: 128 GiB System RAM minimum required for RAM disk.
 
 XCH: xch1w5c2vv5ak08pczeph7tp5xmkl5762pdf3pyjkg9z4ks4ed55j3psgay0zh
 
-ETH: 0x97057cdf529867838d2a1f7f23ba62456764e0cd
+ETH-ERC20: 0x97057cdf529867838d2a1f7f23ba62456764e0cd
 
 LTC: MNUnszsX2srv5EJpu9YYHAXb19MqUpuBjD
 
