@@ -79,6 +79,7 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr) {
 inline
 phase4::output_t create_plot(	const int num_threads,
 								const int log_num_buckets,
+								const int log_num_buckets_3,
 								const vector<uint8_t>& pool_key_bytes,
 								const vector<uint8_t>& puzzle_hash_bytes,
 								const vector<uint8_t>& farmer_key_bytes,
@@ -90,8 +91,10 @@ phase4::output_t create_plot(	const int num_threads,
 	
 	std::cout << "Process ID: " << GETPID() << std::endl;
 	std::cout << "Number of Threads: " << num_threads << std::endl;
-	std::cout << "Number of Buckets: 2^" << log_num_buckets
+	std::cout << "Number of Buckets P1:    2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
+	std::cout << "Number of Buckets P3+P4: 2^" << log_num_buckets_3
+			<< " (" << (1 << log_num_buckets_3) << ")" << std::endl;
 	
 	bls::G1Element pool_key;
 	bls::G1Element farmer_key;
@@ -181,13 +184,13 @@ phase4::output_t create_plot(	const int num_threads,
 	phase1::compute(params, out_1, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase2::output_t out_2;
-	phase2::compute(out_1, out_2, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase3::output_t out_3;
-	phase3::compute(out_2, out_3, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase4::output_t out_4;
-	phase4::compute(out_3, out_4, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
 	std::cout << "Total plot creation time was "
@@ -206,6 +209,7 @@ int main(int argc, char** argv)
 #endif
 		"\n\n"
 		"For <poolkey> and <farmerkey> see output of `chia keys show`.\n"
+		"To plot for pools, specify <puzzle> hash instead of <poolkey>, see `chia plotnft show`.\n"
 		"<tmpdir> needs about 220 GiB space, it will handle about 25% of all writes. (Examples: './', '/mnt/tmp/')\n"
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
 		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
@@ -222,17 +226,21 @@ int main(int argc, char** argv)
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
+	int num_buckets_3 = 0;
+	bool tmptoggle = false;
 	
 	options.allow_unrecognised_options().add_options()(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
+		"v, buckets3", "Number of buckets for phase 3+4 (default = buckets)", cxxopts::value<int>(num_buckets_3))(
 		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"c, contract", "Pool Contract Address (64 chars)", cxxopts::value<std::string>(contract_addr_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
+		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
 		"help", "Print help");
 	
 	if(argc <= 1) {
@@ -263,10 +271,14 @@ int main(int argc, char** argv)
 	if(final_dir.empty()) {
 		final_dir = tmp_dir;
 	}
+	if(num_buckets_3 <= 0) {
+		num_buckets_3 = num_buckets;
+	}
 	const auto pool_key = hex_to_bytes(pool_key_str);
 	const auto puzzle_hash = bech32_address_decode(contract_addr_str);
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
+	const int log_num_buckets_3 = num_buckets_3 >= 16 ? int(log2(num_buckets_3)) : num_buckets_3;
 
 	if(puzzle_hash.empty()) {
 		if(pool_key.size() != bls::G1Element::SIZE) {
@@ -303,7 +315,11 @@ int main(int argc, char** argv)
 		return -2;
 	}
 	if(log_num_buckets < 4 || log_num_buckets > 16) {
-		std::cout << "Invalid buckets parameter: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
+		std::cout << "Invalid buckets parameter -u: 2^" << log_num_buckets << " (supported: 2^[4..16])" << std::endl;
+		return -2;
+	}
+	if (log_num_buckets_3 < 4 || log_num_buckets_3 > 16) {
+		std::cout << "Invalid buckets parameter -v: 2^" << log_num_buckets_3 << " (supported: 2^[4..16])" << std::endl;
 		return -2;
 	}
 	{
@@ -336,7 +352,7 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
-	const int num_files_max = (1 << log_num_buckets) + 2 * num_threads + 32;
+	const int num_files_max = (1 << std::max(log_num_buckets, log_num_buckets_3)) + 2 * num_threads + 32;
 	
 #ifndef _WIN32
 	if(false) {
@@ -411,13 +427,18 @@ int main(int argc, char** argv)
 			break;
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
-		const auto out = create_plot(num_threads, log_num_buckets, pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
+		const auto out = create_plot(
+				num_threads, log_num_buckets, log_num_buckets_3,
+				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
 		{
 			const auto dst_path = final_dir + out.params.plot_name + ".plot";
 			std::cout << "Started copy to " << dst_path << std::endl;
 			copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
+		}
+		if (tmptoggle) {
+			tmp_dir.swap(tmp_dir2);
 		}
 	}
 	copy_thread.close();

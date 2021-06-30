@@ -8,7 +8,7 @@ simply by increasing the number of "cores", ie. threads.
 
 ## Usage
 
-Check discord for support: https://discord.gg/rj46Dc5c
+Check discord for support: https://discord.gg/YJ4GSMMY
 
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
@@ -23,11 +23,13 @@ Usage:
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Number of buckets (default = 256)
+  -v, --buckets3 arg   Number of buckets for phase 3+4 (default = buckets)
   -t, --tmpdir arg     Temporary directory, needs ~220 GiB (default = $PWD)
   -2, --tmpdir2 arg    Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)
   -d, --finaldir arg   Final directory (default = <tmpdir>)
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
+  -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
       --help           Print help
 ```
 
@@ -36,6 +38,8 @@ Depending on the phase more threads will be launched, the setting is just a mult
 
 RAM usage depends on `<threads>` and `<buckets>`.
 With the new default of 256 buckets it's about 0.5 GB per thread at most.
+
+`-G` option will alternate the temp dirs used while plotting to give each one, tmpdir and tmpdir2, equal usage. The first plot creation will use tmpdir and tmpdir2 as expected. The next run, if -n equals 2 or more, will swap the order to tmpdir2 and tmpdir. The next run swaps again to tmpdir and tmpdir2. This will occur until the number of plots created is reached or until stopped.
 
 ### RAM disk setup on Linux
 `sudo mount -t tmpfs -o size=110G tmpfs /mnt/ram/`
@@ -178,7 +182,28 @@ scl enable devtoolset-7 bash
 ```
 ---
 ### Clear Linux
-Read [install file](doc/install_clearlinux.md)
+```bash
+sudo swupd update
+sudo swupd bundle-add c-basic devpkg-libsodium git wget
+
+echo PATH=$PATH:/usr/local/bin/ # for statically compiled cmake if not already in your PATH
+
+# Install libsodium
+cd /tmp
+wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz
+tar -xvf LATEST.tar.gz
+cd libsodium-stable
+./configure
+make && make check
+sudo make install
+# Checkout the source and install
+cd ~/
+git clone https://github.com/madMAx43v3r/chia-plotter.git 
+cd ~/chia-plotter
+git submodule update --init
+./make_devel.sh
+./build/chia_plot --help
+```
 
 ---
 ### Ubuntu 20.04
@@ -306,7 +331,6 @@ Would run your plotter with 8 CPUs and 8GB of RAM.
 
 ## Known Issues
 
-- Doesn't compile with gcc-11, use a lower version.
 - Needs at least cmake 3.14 (because of bls-signatures)
 
 ## How to install latest cmake on 18.04
