@@ -276,24 +276,28 @@ int main(int argc, char** argv)
 	if(num_buckets_3 <= 0) {
 		num_buckets_3 = num_buckets;
 	}
-	const auto pool_key = hex_to_bytes(pool_key_str);
-	const auto puzzle_hash = bech32_address_decode(contract_addr_str);
+	std::vector<uint8_t> pool_key;
+	std::vector<uint8_t> puzzle_hash;
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
 	const int log_num_buckets_3 = num_buckets_3 >= 16 ? int(log2(num_buckets_3)) : num_buckets_3;
 
-	if(puzzle_hash.empty()) {
+	if(contract_addr_str.empty()) {
+		pool_key = hex_to_bytes(pool_key_str);
 		if(pool_key.size() != bls::G1Element::SIZE) {
 			std::cout << "Invalid poolkey: " << bls::Util::HexStr(pool_key) << ", '" << pool_key_str
 				<< "' (needs to be " << bls::G1Element::SIZE << " bytes, see `chia keys show`)" << std::endl;
 			return -2;
 		}
 	}
-	else if(puzzle_hash.size() != 32) {
-		std::cout << "Invalid puzzle hash (pool contract address): "
-				<< bls::Util::HexStr(puzzle_hash) << ", '" << contract_addr_str
-			<< "' (needs to be 32 bytes, see `chia plotnft show`)" << std::endl;
-		return -2;
+	else {
+		puzzle_hash = bech32_address_decode(contract_addr_str);
+		if(puzzle_hash.size() != 32) {
+			std::cout << "Invalid puzzle hash (pool contract address): "
+					<< bls::Util::HexStr(puzzle_hash) << ", '" << contract_addr_str
+				<< "' (needs to be 32 bytes, see `chia plotnft show`)" << std::endl;
+			return -2;
+		}
 	}
 	if(farmer_key.size() != bls::G1Element::SIZE) {
 		std::cout << "Invalid farmerkey: " << bls::Util::HexStr(farmer_key) << ", '" << farmer_key_str
