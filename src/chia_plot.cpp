@@ -160,7 +160,8 @@ int main(int argc, char** argv)
 		"<tmpdir2> needs about 110 GiB space and ideally is a RAM drive, it will handle about 75% of all writes.\n"
 		"Combined (tmpdir + tmpdir2) peak disk usage is less than 256 GiB.\n"
 		"In case of <count> != 1, you may press Ctrl-C for graceful termination after current plot is finished,\n"
-		"or double press Ctrl-C to terminate immediately.\n"
+		"or double press Ctrl-C to terminate immediately.\n\n"
+		"(Sponsored by Flexpool.io - Check them out if you're looking for a secure and scalable Chia pool)\n"
 	);
 	
 	std::string pool_key_str;
@@ -332,6 +333,7 @@ int main(int argc, char** argv)
 		std::cout << " - " << GIT_COMMIT_HASH;
 	#endif	
 	std::cout << std::endl;
+	std::cout << "(Sponsored by Flexpool.io - Check them out if you're looking for a secure and scalable Chia pool)" << std::endl << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
