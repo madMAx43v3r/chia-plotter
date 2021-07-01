@@ -6,6 +6,8 @@ similar to how GPUs work, only the "cores" are normal software CPU threads.
 As a result this plotter is able to fully max out any storage device's bandwidth,
 simply by increasing the number of "cores", ie. threads.
 
+Sponsored by [Flexpool.io](https://www.flexpool.io/) - Check them out if you're looking for a secure and scalable Chia pool.
+
 ## Usage
 
 Join the Discord for support: https://discord.gg/maFmsyzQ
