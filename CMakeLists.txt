@@ -22,10 +22,18 @@ set(ENV{RELIC_MAIN} "1")
 
 if (MSVC)
 
-    add_definitions(-DCHIA_PLOT_BUILD_INFO="${CHIA_PLOT_BUILD_INFO}")    
+    add_definitions(-DCHIA_PLOT_BUILD_INFO="${CHIA_PLOT_BUILD_INFO}")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+	add_definitions(-DSODIUM_STATIC=TRUE)
+
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+
+	include_directories(
+		${sodium_INCLUDE_DIR}
+		${GMP_INCLUDE_DIR}
+	)	
+
 else()
 	find_package(Threads REQUIRED)
 	
@@ -50,12 +58,6 @@ include_directories(
 	${CMAKE_BINARY_DIR}/_deps/relic-src/include
 	${CMAKE_BINARY_DIR}/_deps/relic-build/include
 )
-
-if (MSVC)
-	include_directories(
-		${sodium_INCLUDE_DIR}
-	)	
-endif()
 
 #add_definitions(-DBLAKE3_NO_SSE2=true)
 #add_definitions(-DBLAKE3_NO_SSE41=true)
