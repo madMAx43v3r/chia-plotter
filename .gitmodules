@@ -3,4 +3,4 @@
 	url = https://github.com/madMAx43v3r/bls-signatures.git
 [submodule "lib/BLAKE3"]
 	path = lib/BLAKE3
-	url = https://github.com/BLAKE3-team/BLAKE3.git
+	url = https://github.com/canhmai/BLAKE3.git
