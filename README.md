@@ -6,11 +6,9 @@ similar to how GPUs work, only the "cores" are normal software CPU threads.
 As a result this plotter is able to fully max out any storage device's bandwidth,
 simply by increasing the number of "cores", ie. threads.
 
-Sponsored by [Flexpool.io](https://www.flexpool.io/) - Check them out if you're looking for a secure and scalable Chia pool.
-
 ## Usage
 
-Join the Discord for support: https://discord.gg/maFmsyzQ
+Join the Discord for support: https://discord.gg/YJ4GSMMY
 
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
@@ -31,6 +29,7 @@ Usage:
   -d, --finaldir arg   Final directory (default = <tmpdir>)
   -w, --waitforcopy    Wait for copy to start next plot
   -p, --poolkey arg    Pool Public Key (48 bytes)
+  -c, --contract arg   Pool Contract Address (64 chars)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
   -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
       --help           Print help
@@ -53,7 +52,7 @@ Note: 128 GiB System RAM minimum required for RAM disk.
 
 XCH: xch1w5c2vv5ak08pczeph7tp5xmkl5762pdf3pyjkg9z4ks4ed55j3psgay0zh
 
-ETH-ERC20: 0x97057cdf529867838d2a1f7f23ba62456764e0cd
+ETH: 0x97057cdf529867838d2a1f7f23ba62456764e0cd
 
 LTC: MNUnszsX2srv5EJpu9YYHAXb19MqUpuBjD
 
