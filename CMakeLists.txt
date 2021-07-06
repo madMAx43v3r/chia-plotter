@@ -46,7 +46,6 @@ endif()
 
 add_subdirectory(lib/bls-signatures)
 
-add_subdirectory(lib/libbech32)
 
 set(BLAKE3_PATH lib/BLAKE3/c)
 set(FSE_PATH lib/FSE/lib)
@@ -55,7 +54,6 @@ include_directories(
 	lib
 	include
 	lib/bls-signatures/src
-	lib/libbech32/include/libbech32
 	${BLAKE3_PATH}
 	${CMAKE_BINARY_DIR}/_deps/relic-src/include
 	${CMAKE_BINARY_DIR}/_deps/relic-build/include
@@ -112,9 +110,9 @@ add_library(chia_plotter STATIC
 )
 
 if (MSVC)
-	target_link_libraries(chia_plotter blake3 fse bech32)
+	target_link_libraries(chia_plotter blake3 fse)
 else()
-	target_link_libraries(chia_plotter blake3 fse bech32 Threads::Threads)
+	target_link_libraries(chia_plotter blake3 fse Threads::Threads)
 endif()
 
 if(CHIA_PLOT_BUILD_TESTS)
