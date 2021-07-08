@@ -245,7 +245,7 @@ int main(int argc, char** argv)
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"w, waitforcopy", "Wait for copy to start next plot", cxxopts::value<bool>(waitforcopy))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
-		"c, contract", "Pool Contract Address (64 chars)", cxxopts::value<std::string>(contract_addr_str))(
+		"c, contract", "Pool Contract Address (62 chars)", cxxopts::value<std::string>(contract_addr_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
 		"help", "Print help");
