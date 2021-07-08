@@ -33,7 +33,7 @@ Usage:
   -d, --finaldir arg   Final directory (default = <tmpdir>)
   -w, --waitforcopy    Wait for copy to start next plot
   -p, --poolkey arg    Pool Public Key (48 bytes)
-  -c, --contract arg   Pool Contract Address (64 chars)
+  -c, --contract arg   Pool Contract Address (62 chars)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
   -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
       --help           Print help
