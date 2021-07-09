@@ -446,36 +446,49 @@ void remove(const std::string& file_name) {
 	std::remove(file_name.c_str());
 }
 
-#define GiB_1 (1024L * 1024L * 1024L)
-#define GiB_128 (128L * GiB_1)
+#define GiB (1024L * 1024L * 1024L)
 
 inline
 bool has_phase1(const std::string& phase_name, const std::string& folder) {
     bool result = false;
     DIR *dp;
     struct dirent *dirp;
+    int file_count = 0;
+    bool found_p1t6 = false;
+    bool found_p1t7 = false;
     if ((dp = opendir(folder.c_str())) == NULL) {
       result = false;
     }
     else {
         while ((dirp = readdir(dp)) != NULL) {
             std::string name = dirp->d_name;
-            if (phase_name == "P1") {
+            if (name.find(".tmp") != std::string::npos) {
+                file_count++;
                 if (name.find(".p1.") != std::string::npos) {
                     result = true;
-                    break;
-                }
-            }
-            else {
-                if (name.find(".p1.t1") != std::string::npos || name.find(".p1.t2") != std::string::npos 
-                    || name.find(".p1.t3") != std::string::npos || name.find(".p1.t4") != std::string::npos 
-                    || name.find(".p1.t5") != std::string::npos || name.find(".p1.t6") != std::string::npos) {
-                    result = true;
-                    break;
+                    if (name.find(".p1.t6") != std::string::npos) {
+                        found_p1t6 = true;
+                    }
+                    if (name.find(".p1.table7") != std::string::npos) {
+                        found_p1t7 = true;
+                    }
+                    if (file_count > 1) {
+                        break;
+                    }
                 }
             }
         }
         closedir(dp);
+    }
+    if (result) {
+        if (file_count == 1 && found_p1t7) {
+            std::cout << "[" << phase_name << "] relaxed, file_count = " << file_count << ", found_p1t7 = " << found_p1t7 << std::endl;
+            result = false; // relax if only p1t7 is found
+        }
+        else if (phase_name != "P1" && (found_p1t6 || found_p1t7)) {
+            std::cout << "[" << phase_name << "] relaxed, found_p1t6 = " << found_p1t6 << ", found_p1t7 = " << found_p1t7 << std::endl;
+            result = false; // relax if not P1 waiting
+        }
     }
     return result;
 }
@@ -486,39 +499,32 @@ void wait_for_space(const std::string& phase_name, const std::string& folder, ui
     bool waiting = false;
     do {
         std::filesystem::space_info info = std::filesystem::space(folder);
-        uintmax_t space_gib = required_space_gib;
-        if (non_phase1_gib > 0) {
-            if (required_space_gib == 0 || !has_phase1(phase_name, folder)) {
-                space_gib = non_phase1_gib;
-            }
-        }
-        if (info.available > space_gib * GiB_1) {
-            std::cout << "[" << phase_name << "] OK: Need " << space_gib << " GiB at " << folder << ", available space: " << (info.available / GiB_1) << " GiB" << std::endl;
+        if (required_space_gib > 0 && info.available > required_space_gib * GiB) {
+            std::cout << "[" << phase_name << "] OK: Need " << required_space_gib << " GiB at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
             space_available = true;
         }
+        else if (non_phase1_gib > 0 && !has_phase1(phase_name, folder)) {
+            if (info.available > non_phase1_gib * GiB) {
+                std::cout << "[" << phase_name << "] OK: Need " << non_phase1_gib << " GiB (non phase1) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+                space_available = true;
+            }
+            else if (!waiting) {
+                std::cout << "[" << phase_name << "] Waiting for " << non_phase1_gib << " GiB (non phase1) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+            }
+        }
         else if (!waiting) {
-            std::cout << "[" << phase_name << "] Waiting for " << space_gib << " GiB at " << folder << ", available space: " << (info.available / GiB_1) << " GiB" << std::endl;
+            if (required_space_gib == 0) {
+                std::cout << "[" << phase_name << "] Waiting for " << non_phase1_gib << " GiB (non phase1) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+            }
+            else {
+                std::cout << "[" << phase_name << "] Waiting for " << required_space_gib << " GiB at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+            }
         }
         if (!space_available) {
             // waiting = true;
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
     } while (!space_available);
-}
-
-inline
-uintmax_t print_available_space(const std::string& phase_name, const std::string& folder, uintmax_t last_available = UINTMAX_MAX) {
-    std::filesystem::space_info info = std::filesystem::space(folder);
-    std::cout << phase_name;
-    if (last_available == UINTMAX_MAX) {
-        last_available = info.capacity;
-    }
-    if (last_available >= info.available) {
-        uintmax_t used = last_available - info.available;
-        std::cout << " used " << (used / GiB_1) << " GiB,";
-    }
-    std::cout << " available " << (info.available / GiB_1) << " GiB at " << folder << std::endl;
-    return info.available;
 }
 
 inline

@@ -1,3 +1,31 @@
+# chia-plotter (duo edition)
+
+This branch aims to stagger 2 plotters on a single 110 GiB ram disk as tmpdir2 by waiting for the space needed before
+processing. For example, only a single plotter can be on phase 1 as it is both CPU and ram disk intensive.
+For phase 3, it is less CPU intensive and each plotter only need half of the ram disk, therefore both plotters can be executed in parallel.
+
+To run, start the first plotter in a terminal, then wait 30 seconds before starting the second plotter in another terminal.
+To maximize storage bandwidth, each plotter should have its own ssd/nvme as tmpdir. 
+If one ssd is faster than the other, best to run the slow one first, to allow the fast one to catch up at phase 3 and 4,
+and, therefore, minimize the time before the first plotter can start its second job.
+
+This is a highly custom mod that works for my system, where the bottleneck is storage bandwidth:
+  2x Xeon E5-2970 (16 core / 32 threads total)
+  128GB RAM (DDR3)
+  slow ssd for the first plotter
+  fast ssd for the second plotter
+with the following settings:
+```
+  plotter #1: chia_plot -r 24 -u 512 -v 512 -t /mnt/ssd1/tmp -2 /mnt/ram/tmp -d /mnt/ssd1/pool
+  plotter #2: chia_plot -r 24 -u 512 -v 512 -t /mnt/ssd2/tmp -2 /mnt/ram/tmp -d /mnt/ssd2/pool
+```
+
+On a solo plotter, it took 50 minutes per job and the CPU is only maxed out in phase 1, and the rest never go over half.
+With duo plotters, it took 35 minutes per job and the CPU is maxed out most of time, except when a plotter is waiting for ram disk space.
+
+Essentially, this duo edition turns a 28 plots per day into a 41 plots per day system, with the same benefit of lower ssd consumption using ram disk.
+
+
 # chia-plotter (pipelined multi-threaded)
 
 This is a new implementation of a chia plotter which is designed as a processing pipeline,
