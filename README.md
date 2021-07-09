@@ -10,7 +10,7 @@ Sponsored by [Flexpool.io](https://www.flexpool.io/) - Check them out if you're 
 
 ## Usage
 
-Join the Discord for support: https://discord.gg/maFmsyzQ
+Join the Discord for support: https://discord.gg/wQ2HKyec
 
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
