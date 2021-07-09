@@ -136,6 +136,7 @@ cd chia-plotter
 git checkout master
 git pull
 git submodule update --init
+./make_devel.sh
 ```
 
 ## Future Plans
