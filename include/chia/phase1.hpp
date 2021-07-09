@@ -455,16 +455,19 @@ void compute(	const input_t& input, output_t& out,
 				const std::string tmp_dir,
 				const std::string tmp_dir_2)
 {
+	wait_for_space("P1", tmp_dir_2, 109, 37); // phase 1 need 109 GiB, or table 1 need 37 GiB for early start
 	const auto total_begin = get_wall_time_micros();
 	
 	initialize();
-	
-	const std::string prefix = tmp_dir + plot_name + ".p1.";
-	const std::string prefix_2 = tmp_dir_2 + plot_name + ".p1.";
+
+	const std::string prefix = tmp_dir + short_plot_name(plot_name) + ".p1.";
+	const std::string prefix_2 = tmp_dir_2 + short_plot_name(plot_name) + ".p1.";
 	
 	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, prefix_2 + "t1");
 	compute_f1(input.id.data(), num_threads, &sort_1);
-	
+
+	wait_for_space("P1", tmp_dir_2, 72); // the rest need 72 GiB
+
 	DiskTable<tmp_entry_1> tmp_1(prefix + "table1.tmp");
 	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, prefix_2 + "t2");
 	compute_table<entry_1, entry_2, tmp_entry_1>(

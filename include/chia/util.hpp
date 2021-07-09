@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -30,6 +31,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <dirent.h>
 
 template <typename Int>
 constexpr inline Int cdiv(Int a, int b) { return (a + b - 1) / b; }
@@ -442,6 +444,86 @@ size_t fwrite_at(FILE* file, uint64_t offset, const void* buf, size_t length) {
 inline
 void remove(const std::string& file_name) {
 	std::remove(file_name.c_str());
+}
+
+#define GiB_1 (1024L * 1024L * 1024L)
+#define GiB_128 (128L * GiB_1)
+
+inline
+bool has_phase1(const std::string& phase_name, const std::string& folder) {
+    bool result = false;
+    DIR *dp;
+    struct dirent *dirp;
+    if ((dp = opendir(folder.c_str())) == NULL) {
+      result = false;
+    }
+    else {
+        while ((dirp = readdir(dp)) != NULL) {
+            std::string name = dirp->d_name;
+            if (phase_name == "P1") {
+                if (name.find(".p1.") != std::string::npos) {
+                    result = true;
+                    break;
+                }
+            }
+            else {
+                if (name.find(".p1.t1") != std::string::npos || name.find(".p1.t2") != std::string::npos 
+                    || name.find(".p1.t3") != std::string::npos || name.find(".p1.t4") != std::string::npos 
+                    || name.find(".p1.t5") != std::string::npos || name.find(".p1.t6") != std::string::npos) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+        closedir(dp);
+    }
+    return result;
+}
+
+inline
+void wait_for_space(const std::string& phase_name, const std::string& folder, uintmax_t required_space_gib, uintmax_t non_phase1_gib = 0) {
+    bool space_available = false;
+    bool waiting = false;
+    do {
+        std::filesystem::space_info info = std::filesystem::space(folder);
+        uintmax_t space_gib = required_space_gib;
+        if (non_phase1_gib > 0) {
+            if (required_space_gib == 0 || !has_phase1(phase_name, folder)) {
+                space_gib = non_phase1_gib;
+            }
+        }
+        if (info.available > space_gib * GiB_1) {
+            std::cout << "[" << phase_name << "] OK: Need " << space_gib << " GiB at " << folder << ", available space: " << (info.available / GiB_1) << " GiB" << std::endl;
+            space_available = true;
+        }
+        else if (!waiting) {
+            std::cout << "[" << phase_name << "] Waiting for " << space_gib << " GiB at " << folder << ", available space: " << (info.available / GiB_1) << " GiB" << std::endl;
+        }
+        if (!space_available) {
+            // waiting = true;
+            std::this_thread::sleep_for(std::chrono::seconds(10));
+        }
+    } while (!space_available);
+}
+
+inline
+uintmax_t print_available_space(const std::string& phase_name, const std::string& folder, uintmax_t last_available = UINTMAX_MAX) {
+    std::filesystem::space_info info = std::filesystem::space(folder);
+    std::cout << phase_name;
+    if (last_available == UINTMAX_MAX) {
+        last_available = info.capacity;
+    }
+    if (last_available >= info.available) {
+        uintmax_t used = last_available - info.available;
+        std::cout << " used " << (used / GiB_1) << " GiB,";
+    }
+    std::cout << " available " << (info.available / GiB_1) << " GiB at " << folder << std::endl;
+    return info.available;
+}
+
+inline
+std::string short_plot_name(const std::string& plot_name) {
+    return plot_name.substr(0, plot_name.length() / 2);
 }
 
 #endif  // SRC_CPP_UTIL_HPP_
