@@ -4,35 +4,39 @@ This branch aims to stagger 2 plotters on a single 110 GiB ram disk as tmpdir2 b
 processing. For example, only a single plotter can be on phase 1 as it is both CPU and ram disk intensive.
 For phase 3, it is less CPU intensive and each plotter only need half of the ram disk, therefore both plotters can be executed in parallel.
 
-To run, start the first plotter in a terminal, then wait 1 minute before starting the second plotter in another terminal.
+To run, start the first plotter in a terminal, then wait 60 seconds before starting the second plotter in another terminal.
 To maximize storage bandwidth, each plotter should have its own ssd/nvme as tmpdir. 
-If one ssd is faster than the other, best to run the slow one first, to allow the fast one to catch up at phase 3 and 4,
-and, therefore, minimize the time before the first plotter can start its second job.
+If one ssd is faster than the other, run the slow one first and the fast one will catch up at phase 3 and 4, and therefore, 
+minimize the time before the first plotter can start its second job.
 
 This is a highly custom mod that works for my system, where the bottleneck is storage bandwidth:
 ```
-  2x Xeon E5-2970 (16 core / 32 threads total)
+  Dell Precision T5600
+  Dual Xeon® E5-2670 @ 2.60GHz (16 cores / 32 threads)
   128GB RAM (DDR3)
-  slow ssd for the first plotter
-  fast ssd for the second plotter
+  slow ssd for the first plotter (ZFS RAID0 oncat a 256GB sata ssd and a 256GB slow nvme)
+  fast ssd for the second plotter (ZFS on a fast nvme)
 ```
 with the following settings:
 ```
+  sudo mount -t tmpfs -o size=128G tmpfs /mnt/ram/
   plotter #1: chia_plot -r 24 -u 512 -v 512 -t /mnt/ssd1/tmp -2 /mnt/ram/tmp -d /mnt/ssd1/pool
-  plotter #2: chia_plot -r 24 -u 512 -v 512 -t /mnt/ssd2/tmp -2 /mnt/ram/tmp -d /mnt/ssd2/pool
+  plotter #2: chia_plot -r 32 -u 512 -v 512 -t /mnt/ssd2/tmp -2 /mnt/ram/tmp -d /mnt/ssd2/pool
 ```
 
-On a solo plotter, it took 50 minutes per job and the CPU is only maxed out in phase 1, and the rest never go over half.
-With duo plotters, it took 35 minutes per job and the CPU is maxed out most of time, except when a plotter is waiting for ram disk space.
+On a solo plotter, it took 42 minutes per job and the CPU is only maxed out in phase 1, and the rest never go over half.
+With duo plotters, it took 32 minutes per job and the CPU is maxed out most of time, except when a plotter is waiting for ram disk space.
 
-Essentially, this duo edition turns a 28 plots per day system into a 41 plots per day one, with the same benefit of lower ssd consumption using ram disk.
+Essentially, this duo edition turns a system producing 36 plots per day to 45 plots per day, a 25% improvement,
+with the same benefit of lower ssd consumption using ram disk.
 
-On Linux, you can setup a 128 GiB ram disk with tmpfs to allow the best staggering. 
-Note that tmpfs will only allocate what you actually write to it and swap to virtual memory if necessary.
-So be sure to allow a larger swap space to avoid system crash.
-In my testing, running 2 duo edition plotters will not exceed the 110 GiB ram allocation, but it will allow earlier overlap.
-In the overlap period, the second plotter will requesting more memory as the first plotter will be released, and therefore
-it will not exceed the 110 GiB ram allocation.
+On Linux, you can setup a 128 GiB ram disk with tmpfs to allow the best staggering because tmpfs will only allocate 
+what you actually write to it. Even with the 128 GiB tmpfs, running 2 duo edition plotters will not exceed the 110 GiB 
+ram allocation, but it will allow earlier overlap because of the available storage space. During the overlap period, 
+the second plotter will be requesting more memory as the first plotter will be releasing them, and therefore it does
+not exceed the 110 GiB ram allocation.
+
+Note that tmpfs swap to virtual memory if necessary, so be sure to allow a larger swap space to avoid system crash.
 
 
 # chia-plotter (pipelined multi-threaded)
