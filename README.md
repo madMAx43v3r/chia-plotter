@@ -53,6 +53,7 @@ It also allows both plotters to run in parallel in phase 3 as each plotter requi
   git clone https://github.com/alexhu98/chia-plotter.git 
   cd chia-plotter
 
+  # Checkout the duo edition
   git checkout duo
   git pull
 
