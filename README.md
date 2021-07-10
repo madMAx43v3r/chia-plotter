@@ -77,7 +77,7 @@ Sponsored by [Flexpool.io](https://www.flexpool.io/) - Check them out if you're 
 
 ## Usage
 
-Join the Discord for support: https://discord.gg/maFmsyzQ
+Join the Discord for support: https://discord.gg/pQwkebKnPB
 
 ```
 For <poolkey> and <farmerkey> see output of `chia keys show`.
@@ -100,7 +100,7 @@ Usage:
   -d, --finaldir arg   Final directory (default = <tmpdir>)
   -w, --waitforcopy    Wait for copy to start next plot
   -p, --poolkey arg    Pool Public Key (48 bytes)
-  -c, --contract arg   Pool Contract Address (64 chars)
+  -c, --contract arg   Pool Contract Address (62 chars)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
   -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
       --help           Print help
@@ -203,6 +203,7 @@ cd chia-plotter
 git checkout master
 git pull
 git submodule update --init
+./make_devel.sh
 ```
 
 ## Future Plans

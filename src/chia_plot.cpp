@@ -61,9 +61,6 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr)
 	if(res.encoding != bech32::Bech32m) {
 		throw std::logic_error("invalid contract address (!Bech32m): " + addr);
 	}
-	if(res.hrp != "xch" && res.hrp != "txch") {
-		throw std::logic_error("invalid contract address (" + res.hrp + " != xch): " + addr);
-	}
 	if(res.dp.size() != 52) {
 		throw std::logic_error("invalid contract address (size != 52): " + addr);
 	}
@@ -245,7 +242,7 @@ int main(int argc, char** argv)
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
 		"w, waitforcopy", "Wait for copy to start next plot", cxxopts::value<bool>(waitforcopy))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
-		"c, contract", "Pool Contract Address (64 chars)", cxxopts::value<std::string>(contract_addr_str))(
+		"c, contract", "Pool Contract Address (62 chars)", cxxopts::value<std::string>(contract_addr_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
 		"help", "Print help");
