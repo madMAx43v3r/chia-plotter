@@ -462,18 +462,19 @@ void compute(	const input_t& input, output_t& out,
 
 	const std::string prefix = tmp_dir + short_plot_name(plot_name) + ".p1.";
 	const std::string prefix_2 = tmp_dir_2 + short_plot_name(plot_name) + ".p1.";
-	const std::string prefix_3 = prefix;
 	
 	DiskSort1 sort_1(32 + kExtraBits, log_num_buckets, prefix_2 + "t1");
 	compute_f1(input.id.data(), num_threads, &sort_1);
 
-	wait_for_space("P1", tmp_dir_2, 72); // the rest need 72 GiB
+	wait_for_space("P1", tmp_dir_2, 72, 0, 37); // the rest need 72 GiB, table 2 need 37 GiB for early start
 
 	DiskTable<tmp_entry_1> tmp_1(prefix + "table1.tmp");
 	DiskSort2 sort_2(32 + kExtraBits, log_num_buckets, prefix_2 + "t2");
 	compute_table<entry_1, entry_2, tmp_entry_1>(
 			2, num_threads, &sort_1, &sort_2, &tmp_1);
 	
+	wait_for_space("P1", tmp_dir_2, 35); // the rest need 35 GiB
+
 	DiskTable<tmp_entry_x> tmp_2(prefix + "table2.tmp");
 	DiskSort3 sort_3(32 + kExtraBits, log_num_buckets, prefix_2 + "t3");
 	compute_table<entry_2, entry_3, tmp_entry_x>(
@@ -495,7 +496,7 @@ void compute(	const input_t& input, output_t& out,
 			6, num_threads, &sort_5, &sort_6, &tmp_5);
 	
 	DiskTable<tmp_entry_x> tmp_6(prefix + "table6.tmp");
-	DiskTable<entry_7> tmp_7(prefix_3 + "table7.tmp");
+	DiskTable<entry_7> tmp_7(prefix_2 + "table7.tmp");
 	compute_table<entry_6, entry_7, tmp_entry_x, DiskSort6, DiskSort7>(
 			7, num_threads, &sort_6, nullptr, &tmp_6, &tmp_7);
 	

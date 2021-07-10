@@ -494,7 +494,33 @@ bool has_phase1(const std::string& phase_name, const std::string& folder) {
 }
 
 inline
-void wait_for_space(const std::string& phase_name, const std::string& folder, uintmax_t required_space_gib, uintmax_t non_phase1_gib = 0) {
+bool has_phase3(const std::string& phase_name, const std::string& folder) {
+    bool result = false;
+    DIR *dp;
+    struct dirent *dirp;
+    if ((dp = opendir(folder.c_str())) == NULL) {
+      result = false;
+    }
+    else {
+        while ((dirp = readdir(dp)) != NULL) {
+            std::string name = dirp->d_name;
+            if (name.find(".p3s1.t1") != std::string::npos || name.find(".p3s2.t1") != std::string::npos
+                || name.find(".p3s1.t2") != std::string::npos || name.find(".p3s2.t2") != std::string::npos
+                || name.find(".p3s1.t3") != std::string::npos || name.find(".p3s2.t3") != std::string::npos
+                || name.find(".p3s1.t4") != std::string::npos || name.find(".p3s2.t4") != std::string::npos
+                || name.find(".p3s1.t5") != std::string::npos || name.find(".p3s2.t5") != std::string::npos
+                || name.find(".p3s1.t6") != std::string::npos || name.find(".p3s2.t6") != std::string::npos) {
+                result = true;
+                break;
+            }
+        }
+        closedir(dp);
+    }
+    return result;
+}
+
+inline
+void wait_for_space(const std::string& phase_name, const std::string& folder, uintmax_t required_space_gib, uintmax_t non_phase1_gib = 0, uintmax_t non_phase3_gib = 0) {
     bool space_available = false;
     bool waiting = false;
     do {
@@ -512,9 +538,23 @@ void wait_for_space(const std::string& phase_name, const std::string& folder, ui
                 std::cout << "[" << phase_name << "] Waiting for " << non_phase1_gib << " GiB (non phase1) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
             }
         }
+        else if (non_phase3_gib > 0 && !has_phase3(phase_name, folder)) {
+            if (info.available > non_phase3_gib * GiB) {
+                std::cout << "[" << phase_name << "] OK: Need " << non_phase3_gib << " GiB (non phase3) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+                space_available = true;
+            }
+            else if (!waiting) {
+                std::cout << "[" << phase_name << "] Waiting for " << non_phase3_gib << " GiB (non phase3) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+            }
+        }
         else if (!waiting) {
             if (required_space_gib == 0) {
-                std::cout << "[" << phase_name << "] Waiting for " << non_phase1_gib << " GiB (non phase1) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+                if (non_phase1_gib > 0) {
+                    std::cout << "[" << phase_name << "] Waiting for " << non_phase1_gib << " GiB (non phase1) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+                }
+                else {
+                    std::cout << "[" << phase_name << "] Waiting for " << non_phase3_gib << " GiB (non phase3) at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;
+                }
             }
             else {
                 std::cout << "[" << phase_name << "] Waiting for " << required_space_gib << " GiB at " << folder << ", available space: " << (info.available / GiB) << " GiB" << std::endl;

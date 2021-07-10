@@ -4,7 +4,7 @@ This branch aims to stagger 2 plotters on a single 110 GiB ram disk as tmpdir2 b
 processing. For example, only a single plotter can be on phase 1 as it is both CPU and ram disk intensive.
 For phase 3, it is less CPU intensive and each plotter only need half of the ram disk, therefore both plotters can be executed in parallel.
 
-To run, start the first plotter in a terminal, then wait 30 seconds before starting the second plotter in another terminal.
+To run, start the first plotter in a terminal, then wait 1 minute before starting the second plotter in another terminal.
 To maximize storage bandwidth, each plotter should have its own ssd/nvme as tmpdir. 
 If one ssd is faster than the other, best to run the slow one first, to allow the fast one to catch up at phase 3 and 4,
 and, therefore, minimize the time before the first plotter can start its second job.
