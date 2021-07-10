@@ -38,6 +38,11 @@ not exceed the 110 GiB ram allocation.
 
 Note that tmpfs swap to virtual memory if necessary, so be sure to allow a larger swap space to avoid system crash.
 
+When plotting solo with this duo edition, it is about slightly slower (2 minutes on my system) than the original plotter. 
+The original plotter store a 43 GiB table in the ram disk in phase 2 and 3. This duo edition moves this same table 
+into tmpdir to free up the whole ram disk so that the second plotter can use the ram disk.
+It also allow both plotters to run in parallel in phase 3 as each plotter requires 50 GiB to run in phase 3.
+
 
 # chia-plotter (pipelined multi-threaded)
 
