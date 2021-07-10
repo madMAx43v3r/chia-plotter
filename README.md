@@ -10,10 +10,12 @@ If one ssd is faster than the other, best to run the slow one first, to allow th
 and, therefore, minimize the time before the first plotter can start its second job.
 
 This is a highly custom mod that works for my system, where the bottleneck is storage bandwidth:
+```
   2x Xeon E5-2970 (16 core / 32 threads total)
   128GB RAM (DDR3)
   slow ssd for the first plotter
   fast ssd for the second plotter
+```
 with the following settings:
 ```
   plotter #1: chia_plot -r 24 -u 512 -v 512 -t /mnt/ssd1/tmp -2 /mnt/ram/tmp -d /mnt/ssd1/pool
@@ -23,7 +25,14 @@ with the following settings:
 On a solo plotter, it took 50 minutes per job and the CPU is only maxed out in phase 1, and the rest never go over half.
 With duo plotters, it took 35 minutes per job and the CPU is maxed out most of time, except when a plotter is waiting for ram disk space.
 
-Essentially, this duo edition turns a 28 plots per day into a 41 plots per day system, with the same benefit of lower ssd consumption using ram disk.
+Essentially, this duo edition turns a 28 plots per day system into a 41 plots per day one, with the same benefit of lower ssd consumption using ram disk.
+
+On Linux, you can setup a 128 GiB ram disk with tmpfs to allow the best staggering. 
+Note that tmpfs will only allocate what you actually write to it and swap to virtual memory if necessary.
+So be sure to allow a larger swap space to avoid system crash.
+In my testing, running 2 duo edition plotters will not exceed the 110 GiB ram allocation, but it will allow earlier overlap.
+In the overlap period, the second plotter will requesting more memory as the first plotter will be released, and therefore
+it will not exceed the 110 GiB ram allocation.
 
 
 # chia-plotter (pipelined multi-threaded)
