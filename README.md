@@ -38,10 +38,30 @@ not exceed the 110 GiB ram allocation.
 
 Note that tmpfs swap to virtual memory if necessary, so be sure to allow a larger swap space to avoid system crash.
 
-When plotting solo with this duo edition, it is about slightly slower (2 minutes on my system) than the original plotter. 
-The original plotter store a 43 GiB table in the ram disk in phase 2 and 3. This duo edition moves this same table 
-into tmpdir to free up the whole ram disk so that the second plotter can use the ram disk.
-It also allow both plotters to run in parallel in phase 3 as each plotter requires 50 GiB to run in phase 3.
+When single plotting with this duo edition, it is slightly slower (5% or 2 minutes on my system) than the original plotter. 
+The original plotter stores a 43 GiB table in the ram disk in phase 2 and 3. This duo edition moves this same table 
+into tmpdir to free up the whole ram disk so that the second plotter can use the ram disk in phase 1.
+It also allows both plotters to run in parallel in phase 3 as each plotter requires 50 GiB to run in phase 3.
+
+## Install
+
+  <summary>Ubuntu 20.04</summary>
+  
+  ```bash
+  sudo apt install -y libsodium-dev cmake g++ git build-essential
+  # Checkout the source and install
+  git clone https://github.com/alexhu98/chia-plotter.git 
+  cd chia-plotter
+
+  git checkout duo
+  git pull
+
+  git submodule update --init
+  ./make_devel.sh
+  ./build/chia_plot --help
+  ```
+
+  The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
 
 
 # chia-plotter (pipelined multi-threaded)
