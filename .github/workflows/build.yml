@@ -16,10 +16,10 @@ jobs:
         submodules: recursive
 
     - name: Install development headers
-      run: sudo apt install libsodium-dev
+      run: sudo apt install -y libsodium-dev cmake g++ git build-essential
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -D CMAKE_CXX_FLAGS="-g -fmax-errors=1" -DBUILD_BLS_PYTHON_BINDINGS=false
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_BLS_PYTHON_BINDINGS=false
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Debug
@@ -39,10 +39,10 @@ jobs:
         submodules: recursive
 
     - name: Install development headers
-      run: sudo apt install libsodium-dev
+      run: sudo apt install -y libsodium-dev cmake g++ git build-essential
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -D CMAKE_CXX_FLAGS="-O3 -fmax-errors=1" -DBUILD_BLS_PYTHON_BINDINGS=false
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_BLS_PYTHON_BINDINGS=false -DBUILD_BLS_TESTS=false -DBUILD_BLS_BENCHMARKS=false
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Release
