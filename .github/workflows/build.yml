@@ -15,16 +15,16 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install development headers
+    - name: Install dependencies
       run: sudo apt install -y libsodium-dev cmake g++ git build-essential
 
-    - name: Configure CMake
+    - name: Configure CMake project
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_BLS_PYTHON_BINDINGS=false
 
-    - name: Build
+    - name: Build CMake project
       run: cmake --build ${{github.workspace}}/build --config Debug
 
-    - name: Upload a Build Artifact
+    - name: Upload build artifact
       uses: actions/upload-artifact@v2.2.3
       with:
         name: Debug build
@@ -38,16 +38,16 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install development headers
+    - name: Install dependencies
       run: sudo apt install -y libsodium-dev cmake g++ git build-essential
 
-    - name: Configure CMake
+    - name: Configure CMake project
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_BLS_PYTHON_BINDINGS=false -DBUILD_BLS_TESTS=false -DBUILD_BLS_BENCHMARKS=false
 
-    - name: Build
+    - name: Build CMake project
       run: cmake --build ${{github.workspace}}/build --config Release
 
-    - name: Upload a Build Artifact
+    - name: Upload build artifact
       uses: actions/upload-artifact@v2.2.3
       with:
         name: Release build
