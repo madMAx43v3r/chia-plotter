@@ -10,8 +10,8 @@ an early start with the following changes:
 On my system, it took about 16 minutes to move out the previous plot, about the same time it took for phase 1.
 
 2. When phase 2 starts, it converts the phase 1 table 7 (which is already in tmpdir2) to phase 2 table 7 (also already in tmpdir2).
-Afterward, it waits for the necessary storage space before starting table 6. In most case, this wait time is not necessary at this
-point, but it is there in case if the final farmer storage is temporarily unavailable.
+Afterwards, this edition waits for the necessary storage space before starting table 6. Normally, this wait time is not necessary,
+but it is there in case if the final farmer storage is temporarily unavailable.
 
 With these changes, the second plot can be staggered while the first plot is being moved to the final farmer storage, allowing a
 single 230 GiB SATA SSD + ram disk to achieve 32 plots a day, instead of 24 plots a day without staggering.
