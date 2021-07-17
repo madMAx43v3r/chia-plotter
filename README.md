@@ -5,7 +5,9 @@ and the finished plot is moved by an external script.
 
 There is not enough to start the 2nd plot because only 128 GiB is available until the finished plot is moved out of the device.
 
-This edition waits for the necessary storage space before starting a table.
+This edition waits for the necessary storage space before starting a table. It also moved phase 1 table 6 into tmpdir2 to free
+up 25 GiB from tmpdir, just enough to phase 1 to the completed while the previous plot file is moved to the farmer storage.
+And therefore minimize the wait time, if any, when phase 2 is started.
 
 ## Install
 

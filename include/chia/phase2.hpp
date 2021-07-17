@@ -133,7 +133,6 @@ void compute(	const phase1::output_t& input, output_t& out,
 	
 	const std::string prefix = tmp_dir + short_plot_name(plot_name) + ".p2.";
 	const std::string prefix_2 = tmp_dir_2 + short_plot_name(plot_name) + ".p2.";
-	const std::string prefix_3 = prefix;
 	
 	size_t max_table_size = 0;
 	for(const auto& table : input.table) {
@@ -144,7 +143,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	auto curr_bitfield = std::make_shared<bitfield>(max_table_size);
 	auto next_bitfield = std::make_shared<bitfield>(max_table_size);
 	
-	DiskTable<entry_7> table_7(prefix_3 + "table7.tmp");
+	DiskTable<entry_7> table_7(prefix_2 + "table7.tmp");
 	
 	compute_table<entry_7, entry_7, DiskSort7>(
 			7, num_threads, nullptr, &table_7, input.table[6], next_bitfield.get(), nullptr);
@@ -152,22 +151,17 @@ void compute(	const phase1::output_t& input, output_t& out,
 	table_7.close();
 	remove(input.table[6].file_name);
 
-	bool wait_for_space_before_phase3 = false;
 	for(int i = 5; i >= 1; --i)
 	{
-		std::string i_prefix = prefix;
-		if (i == 1) {
-			if (has_phase1("P2", tmp_dir_2)) {
-				wait_for_space_before_phase3 = true;
-			}
-			else {
-				wait_for_space("P2", tmp_dir_2, 0, 50); // prepare for the last p2 table plus all phase 3
-				i_prefix = prefix_2;
-			}
+		if (i >= 4) {
+			wait_for_space("P2", tmp_dir, 35);
+		}
+		else if (i > 1) {
+			wait_for_space("P2", tmp_dir, 10);
 		}
 
 		std::swap(curr_bitfield, next_bitfield);
-		out.sort[i] = std::make_shared<DiskSortT>(32, log_num_buckets, i_prefix + "t" + std::to_string(i + 1));
+		out.sort[i] = std::make_shared<DiskSortT>(32, log_num_buckets, (i == 1 ? prefix_2 : prefix) + "t" + std::to_string(i + 1));
 		
 		compute_table<phase1::tmp_entry_x, entry_x, DiskSortT>(
 			i + 1, num_threads, out.sort[i].get(), nullptr, input.table[i], next_bitfield.get(), curr_bitfield.get());
@@ -181,9 +175,6 @@ void compute(	const phase1::output_t& input, output_t& out,
 	out.bitfield_1 = next_bitfield;
 	
 	std::cout << "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
-	if (wait_for_space_before_phase3) {
-		wait_for_space("P3", tmp_dir_2, 0, 50); // prepare for all phase 3
-	}
 }
 
 
