@@ -151,15 +151,10 @@ void compute(	const phase1::output_t& input, output_t& out,
 	table_7.close();
 	remove(input.table[6].file_name);
 
+	wait_for_space("P2", tmp_dir, 102);
+
 	for(int i = 5; i >= 1; --i)
 	{
-		if (i >= 4) {
-			wait_for_space("P2", tmp_dir, 35);
-		}
-		else if (i > 1) {
-			wait_for_space("P2", tmp_dir, 10);
-		}
-
 		std::swap(curr_bitfield, next_bitfield);
 		out.sort[i] = std::make_shared<DiskSortT>(32, log_num_buckets, (i == 1 ? prefix_2 : prefix) + "t" + std::to_string(i + 1));
 		
