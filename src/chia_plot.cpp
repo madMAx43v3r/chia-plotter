@@ -85,7 +85,8 @@ phase4::output_t create_plot(	const int num_threads,
 								const vector<uint8_t>& puzzle_hash_bytes,
 								const vector<uint8_t>& farmer_key_bytes,
 								const std::string& tmp_dir,
-								const std::string& tmp_dir_2)
+								const std::string& tmp_dir_2,
+								const std::string& final_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	const bool have_puzzle = !puzzle_hash_bytes.empty();
@@ -188,10 +189,10 @@ phase4::output_t create_plot(	const int num_threads,
 	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase3::output_t out_3;
-	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, final_dir, tmp_dir_2);
 	
 	phase4::output_t out_4;
-	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, final_dir, tmp_dir_2);
 	
 	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
 	std::cout << "Total plot creation time was "
@@ -452,7 +453,7 @@ int main(int argc, char** argv)
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(
 				num_threads, log_num_buckets, log_num_buckets_3,
-				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
+				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2, final_dir);
 		
 		if(final_dir != tmp_dir)
 		{
