@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ master, pool-puzzles ]
+    branches: [ master ]
     tags:
       - '*'
   pull_request:
@@ -30,6 +30,8 @@ jobs:
           type=ref,event=pr
           type=ref,event=tag
           type=sha
+        flavor: |
+          latest=true
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
