@@ -131,6 +131,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 {
 	const auto total_begin = get_wall_time_micros();
 	
+	const int k = input.params.k;
 	const std::string prefix = tmp_dir + plot_name + ".p2.";
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".p2.";
 	
@@ -154,7 +155,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	for(int i = 5; i >= 1; --i)
 	{
 		std::swap(curr_bitfield, next_bitfield);
-		out.sort[i] = std::make_shared<DiskSortT>(32, log_num_buckets, (i == 1 ? prefix_2 : prefix) + "t" + std::to_string(i + 1));
+		out.sort[i] = std::make_shared<DiskSortT>(k, log_num_buckets, (i == 1 ? prefix_2 : prefix) + "t" + std::to_string(i + 1));
 		
 		compute_table<phase1::tmp_entry_x, entry_x, DiskSortT>(
 			i + 1, num_threads, out.sort[i].get(), nullptr, input.table[i], next_bitfield.get(), curr_bitfield.get());
