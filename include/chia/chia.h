@@ -29,6 +29,9 @@ static constexpr uint8_t kExtraBitsPow = 1 << kExtraBits;
 // Distance between matching entries is stored in the offset
 static constexpr uint32_t kOffsetSize = 10;
 
+// ChaCha8 block size
+const uint16_t kF1BlockSizeBits = 512;
+
 // B and C groups which constitute a bucket, or BC group. These groups determine how
 // elements match with each other. Two elements must be in adjacent buckets to match.
 static constexpr uint16_t kB = 119;
