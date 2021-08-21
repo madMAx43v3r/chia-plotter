@@ -131,8 +131,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 {
 	const auto total_begin = get_wall_time_micros();
 	
-	const std::string prefix = tmp_dir + short_plot_name(plot_name) + ".p2.";
-	// const std::string prefix_2 = tmp_dir_2 + short_plot_name(plot_name) + ".p2.";
+	const std::string prefix_2 = tmp_dir_2 + short_plot_name(plot_name) + ".p2.";
 	
 	size_t max_table_size = 0;
 	for(const auto& table : input.table) {
@@ -143,7 +142,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	auto curr_bitfield = std::make_shared<bitfield>(max_table_size);
 	auto next_bitfield = std::make_shared<bitfield>(max_table_size);
 	
-	DiskTable<entry_7> table_7(prefix + "table7.tmp");
+	DiskTable<entry_7> table_7(prefix_2 + "table7.tmp");
 	
 	compute_table<entry_7, entry_7, DiskSort7>(
 			7, num_threads, nullptr, &table_7, input.table[6], next_bitfield.get(), nullptr);
@@ -156,7 +155,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	for(int i = 5; i >= 1; --i)
 	{
 		std::swap(curr_bitfield, next_bitfield);
-		out.sort[i] = std::make_shared<DiskSortT>(32, log_num_buckets, prefix + "t" + std::to_string(i + 1));
+		out.sort[i] = std::make_shared<DiskSortT>(32, log_num_buckets, prefix_2 + "t" + std::to_string(i + 1));
 		
 		compute_table<phase1::tmp_entry_x, entry_x, DiskSortT>(
 			i + 1, num_threads, out.sort[i].get(), nullptr, input.table[i], next_bitfield.get(), curr_bitfield.get());

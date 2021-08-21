@@ -499,7 +499,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	DiskTable<phase2::entry_1> L_table_1(input.table_1);
 	
 	auto R_sort_lp = std::make_shared<DiskSortLP>(
-			63, log_num_buckets, prefix_2 + "p3s1.t2");
+			63, log_num_buckets, prefix + "p3s1.t2");
 	
 	compute_stage1<phase2::entry_1, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
 			1, num_threads, nullptr, input.sort[1].get(), R_sort_lp.get(), &L_table_1, input.bitfield_1.get());
@@ -508,7 +508,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	remove(input.table_1.file_name);
 	
 	auto L_sort_np = std::make_shared<DiskSortNP>(
-			32, log_num_buckets, prefix + "p3s2.t2");
+			32, log_num_buckets, prefix_2 + "p3s2.t2");
 	
 	num_written_final += compute_stage2(
 			1, num_threads, R_sort_lp.get(), L_sort_np.get(),
@@ -519,13 +519,13 @@ void compute(	phase2::output_t& input, output_t& out,
 		const std::string R_t = "t" + std::to_string(L_index + 1);
 		
 		R_sort_lp = std::make_shared<DiskSortLP>(
-				63, log_num_buckets, prefix_2 + "p3s1." + R_t);
+				63, log_num_buckets, prefix + "p3s1." + R_t);
 		
 		compute_stage1<entry_np, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
 				L_index, num_threads, L_sort_np.get(), input.sort[L_index].get(), R_sort_lp.get());
 		
 		L_sort_np = std::make_shared<DiskSortNP>(
-				32, log_num_buckets, prefix + "p3s2." + R_t);
+				32, log_num_buckets, prefix_2 + "p3s2." + R_t);
 		
 		num_written_final += compute_stage2(
 				L_index, num_threads, R_sort_lp.get(), L_sort_np.get(),
@@ -534,14 +534,14 @@ void compute(	phase2::output_t& input, output_t& out,
 	
 	DiskTable<phase2::entry_7> R_table_7(input.table_7);
 	
-	R_sort_lp = std::make_shared<DiskSortLP>(63, log_num_buckets, prefix_2 + "p3s1.t7");
+	R_sort_lp = std::make_shared<DiskSortLP>(63, log_num_buckets, prefix + "p3s1.t7");
 	
 	compute_stage1<entry_np, phase2::entry_7, DiskSortNP, phase2::DiskSort7>(
 			6, num_threads, L_sort_np.get(), nullptr, R_sort_lp.get(), nullptr, nullptr, &R_table_7);
 	
 	remove(input.table_7.file_name);
 	
-	L_sort_np = std::make_shared<DiskSortNP>(32, log_num_buckets, prefix + "p3s2.t7");
+	L_sort_np = std::make_shared<DiskSortNP>(32, log_num_buckets, prefix_2 + "p3s2.t7");
 	
 	const auto num_written_final_7 = compute_stage2(
 			6, num_threads, R_sort_lp.get(), L_sort_np.get(),
