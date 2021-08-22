@@ -78,7 +78,8 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr)
 }
 
 inline
-phase4::output_t create_plot(	const int num_threads,
+phase4::output_t create_plot(	const int k,
+								const int num_threads,
 								const int log_num_buckets,
 								const int log_num_buckets_3,
 								const vector<uint8_t>& pool_key_bytes,
@@ -154,6 +155,7 @@ phase4::output_t create_plot(	const int num_threads,
 	}
 	
 	phase1::input_t params;
+	params.k = k;
 	{
 		vector<uint8_t> bytes = have_puzzle ? puzzle_hash_bytes : pool_key.Serialize();
 		{
@@ -162,7 +164,7 @@ phase4::output_t create_plot(	const int num_threads,
 		}
 		bls::Util::Hash256(params.id.data(), bytes.data(), bytes.size());
 	}
-	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M")
+	const std::string plot_name = "plot-k" + std::to_string(k) + "-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
 	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
@@ -225,6 +227,7 @@ int main(int argc, char** argv)
 	std::string tmp_dir;
 	std::string tmp_dir2;
 	std::string final_dir;
+	int k = 32;
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
@@ -233,6 +236,7 @@ int main(int argc, char** argv)
 	bool tmptoggle = false;
 	
 	options.allow_unrecognised_options().add_options()(
+		"k, size", "K size (default = 32, k <= 32)", cxxopts::value<int>(k))(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
@@ -451,7 +455,7 @@ int main(int argc, char** argv)
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(
-				num_threads, log_num_buckets, log_num_buckets_3,
+				k, num_threads, log_num_buckets, log_num_buckets_3,
 				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
