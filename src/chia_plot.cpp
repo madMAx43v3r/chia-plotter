@@ -202,6 +202,10 @@ int main(int argc, char** argv)
 		std::cout << options.help({""}) << std::endl;
 		return 0;
 	}
+	if(k > 32 || k < 16) {
+		std::cout << "Invalid k option: " << k << std::endl;
+		return -2;
+	}
 	if(pool_key_str.empty()) {
 		std::cout << "Pool Public Key (48 bytes) needs to be specified via -p <hex>, see `chia keys show`." << std::endl;
 		return -2;
