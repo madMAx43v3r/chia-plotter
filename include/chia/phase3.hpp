@@ -347,7 +347,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 		std::vector<uint8_t> buffer;
 	};
 	
-	const auto park_size_bytes = CalculateParkSize(32, L_index);
+	const auto park_size_bytes = CalculateParkSize(k, L_index);
 	
 	typedef DiskSortNP::WriteCache WriteCache;
 	
@@ -389,8 +389,8 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 				std::vector<uint64_t> stubs(points.size() - 1);
 				for(size_t i = 0; i < points.size() - 1; ++i) {
 					const auto big_delta = points[i + 1] - points[i];
-					const auto stub = big_delta & ((1ull << (32 - kStubMinusBits)) - 1);
-					const auto small_delta = big_delta >> (32 - kStubMinusBits);
+					const auto stub = big_delta & ((1ull << (k - kStubMinusBits)) - 1);
+					const auto small_delta = big_delta >> (k - kStubMinusBits);
 					if(small_delta >= 256) {
 						throw std::logic_error("small_delta >= 256 (" + std::to_string(small_delta) + ")");
 					}
