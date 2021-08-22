@@ -262,6 +262,10 @@ int main(int argc, char** argv)
 		std::cout << options.help({""}) << std::endl;
 		return 0;
 	}
+	if(k > 32 || k < 16) {
+		std::cout << "Invalid k option: " << k << std::endl;
+		return -2;
+	}
 	if(contract_addr_str.empty() && pool_key_str.empty()) {
 		std::cout << "Pool Public Key (for solo farming) or Pool Contract Address (for pool farming) needs to be specified via -p or -c, see `chia_plot --help`." << std::endl;
 		return -2;
