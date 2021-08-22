@@ -161,7 +161,7 @@ uint64_t compute(	FILE* plot_file,
 			{
 				write_data_t out;
 				out.offset = final_file_writer_1;
-				out.buffer.resize(4);
+				out.buffer.resize(Util::ByteAlign(k) / 8);
 				Bits(entry_y, k).ToBytes(out.buffer.data());
 				final_file_writer_1 += out.buffer.size();
 				{
@@ -212,7 +212,7 @@ uint64_t compute(	FILE* plot_file,
     uint8_t C1_entry_buf[4] = {};
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
+    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
     
     std::cout << "[P4] Finished writing C1 and C3 tables" << std::endl;
     std::cout << "[P4] Writing C2 table" << std::endl;
@@ -220,11 +220,11 @@ uint64_t compute(	FILE* plot_file,
     for(const uint64_t C2_entry : C2) {
         Bits(C2_entry, k).ToBytes(C1_entry_buf);
         final_file_writer_1 +=
-        		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
+        		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
     }
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
+    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
     
     std::cout << "[P4] Finished writing C2 table" << std::endl;
 

@@ -177,6 +177,7 @@ struct get_meta<entry_1> {
 template<typename T>
 struct set_meta {
 	void operator()(T& entry, const uint128_t value, const size_t num_bytes) {
+		entry.meta = {};
 		memcpy(entry.meta.data(), &value, num_bytes);
 	}
 };
