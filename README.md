@@ -24,6 +24,7 @@ or double press Ctrl-C to terminate immediately.
 Usage:
   chia_plot [OPTION...]
 
+  -k, --size arg       K size (default = 32, k <= 32)
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Number of buckets (default = 256)
