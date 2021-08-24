@@ -79,6 +79,7 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr)
 
 inline
 phase4::output_t create_plot(	const int k,
+								const int port,
 								const int num_threads,
 								const int log_num_buckets,
 								const int log_num_buckets_3,
@@ -128,7 +129,7 @@ phase4::output_t create_plot(	const int k,
 	const bls::PrivateKey master_sk = MPL.KeyGen(seed);
 	
 	bls::PrivateKey local_sk = master_sk;
-	for(uint32_t i : {12381, 8444, 3, 0}) {
+	for(uint32_t i : {12381, port, 3, 0}) {
 		local_sk = MPL.DeriveChildSk(local_sk, i);
 	}
 	const bls::G1Element local_key = local_sk.GetG1Element();
@@ -228,6 +229,7 @@ int main(int argc, char** argv)
 	std::string tmp_dir2;
 	std::string final_dir;
 	int k = 32;
+	int port = 8444;			// 8444 = chia, 9699 = chives
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
@@ -237,6 +239,7 @@ int main(int argc, char** argv)
 	
 	options.allow_unrecognised_options().add_options()(
 		"k, size", "K size (default = 32, k <= 32)", cxxopts::value<int>(k))(
+		"x, port", "Network port (default = 8444, for chia)", cxxopts::value<int>(port))(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
@@ -459,7 +462,7 @@ int main(int argc, char** argv)
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(
-				k, num_threads, log_num_buckets, log_num_buckets_3,
+				k, port, num_threads, log_num_buckets, log_num_buckets_3,
 				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)
