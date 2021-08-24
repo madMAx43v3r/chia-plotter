@@ -424,7 +424,15 @@ int main(int argc, char** argv)
     	std::cout << "****************************************************************************************" << std::endl;
     	std::cout << "**   WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING    **" << std::endl;
     	std::cout << "**                   !! k < 32 is not supported on chia network !!                    **" << std::endl;
-    	std::cout << "**                   If you want to plot for chives specify -x 9699                   **" << std::endl;
+    	std::cout << "**                  (If you want to plot for chives specify -x 9699)                  **" << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << std::endl;
+	}
+	if(k >= 32 && port == 9699) {
+		std::cout << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << "**   WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING    **" << std::endl;
+    	std::cout << "**                   !! k > 31 is not supported on chives network !!                  **" << std::endl;
     	std::cout << "****************************************************************************************" << std::endl;
     	std::cout << std::endl;
 	}
