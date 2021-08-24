@@ -23,28 +23,32 @@ uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 {
 	FILE* src = fopen(src_path.c_str(), "rb");
 	if(!src) {
-		throw std::runtime_error("fopen() failed");
+		throw std::runtime_error("fopen() failed for " + src_path);
 	}
 	FILE* dst = fopen(dst_path.c_str(), "wb");
 	if(!dst) {
-		throw std::runtime_error("fopen() failed");
+		fclose(src);
+		throw std::runtime_error("fopen() failed for " + dst_path);
 	}
 	uint64_t total_bytes = 0;
 	std::vector<uint8_t> buffer(g_read_chunk_size * 16);
 	while(true) {
 		const auto num_bytes = fread(buffer.data(), 1, buffer.size(), src);
 		if(fwrite(buffer.data(), 1, num_bytes, dst) != num_bytes) {
-			throw std::runtime_error("fwrite() failed");
+			fclose(src);
+			fclose(dst);
+			throw std::runtime_error("fwrite() failed on " + dst_path);
 		}
 		total_bytes += num_bytes;
 		if(num_bytes < buffer.size()) {
 			break;
 		}
 	}
-	if(fclose(dst)) {
-		throw std::runtime_error("fclose() failed");
-	}
 	fclose(src);
+
+	if(fclose(dst)) {
+		throw std::runtime_error("fclose() failed on " + dst_path);
+	}
 	return total_bytes;
 }
 
