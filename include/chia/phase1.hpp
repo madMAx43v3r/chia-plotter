@@ -205,9 +205,9 @@ public:
 
             if (!rmap[r_y].count) {
                 rmap[r_y].pos = pos_R;
+                rmap_clean.push_back(r_y);
             }
             rmap[r_y].count++;
-            rmap_clean.push_back(r_y);
         }
 
         int idx_count = 0;
