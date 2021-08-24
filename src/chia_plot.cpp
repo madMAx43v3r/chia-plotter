@@ -419,6 +419,16 @@ int main(int argc, char** argv)
 		std::signal(SIGTERM, interrupt_handler);
 	}
 	
+	if(k < 32 && port == 8444) {
+		std::cout << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << "**   WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING    **" << std::endl;
+    	std::cout << "**                   !! k < 32 is not supported on chia network !!                    **" << std::endl;
+    	std::cout << "**                   If you want to plot for chives specify -x 9699                   **" << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << std::endl;
+	}
+
 	std::cout << "Multi-threaded pipelined Chia k32 plotter"; 
 	#ifdef GIT_COMMIT_HASH
 		std::cout << " - " << GIT_COMMIT_HASH;
