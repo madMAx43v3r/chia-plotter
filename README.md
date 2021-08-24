@@ -25,6 +25,7 @@ Usage:
   chia_plot [OPTION...]
 
   -k, --size arg       K size (default = 32, k <= 32)
+  -x, --port arg       Network port (default = 8444, chives = 9699)
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Number of buckets (default = 256)
