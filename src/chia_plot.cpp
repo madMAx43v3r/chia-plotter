@@ -425,6 +425,7 @@ int main(int argc, char** argv)
 	#endif	
 	std::cout << std::endl;
 	std::cout << "(Sponsored by Flexpool.io - Check them out if you're looking for a secure and scalable Chia pool)" << std::endl << std::endl;
+	std::cout << "Network Port: " << port << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
