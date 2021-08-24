@@ -239,7 +239,7 @@ int main(int argc, char** argv)
 	
 	options.allow_unrecognised_options().add_options()(
 		"k, size", "K size (default = 32, k <= 32)", cxxopts::value<int>(k))(
-		"x, port", "Network port (default = 8444, for chia)", cxxopts::value<int>(port))(
+		"x, port", "Network port (default = 8444, chives = 9699)", cxxopts::value<int>(port))(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
