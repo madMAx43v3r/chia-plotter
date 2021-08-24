@@ -24,6 +24,7 @@ or double press Ctrl-C to terminate immediately.
 Usage:
   chia_plot [OPTION...]
 
+  -k, --size arg       K size (default = 32, k <= 32)
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Number of buckets (default = 256)
@@ -56,6 +57,10 @@ Note: 128 GiB System RAM minimum required for RAM disk.
 ## How to Support
 
 XCH: xch1w5c2vv5ak08pczeph7tp5xmkl5762pdf3pyjkg9z4ks4ed55j3psgay0zh
+
+XFX: xfx1succfn2z3uwmq50ukztjanrvs9kw294mqn4lv22rk6tzmcu7e2xsyxyaa5
+
+XCC: xcc16j65y35fs8u289nq6krcyehsmp5eqd4we493rxf36pg7eymcqrqqltsrat
 
 ETH-ERC20: 0x97057cdf529867838d2a1f7f23ba62456764e0cd
 
