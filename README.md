@@ -286,7 +286,15 @@ https://github.com/stotiks/chia-plotter/releases
   # Now download chia-plotter's dependencies
   brew install libsodium cmake git autoconf automake libtool wget
   brew link cmake
+  git clone https://github.com/madMAx43v3r/chia-plotter.git 
+  cd chia-plotter
+  git submodule update --init
+  ./make_devel.sh
+  ./build/chia_plot --help
+  ```
 
+  Linking libsodium should be performed automatically, but in case of failure please follow these instructions:
+  ```
   # If you downloaded Xcode run these:
   sudo ln -s /usr/local/include/sodium.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
   sudo ln -s /usr/local/include/sodium /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
@@ -308,13 +316,6 @@ https://github.com/stotiks/chia-plotter/releases
   wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /opt/homebrew/Cellar/cmake/*/share/cmake/Modules/FindSodium.cmake
   ```
 
-  ```
-  git clone https://github.com/madMAx43v3r/chia-plotter.git 
-  cd chia-plotter
-  git submodule update --init
-  ./make_devel.sh
-  ./build/chia_plot --help
-  ```
   If a maximum open file limit error occurs (as default OS setting is 256, which is too low for default bucket size of `256`), run this before starting the plotter
   ```
   ulimit -n 3000
