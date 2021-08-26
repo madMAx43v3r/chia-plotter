@@ -26,7 +26,7 @@ void compute_stage1(int L_index, int num_threads,
 {
 	const auto begin = get_wall_time_micros();
 	const int num_threads_read = std::max(num_threads / g_read_thread_divider, 2);
-	const int num_threads_merge = std::max(num_threads / 4, 1);
+	const int num_threads_merge = std::max(num_threads / 8, 1);
 	
 	struct merge_buffer_t {
 		uint64_t offset = 0;					// position offset at buffer[0]
