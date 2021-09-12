@@ -244,12 +244,12 @@ https://github.com/stotiks/chia-plotter/releases
   ```bash
   sudo apt install -y libsodium-dev cmake g++ git build-essential
   # Checkout the source and install
-  git clone https://github.com/madMAx43v3r/chia-plotter.git 
+  sudo git clone https://github.com/madMAx43v3r/chia-plotter.git 
   cd chia-plotter
 
-  git submodule update --init
-  ./make_devel.sh
-  ./build/chia_plot --help
+  sudo git submodule update --init
+  sudo ./make_devel.sh
+  sudo ./build/chia_plot --help
   ```
 
   The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
