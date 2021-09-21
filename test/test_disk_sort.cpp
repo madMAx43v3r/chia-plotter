@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 		sort.finish();
 		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000. << " ms" << std::endl;
 		
-		FILE* out = fopen("sorted.out", "wb");
+		FILE* out = FOPEN("sorted.out", "wb");
 		
 		Thread<std::pair<std::vector<phase1::entry_1>, size_t>> thread(
 			[out](std::pair<std::vector<phase1::entry_1>, size_t>& input) {
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 		std::cout << "add() took " << (get_wall_time_micros() - add_begin) / 1000. << " ms" << std::endl;
 		
 		uint64_t f_max = 0;
-		FILE* out = fopen("sorted.out", "wb");
+		FILE* out = FOPEN("sorted.out", "wb");
 		
 		Thread<std::pair<std::vector<phase1::entry_4>, size_t>> thread(
 			[out, &f_max](std::pair<std::vector<phase1::entry_4>, size_t>& input) {

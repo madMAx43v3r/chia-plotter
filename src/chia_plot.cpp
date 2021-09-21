@@ -203,7 +203,7 @@ phase4::output_t create_plot(	const int k,
 }
 
 
-int main(int argc, char** argv)
+int _main(int argc, char** argv)
 {
 
 	cxxopts::Options options("chia_plot",
@@ -353,7 +353,7 @@ int main(int argc, char** argv)
 	}
 	{
 		const std::string path = tmp_dir + ".chia_plot_tmp";
-		if(auto file = fopen(path.c_str(), "wb")) {
+		if(auto file = FOPEN(path.c_str(), "wb")) {
 			fclose(file);
 			remove(path.c_str());
 		} else {
@@ -363,7 +363,7 @@ int main(int argc, char** argv)
 	}
 	{
 		const std::string path = tmp_dir2 + ".chia_plot_tmp2";
-		if(auto file = fopen(path.c_str(), "wb")) {
+		if(auto file = FOPEN(path.c_str(), "wb")) {
 			fclose(file);
 			remove(path.c_str());
 		} else {
@@ -373,7 +373,7 @@ int main(int argc, char** argv)
 	}
 	{
 		const std::string path = final_dir + ".chia_plot_final";
-		if(auto file = fopen(path.c_str(), "wb")) {
+		if(auto file = FOPEN(path.c_str(), "wb")) {
 			fclose(file);
 			remove(path.c_str());
 		} else {
@@ -383,7 +383,9 @@ int main(int argc, char** argv)
 	}
 	const int num_files_max = (1 << std::max(log_num_buckets, log_num_buckets_3)) + 2 * num_threads + 32;
 	
-#ifndef _WIN32
+#ifdef _WIN32
+	_setmaxstdio(num_files_max + 10);
+#else
 	if(false) {
 		// try to increase the open file limit
 		::rlimit the_limit;
@@ -400,7 +402,7 @@ int main(int argc, char** argv)
 		std::vector<std::pair<FILE*, std::string>> files;
 		for(int i = 0; i < num_files_max; ++i) {
 			const std::string path = tmp_dir + ".chia_plot_tmp." + std::to_string(i);
-			if(auto file = fopen(path.c_str(), "wb")) {
+			if(auto file = FOPEN(path.c_str(), "wb")) {
 				files.emplace_back(file, path);
 			} else {
 				std::cout << "Cannot open at least " << num_files_max
@@ -504,3 +506,38 @@ int main(int argc, char** argv)
 	
 	return 0;
 }
+
+#ifdef _WIN32
+
+void handle_eptr(std::exception_ptr eptr)
+{
+	try {
+		if (eptr) {
+			std::rethrow_exception(eptr);
+		}
+	}
+	catch (const std::exception& e) {
+		std::cout << "Caught exception \"" << e.what() << "\"\n";
+	}
+}
+
+int main(int argc, char** argv)
+{
+	std::exception_ptr eptr;
+	try {
+		return _main(argc, argv);
+	}
+	catch (...) {
+		eptr = std::current_exception();
+	}
+	handle_eptr(eptr);
+}
+
+#else
+
+int main(int argc, char** argv)
+{
+	return _main(argc, argv);
+}
+
+#endif /* _WIN32 */

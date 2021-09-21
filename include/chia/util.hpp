@@ -31,6 +31,8 @@
 #include <utility>
 #include <vector>
 
+#include <chia/stdiox.hpp>
+
 template <typename Int>
 constexpr inline Int cdiv(Int a, int b) { return (a + b - 1) / b; }
 
@@ -419,7 +421,7 @@ std::ifstream::pos_type get_file_size(const char* file_name)
 
 inline
 void fseek_set(FILE* file, uint64_t offset) {
-	if(fseek(file, offset, SEEK_SET)) {
+	if(FSEEK(file, offset, SEEK_SET)) {
 		throw std::runtime_error("fseek() failed");
 	}
 }

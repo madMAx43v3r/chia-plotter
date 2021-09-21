@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 	
 	bitfield bitfield_1(table_1.num_entries);
 	{
-		FILE* file = fopen("test.p2.bitfield1.tmp", "rb");
+		FILE* file = FOPEN("test.p2.bitfield1.tmp", "rb");
 		if(!file) {
 			throw std::runtime_error("bitfield1 missing");
 		}
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 		fclose(file);
 	}
 	
-	FILE* plot_file = fopen("test.plot.tmp", "wb");
+	FILE* plot_file = FOPEN("test.plot.tmp", "wb");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}

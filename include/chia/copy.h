@@ -8,8 +8,6 @@
 #ifndef INCLUDE_CHIA_COPY_H_
 #define INCLUDE_CHIA_COPY_H_
 
-#include <chia/settings.h>
-
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -17,15 +15,21 @@
 #include <cstdio>
 #include <cstdint>
 
+#ifdef _MSC_VER
+#include <filesystem>
+#endif
+
+#include <chia/settings.h>
+#include <chia/stdiox.hpp>
 
 inline
 uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 {
-	FILE* src = fopen(src_path.c_str(), "rb");
+	FILE* src = FOPEN(src_path.c_str(), "rb");
 	if(!src) {
 		throw std::runtime_error("fopen() failed for " + src_path);
 	}
-	FILE* dst = fopen(dst_path.c_str(), "wb");
+	FILE* dst = FOPEN(dst_path.c_str(), "wb");
 	if(!dst) {
 		fclose(src);
 		throw std::runtime_error("fopen() failed for " + dst_path);
@@ -64,6 +68,11 @@ uint64_t final_copy(const std::string& src_path, const std::string& dst_path)
 		// try manual copy
 		total_bytes = copy_file(src_path, tmp_dst_path);
 	}
+#ifdef _MSC_VER
+	else {
+		total_bytes = std::filesystem::file_size(tmp_dst_path.c_str());
+	}
+#endif
 	remove(src_path.c_str());
 	rename(tmp_dst_path.c_str(), dst_path.c_str());
 	return total_bytes;

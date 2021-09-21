@@ -9,6 +9,7 @@
 #define INCLUDE_CHIA_DISKTABLE_H_
 
 #include <chia/buffer.h>
+#include <chia/stdiox.hpp>
 #include <chia/ThreadPool.h>
 
 #include <cstdio>
@@ -34,7 +35,7 @@ public:
 			num_entries(num_entries)
 	{
 		if(!num_entries) {
-			file_out = fopen(file_name.c_str(), "wb");
+			file_out = FOPEN(file_name.c_str(), "wb");
 		}
 	}
 	
@@ -68,7 +69,7 @@ public:
 		
 		for(size_t i = 0; i < pool.num_threads(); ++i)
 		{
-			FILE* file = fopen(file_name.c_str(), "rb");
+			FILE* file = FOPEN(file_name.c_str(), "rb");
 			if(!file) {
 				throw std::runtime_error("fopen() failed");
 			}
@@ -120,7 +121,7 @@ private:
 					std::pair<std::vector<T>, size_t>& out,
 					local_t& local) const
 	{
-		if(int err = fseek(local.file, param.first * T::disk_size, SEEK_SET)) {
+		if(int err = FSEEK(local.file, param.first * T::disk_size, SEEK_SET)) {
 			throw std::runtime_error("fseek() failed");
 		}
 		if(fread(local.buffer, T::disk_size, param.second, local.file) != param.second) {

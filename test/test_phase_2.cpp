@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 	compute_table<phase1::tmp_entry_x, entry_x, DiskSortT>(
 			2, num_threads, &sort_2, nullptr, input[1], &next_bitfield, &curr_bitfield);
 	
-	if(FILE* file = fopen("test.p2.bitfield1.tmp", "wb")) {
+	if(FILE* file = FOPEN("test.p2.bitfield1.tmp", "wb")) {
 		next_bitfield.write(file);
 		fclose(file);
 	}

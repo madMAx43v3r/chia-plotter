@@ -74,7 +74,7 @@ int main()
 		table[i].file_name = file_name;
 		table[i].num_entries = get_file_size(file_name.c_str()) / size;
 		
-		file[i] = fopen(table[i].file_name.c_str(), "rb");
+		file[i] = FOPEN(table[i].file_name.c_str(), "rb");
 		
 		std::cout << "Table " << (i + 1) << ": "
 				<< table[i].num_entries << " entries" << std::endl;

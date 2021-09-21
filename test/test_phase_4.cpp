@@ -20,7 +20,7 @@ int main(int argc, char** argv)
 	const int k = 32;
 	const auto total_begin = get_wall_time_micros();
 	
-	FILE* plot_file = fopen("test.plot.tmp", "rb+");
+	FILE* plot_file = FOPEN("test.plot.tmp", "rb+");
 	if(!plot_file) {
 		throw std::runtime_error("fopen() failed");
 	}
