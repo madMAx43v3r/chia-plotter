@@ -5,6 +5,9 @@ SATA drives are half duplex meaning that transmit and receive cannot occur at th
 bandwidth (550 MB/s) is splitted between the read and write operations.
 
 This sata edition aims to organize the tables so that one SATA drive reads while the other SATA drive writes, and vice versa.
+It has a slight bias on tmpdir so that the a faster sata or NVMe drive is best served as tmpdir.
+
+tmpdir requires 130 GiB, tmpdir2 requires 222 GiB.
 
 
 ## Install
