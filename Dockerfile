@@ -10,8 +10,6 @@ RUN apk --no-cache add \
     build-base \
     cmake \
     gmp-dev \
-    libsodium-dev \
-    libsodium-static \
     git
 
 COPY . .

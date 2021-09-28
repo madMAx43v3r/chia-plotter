@@ -142,7 +142,6 @@ cd chiapos && mkdir build && cd build && cmake .. && make -j8
 cd chia-plotter
 git checkout master
 git pull
-git submodule update --init
 ./make_devel.sh
 ```
 
@@ -157,7 +156,6 @@ keeping most of the load off the CPUs.
 ## Dependencies
 
 - cmake (>=3.14)
-- libsodium-dev
 
 ## Install
 
@@ -174,15 +172,14 @@ https://github.com/stotiks/chia-plotter/releases
 
   First, install dependencies from pacman:
   ```bash
-  sudo pacman -S cmake libsodium gmp gcc11
+  sudo pacman -S cmake gmp gcc11
   ```
   Then, clone and compile the project:
   ```bash
   # Checkout the source and install
-  git clone https://github.com/madMAx43v3r/chia-plotter.git
+  git clone https://github.com/Chia-Network/chia-plotter-madmax.git
   cd chia-plotter
 
-  git submodule update --init
   ./make_devel.sh
   ./build/chia_plot --help
   ```
@@ -192,12 +189,11 @@ https://github.com/stotiks/chia-plotter/releases
   <summary>CentOS 7</summary>
   
   ```bash
-  git clone https://github.com/madMAx43v3r/chia-plotter.git
+  git clone https://github.com/Chia-Network/chia-plotter-madmax.git
   cd chia-plotter
 
-  git submodule update --init
   sudo yum install epel-release -y
-  sudo yum install cmake3 libsodium libsodium-static -y
+  sudo yum install cmake3 -y
   ln /usr/bin/cmake3 /usr/bin/cmake
   # Install a package with repository for your system:
   # On CentOS, install package centos-release-scl available in CentOS repository:
@@ -216,23 +212,14 @@ https://github.com/stotiks/chia-plotter/releases
   
   ```bash
   sudo swupd update
-  sudo swupd bundle-add c-basic devpkg-libsodium git wget
+  sudo swupd bundle-add c-basic git
 
   echo PATH=$PATH:/usr/local/bin/ # for statically compiled cmake if not already in your PATH
 
-  # Install libsodium
-  cd /tmp
-  wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz
-  tar -xvf LATEST.tar.gz
-  cd libsodium-stable
-  ./configure
-  make && make check
-  sudo make install
   # Checkout the source and install
   cd ~/
-  git clone https://github.com/madMAx43v3r/chia-plotter.git 
+  git clone https://github.com/Chia-Network/chia-plotter-madmax.git
   cd ~/chia-plotter
-  git submodule update --init
   ./make_devel.sh
   ./build/chia_plot --help
   ```
@@ -242,12 +229,11 @@ https://github.com/stotiks/chia-plotter/releases
   <summary>Ubuntu 20.04</summary>
   
   ```bash
-  sudo apt install -y libsodium-dev cmake g++ git build-essential
+  sudo apt install -y cmake g++ git build-essential
   # Checkout the source and install
-  git clone https://github.com/madMAx43v3r/chia-plotter.git 
+  git clone https://github.com/Chia-Network/chia-plotter-madmax.git
   cd chia-plotter
 
-  git submodule update --init
   ./make_devel.sh
   ./build/chia_plot --help
   ```
@@ -263,12 +249,11 @@ https://github.com/stotiks/chia-plotter/releases
   ```bash
   # Install cmake 3.16 from buster-backports
   sudo apt install -t buster-backports cmake
-  sudo apt install -y libsodium-dev g++ git
+  sudo apt install -y g++ git
   # Checkout the source and install
-  git clone https://github.com/madMAx43v3r/chia-plotter.git 
+  git clone https://github.com/Chia-Network/chia-plotter-madmax.git
   cd chia-plotter
 
-  git submodule update --init
   ./make_devel.sh
   ./build/chia_plot --help
   ```
@@ -284,36 +269,12 @@ https://github.com/stotiks/chia-plotter/releases
   xcode-select --install
 
   # Now download chia-plotter's dependencies
-  brew install libsodium cmake git autoconf automake libtool wget
+  brew install cmake git
   brew link cmake
-  git clone https://github.com/madMAx43v3r/chia-plotter.git 
+  git clone https://github.com/Chia-Network/chia-plotter-madmax.git
   cd chia-plotter
-  git submodule update --init
   ./make_devel.sh
   ./build/chia_plot --help
-  ```
-
-  Linking libsodium should be performed automatically, but in case of failure please follow these instructions:
-  ```
-  # If you downloaded Xcode run these:
-  sudo ln -s /usr/local/include/sodium.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
-  sudo ln -s /usr/local/include/sodium /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
-
-  # If you downloaded CommandLineTools run these:
-  sudo ln -s /usr/local/include/sodium.h /Library/Developer/CommandLineTools/usr/include
-  sudo ln -s /usr/local/include/sodium /Library/Developer/CommandLineTools/usr/include
-
-  ```
-
-  Confirm which directory you have on YOUR Mac before applying following commands
-  ```
-  # For x86_64 Macs
-  wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /usr/local/opt/cmake/share/cmake/Modules/FindSodium.cmake
-  ```
-   or
-  ``` 
-  # For ARM64 (M1) Macs
-  wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /opt/homebrew/Cellar/cmake/*/share/cmake/Modules/FindSodium.cmake
   ```
 
   If a maximum open file limit error occurs (as default OS setting is 256, which is too low for default bucket size of `256`), run this before starting the plotter
@@ -371,7 +332,7 @@ https://github.com/stotiks/chia-plotter/releases
   ...would run your plotter with 8 CPU cores and 8GB of RAM.
 
   ### Building a Docker container
-  Make sure your submodules are up-to-date by running `git submodule update --init`, then simply build with `docker build .`
+  Simply build with `docker build .`
 </details>
 
 ---
