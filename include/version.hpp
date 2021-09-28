@@ -2,4 +2,4 @@
 
 #include <string>
 
-const std::string kVersion = "2021.08.25-chia";
+const std::string kVersion = "2021.08.25";
