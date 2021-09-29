@@ -24,7 +24,7 @@ void compute_table(	int R_index, int num_threads,
 					bitfield* L_used,
 					const bitfield* R_used)
 {
-	const int num_threads_read = std::max(num_threads / 4, 2);
+	const int num_threads_read = std::max(num_threads / g_read_thread_divider, 1);
 	
 	DiskTable<T> R_input(R_table);
 	{

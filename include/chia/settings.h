@@ -24,6 +24,12 @@ extern size_t g_read_chunk_size;
  */
 extern size_t g_write_chunk_size;
 
+/*
+ * Divider for number of read threads.
+ * default = 4
+ */
+extern int g_read_thread_divider;
+
 namespace phase2 {
   extern int g_thread_multi;
 }

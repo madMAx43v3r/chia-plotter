@@ -189,7 +189,7 @@ uint64_t compute(	FILE* plot_file,
 		p7_threads.take(parks);
 	}, "phase4/read");
     
-    L_sort_7->read(&read_thread, num_threads);
+    L_sort_7->read(&read_thread, num_threads, std::max(num_threads / g_read_thread_divider, 2));
     read_thread.close();
     
     park_data.offset = final_file_writer_3;

@@ -25,7 +25,8 @@ void compute_stage1(int L_index, int num_threads,
 					DiskTable<S>* R_table = nullptr)
 {
 	const auto begin = get_wall_time_micros();
-	const int num_threads_merge = std::max(num_threads / 4, 1);
+	const int num_threads_read = std::max(num_threads / g_read_thread_divider, 2);
+	const int num_threads_merge = std::max(num_threads / 8, 1);
 	
 	struct merge_buffer_t {
 		uint64_t offset = 0;					// position offset at buffer[0]
@@ -164,11 +165,11 @@ void compute_stage1(int L_index, int num_threads,
 		}, &R_add_2, num_threads_merge, "phase3/merge");
 	
 	std::thread R_sort_read(
-		[&mutex, &signal_1, num_threads, L_table, R_sort, R_table, &R_read, &R_is_end]() {
+		[&mutex, &signal_1, num_threads, num_threads_read, L_table, R_sort, R_table, &R_read, &R_is_end]() {
 			if(R_table) {
-				R_table->read(&R_read, std::max(num_threads / 4, 2));
+				R_table->read(&R_read, std::max(num_threads_read / 2, 1));
 			} else {
-				R_sort->read(&R_read, std::max(num_threads / (L_table ? 1 : 2), 1));
+				R_sort->read(&R_read, std::max(num_threads / (L_table ? 1 : 2), 1), std::max(num_threads_read / 2, 1));
 			}
 			R_read.close();
 			{
@@ -179,10 +180,10 @@ void compute_stage1(int L_index, int num_threads,
 		});
 	
 	if(L_table) {
-		L_table->read(&L_read_1, std::max(num_threads / 4, 2));
+		L_table->read(&L_read_1, std::max(num_threads_read / 2, 1));
 		L_read_1.close();
 	} else {
-		L_sort->read(&L_read, std::max(num_threads / (R_table ? 1 : 2), 1));
+		L_sort->read(&L_read, std::max(num_threads / (R_table ? 1 : 2), 1), std::max(num_threads_read / 2, 1));
 	}
 	L_read.close();
 	{
@@ -439,7 +440,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 			L_add.take(input);
 		}, "phase3/slice");
 	
-	R_sort->read(&R_read, num_threads);
+	R_sort->read(&R_read, num_threads, std::max(num_threads / g_read_thread_divider, 2));
 	R_read.close();
 	
 	// Since we don't have a perfect multiple of EPP entries, this writes the last ones
