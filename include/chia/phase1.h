@@ -23,6 +23,7 @@
 namespace phase1 {
 
 struct input_t {
+	int k = 32;
 	std::array<uint8_t, 32> id = {};
 	std::vector<uint8_t> memo;
 	std::string plot_name;
@@ -160,34 +161,30 @@ struct get_y {
 
 template<typename T>
 struct get_meta {
-	void operator()(const T& entry, uint8_t* bytes, size_t* num_bytes) {
-		*num_bytes = sizeof(entry.meta);
-		memcpy(bytes, entry.meta.data(), sizeof(entry.meta));
+	void operator()(const T& entry, uint128_t* value) {
+		*value = 0;
+		memcpy(value, entry.meta.data(), sizeof(entry.meta));
 	}
 };
 
 template<>
 struct get_meta<entry_1> {
-	void operator()(const entry_1& entry, uint8_t* bytes, size_t* num_bytes) {
-		*num_bytes = sizeof(uint32_t);
-		const uint32_t tmp = bswap_32(entry.x);
-		memcpy(bytes, &tmp, sizeof(uint32_t));
+	void operator()(const entry_1& entry, uint128_t* value) {
+		*value = entry.x;
 	}
 };
 
 template<typename T>
 struct set_meta {
-	void operator()(T& entry, const uint8_t* bytes, const size_t num_bytes) {
-		if(num_bytes != sizeof(entry.meta)) {
-			throw std::logic_error("meta data size mismatch");
-		}
-		memcpy(entry.meta.data(), bytes, sizeof(entry.meta));
+	void operator()(T& entry, const uint128_t value, const size_t num_bytes) {
+		entry.meta = {};
+		memcpy(entry.meta.data(), &value, num_bytes);
 	}
 };
 
 template<>
 struct set_meta<entry_7> {
-	void operator()(entry_7& entry, const uint8_t* bytes, const size_t num_bytes) {
+	void operator()(entry_7& entry, const uint128_t value, const size_t num_bytes) {
 		// no meta data
 	}
 };

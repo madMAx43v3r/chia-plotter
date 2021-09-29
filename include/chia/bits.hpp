@@ -167,7 +167,7 @@ public:
     BitsGeneric<T>(const uint8_t* big_endian_bytes, uint32_t num_bytes, uint32_t size_bits)
     {
         this->last_size_ = 0;
-        uint32_t extra_space = size_bits - num_bytes * 8;
+        int32_t extra_space = int32_t(size_bits) - num_bytes * 8;
         while (extra_space >= 64) {
             AppendValue(0, 64);
             extra_space -= 64;

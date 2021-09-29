@@ -78,7 +78,9 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr)
 }
 
 inline
-phase4::output_t create_plot(	const int num_threads,
+phase4::output_t create_plot(	const int k,
+								const int port,
+								const int num_threads,
 								const int log_num_buckets,
 								const int log_num_buckets_3,
 								const vector<uint8_t>& pool_key_bytes,
@@ -127,7 +129,7 @@ phase4::output_t create_plot(	const int num_threads,
 	const bls::PrivateKey master_sk = MPL.KeyGen(seed);
 	
 	bls::PrivateKey local_sk = master_sk;
-	for(uint32_t i : {12381, 8444, 3, 0}) {
+	for(uint32_t i : {12381, port, 3, 0}) {
 		local_sk = MPL.DeriveChildSk(local_sk, i);
 	}
 	const bls::G1Element local_key = local_sk.GetG1Element();
@@ -154,6 +156,7 @@ phase4::output_t create_plot(	const int num_threads,
 	}
 	
 	phase1::input_t params;
+	params.k = k;
 	{
 		vector<uint8_t> bytes = have_puzzle ? puzzle_hash_bytes : pool_key.Serialize();
 		{
@@ -162,7 +165,7 @@ phase4::output_t create_plot(	const int num_threads,
 		}
 		bls::Util::Hash256(params.id.data(), bytes.data(), bytes.size());
 	}
-	const std::string plot_name = "plot-k32-" + get_date_string_ex("%Y-%m-%d-%H-%M")
+	const std::string plot_name = "plot-k" + std::to_string(k) + "-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
 	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
@@ -225,6 +228,8 @@ int main(int argc, char** argv)
 	std::string tmp_dir;
 	std::string tmp_dir2;
 	std::string final_dir;
+	int k = 32;
+	int port = 8444;			// 8444 = chia, 9699 = chives
 	int num_plots = 1;
 	int num_threads = 4;
 	int num_buckets = 256;
@@ -233,6 +238,8 @@ int main(int argc, char** argv)
 	bool tmptoggle = false;
 	
 	options.allow_unrecognised_options().add_options()(
+		"k, size", "K size (default = 32, k <= 32)", cxxopts::value<int>(k))(
+		"x, port", "Network port (default = 8444, chives = 9699)", cxxopts::value<int>(port))(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
@@ -257,6 +264,10 @@ int main(int argc, char** argv)
 	if(args.count("help")) {
 		std::cout << options.help({""}) << std::endl;
 		return 0;
+	}
+	if(k > 32 || k < 16) {
+		std::cout << "Invalid k option: " << k << std::endl;
+		return -2;
 	}
 	if(contract_addr_str.empty() && pool_key_str.empty()) {
 		std::cout << "Pool Public Key (for solo farming) or Pool Contract Address (for pool farming) needs to be specified via -p or -c, see `chia_plot --help`." << std::endl;
@@ -408,12 +419,31 @@ int main(int argc, char** argv)
 		std::signal(SIGTERM, interrupt_handler);
 	}
 	
+	if(k < 32 && port == 8444) {
+		std::cout << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << "**   WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING    **" << std::endl;
+    	std::cout << "**                   !! k < 32 is not supported on chia network !!                    **" << std::endl;
+    	std::cout << "**                  (If you want to plot for chives specify -x 9699)                  **" << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << std::endl;
+	}
+	if(k >= 32 && port == 9699) {
+		std::cout << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << "**   WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING ! WARNING    **" << std::endl;
+    	std::cout << "**                   !! k > 31 is not supported on chives network !!                  **" << std::endl;
+    	std::cout << "****************************************************************************************" << std::endl;
+    	std::cout << std::endl;
+	}
+
 	std::cout << "Multi-threaded pipelined Chia k32 plotter"; 
 	#ifdef GIT_COMMIT_HASH
 		std::cout << " - " << GIT_COMMIT_HASH;
 	#endif	
 	std::cout << std::endl;
 	std::cout << "(Sponsored by Flexpool.io - Check them out if you're looking for a secure and scalable Chia pool)" << std::endl << std::endl;
+	std::cout << "Network Port: " << port << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
@@ -451,7 +481,7 @@ int main(int argc, char** argv)
 		}
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
 		const auto out = create_plot(
-				num_threads, log_num_buckets, log_num_buckets_3,
+				k, port, num_threads, log_num_buckets, log_num_buckets_3,
 				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
 		
 		if(final_dir != tmp_dir)

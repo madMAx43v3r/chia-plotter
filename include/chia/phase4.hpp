@@ -42,13 +42,12 @@ static uint32_t CalculateC3Size(uint8_t k)
 // C1 (checkpoint values)
 // C2 (checkpoint values into)
 // C3 (deltas of f7s between C1 checkpoints)
-uint64_t compute(	FILE* plot_file, const int header_size,
+uint64_t compute(	FILE* plot_file,
+					const uint8_t k, const int header_size,
 					phase3::DiskSortNP* L_sort_7, int num_threads,
 					const uint64_t final_pointer_7,
 					const uint64_t final_entries_written)
 {
-    static constexpr uint8_t k = 32;
-	
 	const uint32_t P7_park_size = Util::ByteAlign((k + 1) * kEntriesPerPark) / 8;
     const uint64_t number_of_p7_parks =
         ((final_entries_written == 0 ? 0 : final_entries_written - 1) / kEntriesPerPark) + 1;
@@ -104,7 +103,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 		}, "phase4/write");
     
     ThreadPool<std::vector<park_data_t>, std::vector<write_data_t>> p7_threads(
-		[P7_park_size](std::vector<park_data_t>& input, std::vector<write_data_t>& out, size_t&) {
+		[k, P7_park_size](std::vector<park_data_t>& input, std::vector<write_data_t>& out, size_t&) {
 			for(const auto& park : input) {
 				write_data_t tmp;
 				tmp.offset = park.offset;
@@ -136,7 +135,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     // We read each table7 entry, which is sorted by f7, but we don't need f7 anymore. Instead,
 	// we will just store pos6, and the deltas in table C3, and checkpoints in tables C1 and C2.
     Thread<std::pair<std::vector<phase3::entry_np>, size_t>> read_thread(
-	[begin_byte_C3, C3_size, P7_park_size, &num_C1_entries, &prev_y, &C2,
+	[k, begin_byte_C3, C3_size, P7_park_size, &num_C1_entries, &prev_y, &C2,
 	 &park_deltas, &park_data, &park_threads, &p7_threads, &plot_write,
 	 &final_file_writer_1, &final_file_writer_3]
 	 (std::pair<std::vector<phase3::entry_np>, size_t>& input) {
@@ -162,7 +161,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
 			{
 				write_data_t out;
 				out.offset = final_file_writer_1;
-				out.buffer.resize(4);
+				out.buffer.resize(Util::ByteAlign(k) / 8);
 				Bits(entry_y, k).ToBytes(out.buffer.data());
 				final_file_writer_1 += out.buffer.size();
 				{
@@ -213,7 +212,7 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     uint8_t C1_entry_buf[4] = {};
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
+    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
     
     std::cout << "[P4] Finished writing C1 and C3 tables" << std::endl;
     std::cout << "[P4] Writing C2 table" << std::endl;
@@ -221,11 +220,11 @@ uint64_t compute(	FILE* plot_file, const int header_size,
     for(const uint64_t C2_entry : C2) {
         Bits(C2_entry, k).ToBytes(C1_entry_buf);
         final_file_writer_1 +=
-        		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
+        		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
     }
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
-    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, sizeof(C1_entry_buf));
+    		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
     
     std::cout << "[P4] Finished writing C2 table" << std::endl;
 
@@ -255,7 +254,7 @@ void compute(	const phase3::output_t& input, output_t& out,
 		throw std::runtime_error("fopen() failed");
 	}
 	
-	out.plot_size = compute(plot_file, input.header_size, input.sort_7.get(),
+	out.plot_size = compute(plot_file, input.params.k, input.header_size, input.sort_7.get(),
 							num_threads, input.final_pointer_7, input.num_written_7);
 	
 	fclose(plot_file);
