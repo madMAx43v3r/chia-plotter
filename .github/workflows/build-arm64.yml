@@ -1,0 +1,49 @@
+name: CI Build Linux ARM64
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build-debug:
+    runs-on: [ARM64]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config Debug
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.3
+      with:
+        name: Debug build
+        path: ${{github.workspace}}/build/chia_plot
+
+  build-release:
+    runs-on: [ARM64]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config Release
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.3
+      with:
+        name: Release build
+        path: ${{github.workspace}}/build/chia_plot
