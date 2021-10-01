@@ -16,6 +16,7 @@
 #include <sodium.h>
 #include <cxxopts.hpp>
 #include <libbech32.h>
+#include <version.hpp>
 
 #include <string>
 #include <csignal>
@@ -253,6 +254,7 @@ int main(int argc, char** argv)
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
 		"K, rmulti2", "Thread multiplier for P2 (default = 1)", cxxopts::value<int>(phase2::g_thread_multi))(
+		"version", "Print version")(
 		"help", "Print help");
 	
 	if(argc <= 1) {
@@ -263,6 +265,10 @@ int main(int argc, char** argv)
 	
 	if(args.count("help")) {
 		std::cout << options.help({""}) << std::endl;
+		return 0;
+	}
+	if(args.count("version")) {
+		std::cout << kVersion << std::endl;
 		return 0;
 	}
 	if(k > 32 || k < 16) {
