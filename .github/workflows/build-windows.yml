@@ -39,6 +39,15 @@ jobs:
           name: MSVC Release build
           path: ${{github.workspace}}/build/chia_plot.exe
 
+  upload-release-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: MSVC Release build
+          path: ${{github.workspace}}/build/chia_plot.exe
+
       - name: Get tag name
         if: startsWith(github.ref, 'refs/tags/')
         id: tag-name
@@ -58,6 +67,6 @@ jobs:
             -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Content-Type: $(file -b --mime-type ${{github.workspace}}/build/chia_plot)" \
-            --data-binary @${{github.workspace}}/build/chia_plot \
-            https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release-id.outputs.RELEASE_ID }}/assets?name=chia_plot-${{ steps.tag-name.outputs.TAG_NAME }}-windows
+            -H "Content-Type: $(file -b --mime-type ${{github.workspace}}/build/chia_plot.exe)" \
+            --data-binary @${{github.workspace}}/build/chia_plot.exe \
+            https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release-id.outputs.RELEASE_ID }}/assets?name=chia_plot.exe
