@@ -1,4 +1,4 @@
-name: CI Build
+name: CI Build Windows
 
 on:
   push:
