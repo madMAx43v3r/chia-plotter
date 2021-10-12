@@ -1,4 +1,4 @@
-name: CI Build OSX
+name: CI Build Linux
 
 on:
   push:
@@ -13,13 +13,10 @@ on:
 
 jobs:
   build-debug:
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-
-    - name: Install CMake
-      run: brew install cmake
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug
@@ -34,13 +31,10 @@ jobs:
         path: ${{github.workspace}}/build/chia_plot
 
   build-release:
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-
-    - name: Install CMake
-      run: brew install cmake
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build
@@ -75,4 +69,4 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           -H "Content-Type: $(file -b --mime-type ${{github.workspace}}/build/chia_plot)" \
           --data-binary @${{github.workspace}}/build/chia_plot \
-          https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release-id.outputs.RELEASE_ID }}/assets?name=chia_plot-${{ steps.tag-name.outputs.TAG_NAME }}-macos-intel
+          https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release-id.outputs.RELEASE_ID }}/assets?name=chia_plot-${{ steps.tag-name.outputs.TAG_NAME }}-x86-64
