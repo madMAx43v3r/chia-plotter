@@ -38,30 +38,3 @@ jobs:
       with:
         name: Release build
         path: ${{github.workspace}}/build/chia_plot
-
-  build-msvc-release:
-    runs-on: windows-latest
-    steps:
-    - name: Activate VS prompt
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: amd64
-        toolset: 14.2
-
-    - name: Source checkout
-      uses: actions/checkout@v2
-
-    - name: Setup ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
-
-    - name: Configure
-      run: cmake -B build -G Ninja
-
-    - name: Build
-      run: cmake --build build -- -k0
-
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.2.3
-      with:
-        name: MSVC Release build
-        path: ${{github.workspace}}/build/chia_plot.exe
