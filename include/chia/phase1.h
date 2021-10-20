@@ -40,8 +40,10 @@ struct entry_1 {
 	size_t read(const uint8_t* buf) {
 		y = 0;
 		memcpy(&y, buf, 5);
-		x = 0;
-		memcpy(&x, buf + 5, KBYTES);		// 40 bit
+		if(sizeof(x) > KBYTES) {
+			x = 0;
+		}
+		memcpy(&x, buf + 5, KBYTES);		// 32 bit / 40 bit
 		return disk_size;
 	}
 	size_t write(uint8_t* buf) const {
@@ -94,7 +96,7 @@ struct entry_xm : entry_x {
 		off |= buf[4] >> 6;
 		off |= uint16_t(buf[5]) << 2;
 		memcpy(&pos, buf + 6, 4);
-		memcpy(meta.data(), buf + 10, sizeof(meta));
+		memcpy(meta.data(), buf + 10, meta.size());
 		return disk_size;
 	}
 	size_t write(uint8_t* buf) const {
@@ -102,7 +104,7 @@ struct entry_xm : entry_x {
 		buf[4] = (off << 6) | (buf[4] & 0x3F);
 		buf[5] = off >> 2;
 		memcpy(buf + 6, &pos, 4);
-		memcpy(buf + 10, meta.data(), sizeof(meta));
+		memcpy(buf + 10, meta.data(), meta.size());
 		return disk_size;
 	}
 #endif
@@ -179,6 +181,9 @@ struct tmp_entry_1 {
 		x = entry.x;
 	}
 	size_t read(const uint8_t* buf) {
+		if(sizeof(x) > KBYTES) {
+			x = 0;
+		}
 		memcpy(&x, buf, KBYTES);
 		return disk_size;
 	}
@@ -200,7 +205,7 @@ struct tmp_entry_x {
 	}
 	size_t read(const uint8_t* buf) {
 		memcpy(&pos, buf, KBYTES);
-		pos &= 0x3FFFFFFFFF;
+		pos &= 0x3FFFFFFFFF;			// 38 bit
 		memcpy(&off, buf + 4, 2);
 		off >>= 6;
 		return disk_size;

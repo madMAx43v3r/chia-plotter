@@ -236,11 +236,9 @@ public:
 		}
 		for(int i = 0; i < count; ++i) {
 			const auto pos = L_pos_begin + idx_L[i];
-#ifdef CHIA_K32
-			if(pos >= (uint64_t(1) << 32)) {
+			if(pos >= (uint64_t(1) << PMAX)) {
 				continue;
 			}
-#endif
 			match_t<T> match;
 			match.left = bucket_L[idx_L[i]];
 			match.right = bucket_R[idx_R[i]];
@@ -414,7 +412,7 @@ uint64_t compute_matches(	int R_index, int k, int num_threads,
 	}
 	if(num_written < num_found) {
 //		std::cout << "[P1] Lost " << num_found - num_written
-//				<< " matches due to 32-bit overflow." << std::endl;
+//				<< " matches due to PMAX-bit overflow." << std::endl;
 	}
 	return num_written;
 }

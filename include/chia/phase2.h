@@ -29,11 +29,11 @@ struct entry_x {
 	
 	static constexpr size_t disk_size = 10;
 
-#ifdef CHIA_K34
 	void assign(const phase1::tmp_entry_x& entry) {
 		pos = entry.pos;
 		off = entry.off;
 	}
+#ifdef CHIA_K34
 	size_t read(const uint8_t* buf) {
 		memcpy(&key, buf, 5);
 		key &= 0x7FFFFFFFF;				// 35 bit
@@ -57,10 +57,6 @@ struct entry_x {
 		return disk_size;
 	}
 #else
-	void assign(const phase1::tmp_entry_x& entry) {
-		pos = entry.pos;
-		off = entry.off;
-	}
 	size_t read(const uint8_t* buf) {
 		memcpy(&key, buf, 4);
 		memcpy(&pos, buf + 4, 4);

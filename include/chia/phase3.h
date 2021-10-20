@@ -28,14 +28,15 @@ struct entry_lp {
 	size_t read(const uint8_t* buf) {
 		memcpy(&point, buf, 9);
 		point &= (uint128_t(1) << 68) - 1;		// 68 bit
+		key = 0;
 		memcpy(&key, buf + 8, 5);
-		key >>= 4;
-		key &= 0xFFFFFFFFF;						// 36 bit
+		key >>= 4;								// 36 bit
 		return disk_size;
 	}
 	size_t write(uint8_t* buf) const {
 		memcpy(buf, &point, 9);
-		memcpy(buf + 9, &key, 5);
+		const auto tmp = (key << 4) | buf[8];
+		memcpy(buf + 8, &tmp, 5);
 		return disk_size;
 	}
 #else

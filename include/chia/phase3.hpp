@@ -359,11 +359,9 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 			}
 			uint64_t index = input.second;
 			for(const auto& entry : input.first) {
-#ifdef CHIA_K32
-				if(index >= uint64_t(1) << 32) {
-					break;	// skip 32-bit overflow
+				if(index >= uint64_t(1) << PMAX) {
+					break;	// skip PMAX-bit overflow
 				}
-#endif
 				entry_np tmp;
 				tmp.key = entry.key;
 				tmp.pos = index++;
@@ -421,11 +419,9 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 			parks.reserve(input.first.size() / kEntriesPerPark + 2);
 			uint64_t index = input.second;
 			for(const auto& entry : input.first) {
-#ifdef CHIA_K32
-				if(index >= uint64_t(1) << 32) {
-					break;	// skip 32-bit overflow
+				if(index >= uint64_t(1) << PMAX) {
+					break;	// skip PMAX-bit overflow
 				}
-#endif
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0) {
 					if(index != 0) {
@@ -464,7 +460,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 	Encoding::ANSFree(kRValues[L_index - 1]);
 	
 	if(L_num_write < R_num_read) {
-//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
+//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to PMAX-bit overflow." << std::endl;
 	}
 	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
