@@ -486,7 +486,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	
 	FILE* plot_file = fopen(out.plot_file_name.c_str(), "wb");
 	if(!plot_file) {
-		throw std::runtime_error("fopen() failed");
+		throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
 	}
 	out.header_size = WriteHeader(	plot_file, k, input.params.id.data(),
 									input.params.memo.data(), input.params.memo.size());
@@ -554,7 +554,10 @@ void compute(	phase2::output_t& input, output_t& out,
 		Util::IntToEightBytes(tmp, final_pointers[i]);
 		fwrite_ex(plot_file, tmp, sizeof(tmp));
 	}
-	fclose(plot_file);
+	if(fclose(plot_file)) {
+		throw std::runtime_error("fclose() failed with: " + std::string(std::strerror(errno)));
+	}
+	plot_file = nullptr;
 	
 	out.sort_7 = L_sort_np;
 	out.num_written_7 = num_written_final_7;
