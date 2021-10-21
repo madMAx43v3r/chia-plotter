@@ -38,6 +38,7 @@ Usage:
   -c, --contract arg   Pool Contract Address (62 chars)
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
   -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
+  -D, --directout      Create plot directly in finaldir (default = false)
   -K, --rmulti2 arg    Thread multiplier for P2 (default = 1)
       --help           Print help
 ```
