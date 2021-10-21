@@ -485,7 +485,8 @@ int main(int argc, char** argv)
 			std::cout << std::endl << "Process has been interrupted, waiting for copy/rename operations to finish ..." << std::endl;
 			break;
 		}
-		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
+		std::cout << "Crafting plot " << i+1 << " out of " << num_plots
+				<< " (" << get_date_string_ex("%Y/%m/%d %H:%M:%S") << ")" << std::endl;
 		const auto out = create_plot(
 				k, port, num_threads, log_num_buckets, log_num_buckets_3,
 				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
