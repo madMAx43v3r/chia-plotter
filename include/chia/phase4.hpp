@@ -245,7 +245,8 @@ void compute(	const phase3::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				const std::string plot_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -260,7 +261,7 @@ void compute(	const phase3::output_t& input, output_t& out,
 	fclose(plot_file);
 	
 	out.params = input.params;
-	out.plot_file_name = tmp_dir + plot_name + ".plot";
+	out.plot_file_name = plot_dir + plot_name + ".plot";
 	
 	std::rename(input.plot_file_name.c_str(), out.plot_file_name.c_str());
 	
