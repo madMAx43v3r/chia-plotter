@@ -16,6 +16,8 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
+#include <errno.h>
 
 
 inline
@@ -23,21 +25,23 @@ uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 {
 	FILE* src = fopen(src_path.c_str(), "rb");
 	if(!src) {
-		throw std::runtime_error("fopen() failed for " + src_path);
+		throw std::runtime_error("fopen() failed for " + src_path + " (" + std::string(std::strerror(errno)) + ")");
 	}
 	FILE* dst = fopen(dst_path.c_str(), "wb");
 	if(!dst) {
+		const auto err = errno;
 		fclose(src);
-		throw std::runtime_error("fopen() failed for " + dst_path);
+		throw std::runtime_error("fopen() failed for " + dst_path + " (" + std::string(std::strerror(err)) + ")");
 	}
 	uint64_t total_bytes = 0;
 	std::vector<uint8_t> buffer(g_read_chunk_size * 16);
 	while(true) {
 		const auto num_bytes = fread(buffer.data(), 1, buffer.size(), src);
 		if(fwrite(buffer.data(), 1, num_bytes, dst) != num_bytes) {
+			const auto err = errno;
 			fclose(src);
 			fclose(dst);
-			throw std::runtime_error("fwrite() failed on " + dst_path);
+			throw std::runtime_error("fwrite() failed on " + dst_path + " (" + std::string(std::strerror(err)) + ")");
 		}
 		total_bytes += num_bytes;
 		if(num_bytes < buffer.size()) {
@@ -47,7 +51,7 @@ uint64_t copy_file(const std::string& src_path, const std::string& dst_path)
 	fclose(src);
 
 	if(fclose(dst)) {
-		throw std::runtime_error("fclose() failed on " + dst_path);
+		throw std::runtime_error("fclose() failed on " + dst_path + " (" + std::string(std::strerror(errno)) + ")");
 	}
 	return total_bytes;
 }

@@ -474,7 +474,8 @@ void compute(	phase2::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				const std::string plot_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -483,11 +484,11 @@ void compute(	phase2::output_t& input, output_t& out,
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".";
 	
 	out.params = input.params;
-	out.plot_file_name = tmp_dir + plot_name + ".plot.tmp";
+	out.plot_file_name = plot_dir + plot_name + ".plot.tmp";
 	
 	FILE* plot_file = fopen(out.plot_file_name.c_str(), "wb");
 	if(!plot_file) {
-		throw std::runtime_error("fopen() failed");
+		throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
 	}
 	out.header_size = WriteHeader(	plot_file, k, input.params.id.data(),
 									input.params.memo.data(), input.params.memo.size());
@@ -555,7 +556,10 @@ void compute(	phase2::output_t& input, output_t& out,
 		Util::IntToEightBytes(tmp, final_pointers[i]);
 		fwrite_ex(plot_file, tmp, sizeof(tmp));
 	}
-	fclose(plot_file);
+	if(fclose(plot_file)) {
+		throw std::runtime_error("fclose() failed with: " + std::string(std::strerror(errno)));
+	}
+	plot_file = nullptr;
 	
 	out.sort_7 = L_sort_np;
 	out.num_written_7 = num_written_final_7;

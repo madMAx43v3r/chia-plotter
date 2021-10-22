@@ -16,6 +16,7 @@
 #include <sodium.h>
 #include <cxxopts.hpp>
 #include <libbech32.h>
+#include <version.hpp>
 
 #include <string>
 #include <csignal>
@@ -87,7 +88,8 @@ phase4::output_t create_plot(	const int k,
 								const vector<uint8_t>& puzzle_hash_bytes,
 								const vector<uint8_t>& farmer_key_bytes,
 								const std::string& tmp_dir,
-								const std::string& tmp_dir_2)
+								const std::string& tmp_dir_2,
+								const std::string& plot_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	const bool have_puzzle = !puzzle_hash_bytes.empty();
@@ -191,10 +193,10 @@ phase4::output_t create_plot(	const int k,
 	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
 	
 	phase3::output_t out_3;
-	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, plot_dir);
 	
 	phase4::output_t out_4;
-	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, plot_dir);
 	
 	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
 	std::cout << "Total plot creation time was "
@@ -236,6 +238,7 @@ int main(int argc, char** argv)
 	int num_buckets_3 = 0;
 	bool waitforcopy = false;
 	bool tmptoggle = false;
+	bool directout = false;
 	
 	options.allow_unrecognised_options().add_options()(
 		"k, size", "K size (default = 32, k <= 32)", cxxopts::value<int>(k))(
@@ -251,8 +254,10 @@ int main(int argc, char** argv)
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"c, contract", "Pool Contract Address (62 chars)", cxxopts::value<std::string>(contract_addr_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
-		"G, tmptoggle", "Alternate tmpdir/tmpdir2", cxxopts::value<bool>(tmptoggle))(
+		"G, tmptoggle", "Alternate tmpdir/tmpdir2 (default = false)", cxxopts::value<bool>(tmptoggle))(
+		"D, directout", "Create plot directly in finaldir (default = false)", cxxopts::value<bool>(directout))(
 		"K, rmulti2", "Thread multiplier for P2 (default = 1)", cxxopts::value<int>(phase2::g_thread_multi))(
+		"version", "Print version")(
 		"help", "Print help");
 	
 	if(argc <= 1) {
@@ -263,6 +268,10 @@ int main(int argc, char** argv)
 	
 	if(args.count("help")) {
 		std::cout << options.help({""}) << std::endl;
+		return 0;
+	}
+	if(args.count("version")) {
+		std::cout << kVersion << std::endl;
 		return 0;
 	}
 	if(k > 32 || k < 16) {
@@ -479,18 +488,21 @@ int main(int argc, char** argv)
 			std::cout << std::endl << "Process has been interrupted, waiting for copy/rename operations to finish ..." << std::endl;
 			break;
 		}
-		std::cout << "Crafting plot " << i+1 << " out of " << num_plots << std::endl;
+		std::cout << "Crafting plot " << i+1 << " out of " << num_plots
+				<< " (" << get_date_string_ex("%Y/%m/%d %H:%M:%S") << ")" << std::endl;
 		const auto out = create_plot(
 				k, port, num_threads, log_num_buckets, log_num_buckets_3,
-				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2);
+				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2, directout ? final_dir : tmp_dir);
 		
 		if(final_dir != tmp_dir)
 		{
-			const auto dst_path = final_dir + out.params.plot_name + ".plot";
-			std::cout << "Started copy to " << dst_path << std::endl;
-			copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
-			if(waitforcopy) {
-				copy_thread.wait();
+			if(!directout) {
+				const auto dst_path = final_dir + out.params.plot_name + ".plot";
+				std::cout << "Started copy to " << dst_path << std::endl;
+				copy_thread.take_copy(std::make_pair(out.plot_file_name, dst_path));
+				if(waitforcopy) {
+					copy_thread.wait();
+				}
 			}
 		}
 		else if(tmptoggle) {
