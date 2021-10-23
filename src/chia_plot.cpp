@@ -209,7 +209,7 @@ int main(int argc, char** argv)
 {
 
 	cxxopts::Options options("chia_plot",
-		"Multi-threaded pipelined Chia k32 plotter"
+		"Multi-threaded pipelined Chia k" + std::to_string(KMAX) + " plotter"
 #ifdef GIT_COMMIT_HASH
 		" - " GIT_COMMIT_HASH
 #endif
@@ -241,7 +241,7 @@ int main(int argc, char** argv)
 	bool directout = false;
 	
 	options.allow_unrecognised_options().add_options()(
-		"k, size", "K size (default = 32, k <= 32)", cxxopts::value<int>(k))(
+		"k, size", "K size (default = 32, k <= " + std::to_string(KMAX) + ")", cxxopts::value<int>(k))(
 		"x, port", "Network port (default = 8444, chives = 9699)", cxxopts::value<int>(port))(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
@@ -274,7 +274,7 @@ int main(int argc, char** argv)
 		std::cout << kVersion << std::endl;
 		return 0;
 	}
-	if(k > 32 || k < 16) {
+	if(k > KMAX || k < 16) {
 		std::cout << "Invalid k option: " << k << std::endl;
 		return -2;
 	}
@@ -446,7 +446,7 @@ int main(int argc, char** argv)
     	std::cout << std::endl;
 	}
 
-	std::cout << "Multi-threaded pipelined Chia k32 plotter"; 
+	std::cout << "Multi-threaded pipelined Chia k" + std::to_string(KMAX) + " plotter";
 	#ifdef GIT_COMMIT_HASH
 		std::cout << " - " << GIT_COMMIT_HASH;
 	#endif	
