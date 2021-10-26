@@ -36,6 +36,9 @@ public:
 	{
 		if(!num_entries) {
 			file_out = FOPEN(file_name.c_str(), "wb");
+			if(!file_out) {
+				throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
+			}
 		}
 	}
 	
@@ -71,7 +74,7 @@ public:
 		{
 			FILE* file = FOPEN(file_name.c_str(), "rb");
 			if(!file) {
-				throw std::runtime_error("fopen() failed");
+				throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
 			}
 			auto& local = pool.get_local(i);
 			local.file = file;
@@ -101,8 +104,11 @@ public:
 	}
 	
 	void flush() {
+		if(!file_out) {
+			throw std::logic_error("read only");
+		}
 		if(fwrite(cache.data, cache.entry_size, cache.count, file_out) != cache.count) {
-			throw std::runtime_error("fwrite() failed");
+			throw std::runtime_error("fwrite() failed with: " + std::string(std::strerror(errno)));
 		}
 		num_entries += cache.count;
 		cache.count = 0;
@@ -122,10 +128,10 @@ private:
 					local_t& local) const
 	{
 		if(int err = FSEEK(local.file, param.first * T::disk_size, SEEK_SET)) {
-			throw std::runtime_error("fseek() failed");
+			throw std::runtime_error("fseek() failed with: " + std::string(std::strerror(errno)));
 		}
 		if(fread(local.buffer, T::disk_size, param.second, local.file) != param.second) {
-			throw std::runtime_error("fread() failed");
+			throw std::runtime_error("fread() failed with: " + std::string(std::strerror(errno)));
 		}
 		auto& entries = out.first;
 		entries.resize(param.second);

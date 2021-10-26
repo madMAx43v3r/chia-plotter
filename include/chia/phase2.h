@@ -23,16 +23,40 @@
 namespace phase2 {
 
 struct entry_x {
-	uint32_t key;
-	uint32_t pos;
+	uintkx_t key;		// 32 bit / 35 bit
+	uintkx_t pos;		// 32 bit / 35 bit
 	uint16_t off;		// 10 bit
 	
 	static constexpr size_t disk_size = 10;
-	
+
 	void assign(const phase1::tmp_entry_x& entry) {
 		pos = entry.pos;
 		off = entry.off;
 	}
+#ifdef CHIA_K34
+	size_t read(const uint8_t* buf) {
+		memcpy(&key, buf, 5);
+		key &= 0x7FFFFFFFF;				// 35 bit
+		memcpy(&pos, buf + 4, 5);
+		pos >>= 3;
+		pos &= 0x7FFFFFFFF;				// 35 bit
+		memcpy(&off, buf + 8, 2);
+		off >>= 6;
+		return disk_size;
+	}
+	size_t write(uint8_t* buf) const {
+		memcpy(buf, &key, 5);
+		{
+			const auto tmp = (pos << 3) | buf[4];
+			memcpy(buf + 4, &tmp, 5);
+		}
+		{
+			const auto tmp = (off << 6) | buf[8];
+			memcpy(buf + 8, &tmp, 2);
+		}
+		return disk_size;
+	}
+#else
 	size_t read(const uint8_t* buf) {
 		memcpy(&key, buf, 4);
 		memcpy(&pos, buf + 4, 4);
@@ -45,6 +69,7 @@ struct entry_x {
 		memcpy(buf + 8, &off, 2);
 		return disk_size;
 	}
+#endif
 };
 
 typedef phase1::tmp_entry_1 entry_1;
@@ -59,14 +84,14 @@ struct get_pos {
 
 template<typename T>
 struct set_sort_key {
-	void operator()(T& entry, uint32_t key) {
+	void operator()(T& entry, uint64_t key) {
 		entry.key = key;
 	}
 };
 
 template<>
 struct set_sort_key<entry_7> {
-	void operator()(entry_7& entry, uint32_t key) {
+	void operator()(entry_7& entry, uint64_t key) {
 		// no sort key
 	}
 };

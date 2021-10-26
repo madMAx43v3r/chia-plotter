@@ -39,6 +39,10 @@ static void initialize() {
 	load_tables();
 }
 
+void get_meta<entry_1>::operator()(const entry_1& entry, uint64_t* bytes, const int k) {
+	write_bits(bytes, entry.x, 0, k);
+}
+
 class F1Calculator {
 public:
 	F1Calculator(int k, const uint8_t* orig_key)
@@ -62,12 +66,12 @@ public:
 		const uint64_t num_blocks = end - start;
 		const uint8_t x_shift = k_ - kExtraBits;
 
-		if(num_blocks > 2) {
-			throw std::logic_error("num_blocks > 2");
+		if(num_blocks > 4) {
+			throw std::logic_error("num_blocks > 4");
 		}
 		uint32_t start_bit = (first_x * k_) % kF1BlockSizeBits;
 
-		uint8_t buf[2 * 64];
+		uint8_t buf[4 * 64];
 		chacha8_get_keystream(&this->enc_ctx_, start, num_blocks, buf);
 
 		for(uint64_t x = first_x; x < first_x + num_entries; x++)
@@ -101,53 +105,44 @@ public:
     // Performs one evaluation of the f function.
     void evaluate(const T& L, const T& R, S& entry) const
     {
-        Bits C;
-        Bits input;
-        uint8_t input_bytes[64];
-        uint8_t hash_bytes[32];
-        uint128_t L_meta;
-        uint128_t R_meta;
+        uint64_t C[4] = {};
+        uint64_t input[8] = {};
+        uint64_t L_meta[4] = {};
+        uint64_t R_meta[4] = {};
+        uint64_t hash_bytes[4];
+
+        size_t C_bits = 0;
+        size_t input_bits = 0;
         
         const int meta_bits = kVectorLens[table_index_] * k_;
 
-        get_meta<T>{}(L, &L_meta);
-        get_meta<T>{}(R, &R_meta);
-        
-        const Bits Y_1(L.y, k_ + kExtraBits);
-        const Bits L_c(L_meta, meta_bits);
-        const Bits R_c(R_meta, meta_bits);
+        get_meta<T>{}(L, L_meta, k_);
+        get_meta<T>{}(R, R_meta, k_);
 
         if (table_index_ < 4) {
-            C = L_c + R_c;
-            input = Y_1 + C;
+        	C_bits = append_bits(C, L_meta, C_bits, meta_bits);
+        	C_bits = append_bits(C, R_meta, C_bits, meta_bits);
+        	input_bits = write_bits(input, L.y, input_bits, k_ + kExtraBits);
+        	input_bits = append_bits(input, C, input_bits, C_bits);
         } else {
-            input = Y_1 + L_c + R_c;
+        	input_bits = write_bits(input, L.y, input_bits, k_ + kExtraBits);
+        	input_bits = append_bits(input, L_meta, input_bits, meta_bits);
+        	input_bits = append_bits(input, R_meta, input_bits, meta_bits);
         }
-        input.ToBytes(input_bytes);
 
         blake3_hasher hasher;
         blake3_hasher_init(&hasher);
-        blake3_hasher_update(&hasher, input_bytes, cdiv(input.GetSize(), 8));
-        blake3_hasher_finalize(&hasher, hash_bytes, sizeof(hash_bytes));
+        blake3_hasher_update(&hasher, input, cdiv(input_bits, 8));
+        blake3_hasher_finalize(&hasher, (uint8_t*)hash_bytes, 32);
 
-        entry.y = Util::EightBytesToInt(hash_bytes) >> (64 - (k_ + (table_index_ < 7 ? kExtraBits : 0)));
+        entry.y = bswap_64(hash_bytes[0]) >> (64 - (k_ + (table_index_ < 7 ? kExtraBits : 0)));
 
         if (table_index_ < 4) {
             // c is already computed
         } else if (table_index_ < 7) {
-            uint8_t len = kVectorLens[table_index_ + 1];
-            uint8_t start_byte = (k_ + kExtraBits) / 8;
-            uint8_t end_bit = k_ + kExtraBits + k_ * len;
-            uint8_t end_byte = cdiv(end_bit, 8);
-
-            // TODO: proper support for partial bytes in Bits ctor
-            C = Bits(hash_bytes + start_byte, end_byte - start_byte, (end_byte - start_byte) * 8);
-
-            C = C.Slice((k_ + kExtraBits) % 8, end_bit - start_byte * 8);
+        	C_bits = slice_bits(C, hash_bytes, k_ + kExtraBits, kVectorLens[table_index_ + 1] * k_);
         }
-        uint8_t C_bytes[16];
-        C.ToBytes(C_bytes);
-        set_meta<S>{}(entry, Util::SliceInt128FromBytes(C_bytes, 0, C.GetSize()), cdiv(C.GetSize(), 8));
+        set_meta<S>{}(entry, C, cdiv(C_bits, 8));
     }
 
 private:
@@ -203,11 +198,12 @@ public:
         for (size_t pos_R = 0; pos_R < bucket_R.size(); pos_R++) {
             const uint64_t r_y = bucket_R[pos_R].y - offset;
 
-            if (!rmap[r_y].count) {
-                rmap[r_y].pos = pos_R;
+            auto& entry = rmap[r_y];
+            if (!entry.count) {
+                entry.pos = pos_R;
                 rmap_clean.push_back(r_y);
             }
-            rmap[r_y].count++;
+            entry.count++;
         }
 
         int idx_count = 0;
@@ -235,16 +231,20 @@ public:
 		uint16_t idx_R[kBC];
 		const int count = find_matches_ex(bucket_L, bucket_R, idx_L, idx_R);
 		
+		if(count > kBC) {
+			throw std::logic_error("find_matches(): count > kBC");
+		}
 		for(int i = 0; i < count; ++i) {
 			const auto pos = L_pos_begin + idx_L[i];
-			if(pos < (uint64_t(1) << 32)) {
-				match_t<T> match;
-				match.left = bucket_L[idx_L[i]];
-				match.right = bucket_R[idx_R[i]];
-				match.pos = pos;
-				match.off = idx_R[i] + (bucket_L.size() - idx_L[i]);
-				out.push_back(match);
+			if(pos >= (uint64_t(1) << PMAX)) {
+				continue;
 			}
+			match_t<T> match;
+			match.left = bucket_L[idx_L[i]];
+			match.right = bucket_R[idx_R[i]];
+			match.pos = pos;
+			match.off = idx_R[i] + (bucket_L.size() - idx_L[i]);
+			out.push_back(match);
 		}
 		return count;
 	}
@@ -412,7 +412,7 @@ uint64_t compute_matches(	int R_index, int k, int num_threads,
 	}
 	if(num_written < num_found) {
 //		std::cout << "[P1] Lost " << num_found - num_written
-//				<< " matches due to 32-bit overflow." << std::endl;
+//				<< " matches due to PMAX-bit overflow." << std::endl;
 	}
 	return num_written;
 }

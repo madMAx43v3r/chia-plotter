@@ -37,7 +37,9 @@ jobs:
         uses: actions/upload-artifact@v2.2.3
         with:
           name: MSVC Release build
-          path: ${{github.workspace}}/build/chia_plot.exe
+          path: |
+            ${{github.workspace}}/build/chia_plot.exe
+            ${{github.workspace}}/build/chia_plot_k34.exe
 
   upload-release-artifacts:
     runs-on: ubuntu-latest
