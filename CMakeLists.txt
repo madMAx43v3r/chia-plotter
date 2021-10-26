@@ -161,6 +161,24 @@ target_link_libraries(chia_plot
     bls
 )
 
+add_executable(chia_plot_k34 src/chia_plot.cpp)
+
+target_include_directories(chia_plot_k34
+  PRIVATE
+    ${libbech32_SOURCE_DIR}/include/libbech32
+)
+
+target_compile_definitions(chia_plot_k34
+  PUBLIC
+    CHIA_K34=1
+)
+
+target_link_libraries(chia_plot_k34
+  PRIVATE
+    chia_plotter
+    bls
+)
+
 if(CHIA_PLOTTER_BUILD_TESTS)
   add_executable(test_copy test/test_copy.cpp)
   target_link_libraries(test_copy PRIVATE chia_plotter)

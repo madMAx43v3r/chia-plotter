@@ -76,7 +76,7 @@ uint64_t compute(	FILE* plot_file,
     uint64_t prev_y = 0;
     uint64_t num_C1_entries = 0;
     
-    std::vector<uint32_t> C2;
+    std::vector<uintkx_t> C2;
 
     std::cout << "[P4] Starting to write C1 and C3 tables" << std::endl;
     
@@ -87,7 +87,7 @@ uint64_t compute(	FILE* plot_file,
 	
 	struct park_data_t {
 		uint64_t offset = 0;
-		std::vector<uint32_t> array;	// new_pos
+		std::vector<uintkx_t> array;	// new_pos
 	} park_data;
 	
     struct write_data_t {
@@ -209,7 +209,7 @@ uint64_t compute(	FILE* plot_file,
     p7_threads.close();
     plot_write.close();
 
-    uint8_t C1_entry_buf[4] = {};
+    uint8_t C1_entry_buf[8] = {};
     Bits(0, Util::ByteAlign(k)).ToBytes(C1_entry_buf);
     final_file_writer_1 +=
     		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
@@ -217,7 +217,7 @@ uint64_t compute(	FILE* plot_file,
     std::cout << "[P4] Finished writing C1 and C3 tables" << std::endl;
     std::cout << "[P4] Writing C2 table" << std::endl;
 
-    for(const uint64_t C2_entry : C2) {
+    for(auto C2_entry : C2) {
         Bits(C2_entry, k).ToBytes(C1_entry_buf);
         final_file_writer_1 +=
         		fwrite_at(plot_file, final_file_writer_1, C1_entry_buf, Util::ByteAlign(k) / 8);
@@ -245,7 +245,8 @@ void compute(	const phase3::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				const std::string plot_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -260,7 +261,7 @@ void compute(	const phase3::output_t& input, output_t& out,
 	fclose(plot_file);
 	
 	out.params = input.params;
-	out.plot_file_name = tmp_dir + plot_name + ".plot";
+	out.plot_file_name = plot_dir + plot_name + ".plot";
 	
 	std::rename(input.plot_file_name.c_str(), out.plot_file_name.c_str());
 	

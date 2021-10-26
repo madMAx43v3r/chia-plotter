@@ -29,7 +29,7 @@ void compute_stage1(int L_index, int num_threads,
 	
 	struct merge_buffer_t {
 		uint64_t offset = 0;					// position offset at buffer[0]
-		std::vector<uint32_t> new_pos;			// new_pos buffer
+		std::vector<uintkx_t> new_pos;			// new_pos buffer
 		int copy_sync = 0;						// copy counter
 	};
 	
@@ -339,7 +339,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 	
 	struct park_data_t {
 		uint64_t index = 0;
-		std::vector<uint64_t> points;
+		std::vector<uintlp_t> points;
 	} park;
 	
 	struct park_out_t {
@@ -359,8 +359,8 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 			}
 			uint64_t index = input.second;
 			for(const auto& entry : input.first) {
-				if(index >= uint64_t(1) << 32) {
-					break;	// skip 32-bit overflow
+				if(index >= uint64_t(1) << PMAX) {
+					break;	// skip PMAX-bit overflow
 				}
 				entry_np tmp;
 				tmp.key = entry.key;
@@ -392,7 +392,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 					const auto stub = big_delta & ((1ull << (k - kStubMinusBits)) - 1);
 					const auto small_delta = big_delta >> (k - kStubMinusBits);
 					if(small_delta >= 256) {
-						throw std::logic_error("small_delta >= 256 (" + std::to_string(small_delta) + ")");
+						throw std::logic_error("small_delta >= 256 (" + std::to_string(uint64_t(small_delta)) + ")");
 					}
 					deltas[i] = small_delta;
 					stubs[i] = stub;
@@ -419,8 +419,8 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 			parks.reserve(input.first.size() / kEntriesPerPark + 2);
 			uint64_t index = input.second;
 			for(const auto& entry : input.first) {
-				if(index >= uint64_t(1) << 32) {
-					break;	// skip 32-bit overflow
+				if(index >= uint64_t(1) << PMAX) {
+					break;	// skip PMAX-bit overflow
 				}
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0) {
@@ -460,7 +460,7 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 	Encoding::ANSFree(kRValues[L_index - 1]);
 	
 	if(L_num_write < R_num_read) {
-//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
+//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to PMAX-bit overflow." << std::endl;
 	}
 	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
@@ -474,7 +474,8 @@ void compute(	phase2::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				const std::string plot_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -482,11 +483,11 @@ void compute(	phase2::output_t& input, output_t& out,
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".";
 	
 	out.params = input.params;
-	out.plot_file_name = tmp_dir + plot_name + ".plot.tmp";
+	out.plot_file_name = plot_dir + plot_name + ".plot.tmp";
 	
 	FILE* plot_file = FOPEN(out.plot_file_name.c_str(), "wb");
 	if(!plot_file) {
-		throw std::runtime_error("fopen() failed");
+		throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
 	}
 	out.header_size = WriteHeader(	plot_file, k, input.params.id.data(),
 									input.params.memo.data(), input.params.memo.size());
@@ -554,7 +555,10 @@ void compute(	phase2::output_t& input, output_t& out,
 		Util::IntToEightBytes(tmp, final_pointers[i]);
 		fwrite_ex(plot_file, tmp, sizeof(tmp));
 	}
-	fclose(plot_file);
+	if(fclose(plot_file)) {
+		throw std::runtime_error("fclose() failed with: " + std::string(std::strerror(errno)));
+	}
+	plot_file = nullptr;
 	
 	out.sort_7 = L_sort_np;
 	out.num_written_7 = num_written_final_7;
