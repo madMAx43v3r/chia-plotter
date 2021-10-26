@@ -28,7 +28,9 @@ jobs:
       uses: actions/upload-artifact@v2.2.3
       with:
         name: Debug build
-        path: ${{github.workspace}}/build/chia_plot
+        path: |
+          ${{github.workspace}}/build/chia_plot
+          ${{github.workspace}}/build/chia_plot_k34
 
   build-release:
     runs-on: [ARM64]
@@ -46,7 +48,9 @@ jobs:
       uses: actions/upload-artifact@v2.2.3
       with:
         name: Release build
-        path: ${{github.workspace}}/build/chia_plot
+        path: |
+          ${{github.workspace}}/build/chia_plot
+          ${{github.workspace}}/build/chia_plot_k34
 
     - name: Get tag name
       if: startsWith(github.ref, 'refs/tags/')
