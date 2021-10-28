@@ -74,3 +74,11 @@ jobs:
           -H "Content-Type: $(file -b --mime-type ${{github.workspace}}/build/chia_plot)" \
           --data-binary @${{github.workspace}}/build/chia_plot \
           https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release-id.outputs.RELEASE_ID }}/assets?name=chia_plot-${{ steps.tag-name.outputs.TAG_NAME }}-x86-64
+
+        curl \
+          -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: $(file -b --mime-type ${{github.workspace}}/build/chia_plot_k34)" \
+          --data-binary @${{github.workspace}}/build/chia_plot_k34 \
+          https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release-id.outputs.RELEASE_ID }}/assets?name=chia_plot_k34-${{ steps.tag-name.outputs.TAG_NAME }}-x86-64
