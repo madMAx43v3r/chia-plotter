@@ -27,10 +27,6 @@ add_subdirectory(lib/libbech32)
 
 find_package(Threads REQUIRED)
 
-if(APPLE)
-find_package(sodium REQUIRED)
-endif()
-
 if (SODIUM_FOUND)
   message(STATUS "Found libsodium")
   message(STATUS "Sodium include dir = ${sodium_INCLUDE_DIR}")
