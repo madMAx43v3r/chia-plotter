@@ -81,6 +81,7 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr)
 inline
 phase4::output_t create_plot(	const int k,
 								const int port,
+								const bool make_unique,
 								const int num_threads,
 								const int log_num_buckets,
 								const int log_num_buckets_3,
@@ -165,9 +166,20 @@ phase4::output_t create_plot(	const int k,
 			const auto plot_bytes = plot_key.Serialize();
 			bytes.insert(bytes.end(), plot_bytes.begin(), plot_bytes.end());
 		}
+		if(make_unique) {
+			std::vector<uint8_t> tmp(32 + 4);
+			bls::Util::Hash256(tmp.data(), bytes.data(), bytes.size());
+			const uint32_t port_u32 = port;
+			::memcpy(tmp.data() + 32, &port_u32, 4);
+			bytes = tmp;
+		}
 		bls::Util::Hash256(params.id.data(), bytes.data(), bytes.size());
 	}
-	const std::string plot_name = "plot-k" + std::to_string(k) + "-" + get_date_string_ex("%Y-%m-%d-%H-%M")
+	std::string prefix = "plot";
+	switch(port) {
+		case 11337: prefix += "-mmx"; break;
+	}
+	const std::string plot_name = prefix + "-k" + std::to_string(k) + "-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
 	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
@@ -239,10 +251,11 @@ int main(int argc, char** argv)
 	bool waitforcopy = false;
 	bool tmptoggle = false;
 	bool directout = false;
+	bool make_unique = false;
 	
 	options.allow_unrecognised_options().add_options()(
 		"k, size", "K size (default = 32, k <= " + std::to_string(KMAX) + ")", cxxopts::value<int>(k))(
-		"x, port", "Network port (default = 8444, chives = 9699)", cxxopts::value<int>(port))(
+		"x, port", "Network port (default = 8444, chives = 9699, mmx = 11337)", cxxopts::value<int>(port))(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
@@ -256,6 +269,7 @@ int main(int argc, char** argv)
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2 (default = false)", cxxopts::value<bool>(tmptoggle))(
 		"D, directout", "Create plot directly in finaldir (default = false)", cxxopts::value<bool>(directout))(
+		"Z, unique", "Make unique plot (default = false)", cxxopts::value<bool>(make_unique))(
 		"K, rmulti2", "Thread multiplier for P2 (default = 1)", cxxopts::value<int>(phase2::g_thread_multi))(
 		"version", "Print version")(
 		"help", "Print help");
@@ -302,6 +316,9 @@ int main(int argc, char** argv)
 	}
 	if(num_buckets_3 <= 0) {
 		num_buckets_3 = num_buckets;
+	}
+	switch(port) {
+		case 11337: make_unique = true; break;
 	}
 	std::vector<uint8_t> pool_key;
 	std::vector<uint8_t> puzzle_hash;
@@ -452,7 +469,16 @@ int main(int argc, char** argv)
 	#endif	
 	std::cout << std::endl;
 	std::cout << "(Sponsored by Flexpool.io - Check them out if you're looking for a secure and scalable Chia pool)" << std::endl << std::endl;
-	std::cout << "Network Port: " << port << std::endl;
+	std::cout << "Network Port: " << port;
+	switch(port) {
+		case 8444: std::cout << " [chia]"; break;
+		case 9699: std::cout << " [chives]"; break;
+		case 11337: std::cout << " [MMX]"; break;
+	}
+	if(make_unique) {
+		std::cout << " (unique)";
+	}
+	std::cout << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
@@ -491,7 +517,7 @@ int main(int argc, char** argv)
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots
 				<< " (" << get_date_string_ex("%Y/%m/%d %H:%M:%S") << ")" << std::endl;
 		const auto out = create_plot(
-				k, port, num_threads, log_num_buckets, log_num_buckets_3,
+				k, port, make_unique, num_threads, log_num_buckets, log_num_buckets_3,
 				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2, directout ? final_dir : tmp_dir);
 		
 		if(final_dir != tmp_dir)
