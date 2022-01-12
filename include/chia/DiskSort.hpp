@@ -24,7 +24,7 @@ void DiskSort<T, Key>::bucket_t::open(const char* mode)
 	}
 	file = fopen(file_name.c_str(), mode);
 	if(!file) {
-		throw std::runtime_error("fopen() failed");
+		throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
 	}
 }
 
@@ -34,7 +34,7 @@ void DiskSort<T, Key>::bucket_t::write(const void* data, size_t count)
 	std::lock_guard<std::mutex> lock(mutex);
 	if(file) {
 		if(fwrite(data, T::disk_size, count, file) != count) {
-			throw std::runtime_error("fwrite() failed");
+			throw std::runtime_error("fwrite() failed with: " + std::string(std::strerror(errno)));
 		}
 		num_entries += count;
 	}
@@ -44,7 +44,9 @@ template<typename T, typename Key>
 void DiskSort<T, Key>::bucket_t::close()
 {
 	if(file) {
-		fclose(file);
+		if(fclose(file)) {
+			throw std::runtime_error("fclose() failed with: " + std::string(std::strerror(errno)));
+		}
 		file = nullptr;
 	}
 }
@@ -67,7 +69,8 @@ void DiskSort<T, Key>::WriteCache::add(const T& entry)
 {
 	const size_t index = Key{}(entry) >> key_shift;
 	if(index >= buckets.size()) {
-		throw std::logic_error("bucket index out of range");
+		throw std::logic_error("bucket index out of range: "
+				+ std::to_string(index) + " >= " + std::to_string(buckets.size()));
 	}
 	auto& buffer = buckets[index];
 	if(buffer.count >= buffer.capacity) {
@@ -197,7 +200,7 @@ void DiskSort<T, Key>::read_bucket(	std::pair<size_t, size_t>& index,
 	{
 		const size_t num_entries = std::min(buffer.capacity, bucket.num_entries - i);
 		if(fread(buffer.data, T::disk_size, num_entries, bucket.file) != num_entries) {
-			throw std::runtime_error("fread() failed");
+			throw std::runtime_error("fread() failed with: " + std::string(std::strerror(errno)));
 		}
 		for(size_t k = 0; k < num_entries; ++k) {
 			T entry;

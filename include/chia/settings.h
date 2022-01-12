@@ -24,5 +24,9 @@ extern size_t g_read_chunk_size;
  */
 extern size_t g_write_chunk_size;
 
+namespace phase2 {
+  extern int g_thread_multi;
+}
+
 
 #endif /* INCLUDE_CHIA_SETTINGS_H_ */

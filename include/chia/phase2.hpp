@@ -40,7 +40,7 @@ void compute_table(	int R_index, int num_threads,
 					L_used->set(entry.pos);
 					L_used->set(uint64_t(entry.pos) + entry.off);
 				}
-			}, nullptr, num_threads, "phase2/mark");
+			}, nullptr, num_threads * g_thread_multi, "phase2/mark");
 		
 		L_used->clear();
 		R_input.read(&pool, num_threads_read);
@@ -101,7 +101,7 @@ void compute_table(	int R_index, int num_threads,
 				tmp.off = pos_off.second;
 				out.push_back(tmp);
 			}
-		}, &R_count, num_threads, "phase2/remap");
+		}, &R_count, num_threads * g_thread_multi, "phase2/remap");
 	
 	R_input.read(&map_pool, num_threads_read);
 	
@@ -131,6 +131,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 {
 	const auto total_begin = get_wall_time_micros();
 	
+	const int k = input.params.k;
 	const std::string prefix = tmp_dir + plot_name + ".p2.";
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".p2.";
 	
@@ -154,7 +155,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	for(int i = 5; i >= 1; --i)
 	{
 		std::swap(curr_bitfield, next_bitfield);
-		out.sort[i] = std::make_shared<DiskSortT>(32, log_num_buckets, (i == 1 ? prefix_2 : prefix) + "t" + std::to_string(i + 1));
+		out.sort[i] = std::make_shared<DiskSortT>(k, log_num_buckets, (i == 1 ? prefix_2 : prefix) + "t" + std::to_string(i + 1));
 		
 		compute_table<phase1::tmp_entry_x, entry_x, DiskSortT>(
 			i + 1, num_threads, out.sort[i].get(), nullptr, input.table[i], next_bitfield.get(), curr_bitfield.get());

@@ -17,6 +17,7 @@ int main(int argc, char** argv)
 	const int num_threads = argc > 1 ? atoi(argv[1]) : 4;
 	const int log_num_buckets = argc > 2 ? atoi(argv[2]) : 7;
 	
+	const int k = 32;
 	const auto total_begin = get_wall_time_micros();
 	
 	FILE* plot_file = fopen("test.plot.tmp", "rb+");
@@ -46,7 +47,7 @@ int main(int argc, char** argv)
 	phase3::DiskSortNP L_sort_7(32, log_num_buckets, "test.p3s2.t7", true);
 	
 	const uint64_t total_plot_size =
-			compute(plot_file, header_size, &L_sort_7, num_threads, final_pointer_7, num_written_final_7);
+			compute(plot_file, k, header_size, &L_sort_7, num_threads, final_pointer_7, num_written_final_7);
 	
 	fclose(plot_file);
 	

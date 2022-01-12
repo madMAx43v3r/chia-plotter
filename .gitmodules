@@ -1,9 +1,9 @@
-[submodule "lib/bls-signatures"]
-	path = lib/bls-signatures
-	url = https://github.com/madMAx43v3r/bls-signatures.git
 [submodule "lib/BLAKE3"]
 	path = lib/BLAKE3
 	url = https://github.com/BLAKE3-team/BLAKE3.git
 [submodule "lib/libbech32"]
 	path = lib/libbech32
 	url = https://github.com/dcdpr/libbech32.git
+[submodule "lib/bls-signatures"]
+	path = lib/bls-signatures
+	url = https://github.com/Chia-Network/bls-signatures.git

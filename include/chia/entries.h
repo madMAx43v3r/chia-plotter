@@ -8,8 +8,25 @@
 #ifndef INCLUDE_CHIA_ENTRIES_H_
 #define INCLUDE_CHIA_ENTRIES_H_
 
+#include <chia/util.hpp>
+
 #include <cstdio>
 #include <cstdint>
+
+#ifdef CHIA_K34
+	constexpr int KMAX = 34;
+	constexpr int PMAX = 35;
+	constexpr int KBYTES = 5;
+	typedef uint64_t uintkx_t;
+	typedef uint128_t uintlp_t;
+#else
+#define CHIA_K32
+	constexpr int KMAX = 32;
+	constexpr int PMAX = 32;
+	constexpr int KBYTES = 4;
+	typedef uint32_t uintkx_t;
+	typedef uint64_t uintlp_t;
+#endif
 
 
 template<typename T>

@@ -167,7 +167,7 @@ public:
     BitsGeneric<T>(const uint8_t* big_endian_bytes, uint32_t num_bytes, uint32_t size_bits)
     {
         this->last_size_ = 0;
-        uint32_t extra_space = size_bits - num_bytes * 8;
+        int32_t extra_space = int32_t(size_bits) - num_bytes * 8;
         while (extra_space >= 64) {
             AppendValue(0, 64);
             extra_space -= 64;
@@ -553,5 +553,62 @@ typedef std::vector<uint64_t> LargeVector;
 using Bits = BitsGeneric<SmallVector>;
 using ParkBits = BitsGeneric<ParkVector>;
 using LargeBits = BitsGeneric<LargeVector>;
+
+
+inline
+int write_bits(uint64_t* dst, const uint64_t value, const int bit_offset, const int num_bits)
+{
+	assert(num_bits <= 64);
+	const int free_bits = 64 - (bit_offset % 64);
+	if(free_bits >= num_bits) {
+		dst[bit_offset / 64]     |= bswap_64(value << (free_bits - num_bits));
+	} else {
+		const int suffix_size = num_bits - free_bits;
+		const uint64_t suffix = value & ((uint64_t(1) << suffix_size) - 1);
+		dst[bit_offset / 64]     |= bswap_64(value >> suffix_size);			// prefix (high bits)
+		dst[bit_offset / 64 + 1] |= bswap_64(suffix << (64 - suffix_size));	// suffix (low bits)
+	}
+	return bit_offset + num_bits;
+}
+
+inline
+int append_bits(uint64_t* dst, const uint64_t* src, const int bit_offset, const int num_bits)
+{
+	int i = 0;
+	int offset = bit_offset;
+	int num_left = num_bits;
+	while(num_left > 0) {
+		int bits = 64;
+		uint64_t value = bswap_64(src[i]);
+		if(num_left < 64) {
+			bits = num_left;
+			value >>= (64 - num_left);
+		}
+		offset = write_bits(dst, value, offset, bits);
+		num_left -= bits;
+		i++;
+	}
+	return offset;
+}
+
+inline
+int slice_bits(uint64_t* dst, const uint64_t* src, const int bit_offset, const int num_bits)
+{
+	int count = 0;
+	int offset = bit_offset;
+	int num_left = num_bits;
+	while(num_left > 0) {
+		const int shift = offset % 64;
+		const int bits = std::min(num_left, 64 - shift);
+		uint64_t value = bswap_64(src[offset / 64]) << shift;
+		if(bits < 64) {
+			value >>= (64 - bits);
+		}
+		count = write_bits(dst, value, count, bits);
+		offset += bits;
+		num_left -= bits;
+	}
+	return count;
+}
 
 #endif  // SRC_CPP_BITS_HPP_

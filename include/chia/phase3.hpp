@@ -29,7 +29,7 @@ void compute_stage1(int L_index, int num_threads,
 	
 	struct merge_buffer_t {
 		uint64_t offset = 0;					// position offset at buffer[0]
-		std::vector<uint32_t> new_pos;			// new_pos buffer
+		std::vector<uintkx_t> new_pos;			// new_pos buffer
 		int copy_sync = 0;						// copy counter
 	};
 	
@@ -277,12 +277,11 @@ void WritePark(
     uint128_t first_line_point,
     const std::vector<uint8_t>& park_deltas,
     const std::vector<uint64_t>& park_stubs,
-    uint8_t table_index,
+    uint8_t k,
+	uint8_t table_index,
     uint8_t* park_buffer,
     const uint64_t park_buffer_size)
 {
-    static constexpr uint8_t k = 32;
-    
 	// Parks are fixed size, so we know where to start writing. The deltas will not go over
     // into the next park.
     uint8_t* index = park_buffer;
@@ -328,7 +327,7 @@ void WritePark(
 }
 
 inline
-uint64_t compute_stage2(int L_index, int num_threads,
+uint64_t compute_stage2(int L_index, int k, int num_threads,
 						DiskSortLP* R_sort, DiskSortNP* L_sort,
 						FILE* plot_file, uint64_t L_final_begin, uint64_t* R_final_begin)
 {
@@ -340,7 +339,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	
 	struct park_data_t {
 		uint64_t index = 0;
-		std::vector<uint64_t> points;
+		std::vector<uintlp_t> points;
 	} park;
 	
 	struct park_out_t {
@@ -348,7 +347,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 		std::vector<uint8_t> buffer;
 	};
 	
-	const auto park_size_bytes = CalculateParkSize(32, L_index);
+	const auto park_size_bytes = CalculateParkSize(k, L_index);
 	
 	typedef DiskSortNP::WriteCache WriteCache;
 	
@@ -360,8 +359,8 @@ uint64_t compute_stage2(int L_index, int num_threads,
 			}
 			uint64_t index = input.second;
 			for(const auto& entry : input.first) {
-				if(index >= uint64_t(1) << 32) {
-					break;	// skip 32-bit overflow
+				if(index >= uint64_t(1) << PMAX) {
+					break;	// skip PMAX-bit overflow
 				}
 				entry_np tmp;
 				tmp.key = entry.key;
@@ -379,7 +378,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 		}, "phase3/write");
 	
 	ThreadPool<std::vector<park_data_t>, std::vector<park_out_t>> park_threads(
-		[L_index, L_final_begin, park_size_bytes, &num_written_final]
+		[L_index, k, L_final_begin, park_size_bytes, &num_written_final]
 		 (std::vector<park_data_t>& input, std::vector<park_out_t>& out, size_t&) {
 			for(const auto& park : input) {
 				const auto& points = park.points;
@@ -390,10 +389,10 @@ uint64_t compute_stage2(int L_index, int num_threads,
 				std::vector<uint64_t> stubs(points.size() - 1);
 				for(size_t i = 0; i < points.size() - 1; ++i) {
 					const auto big_delta = points[i + 1] - points[i];
-					const auto stub = big_delta & ((1ull << (32 - kStubMinusBits)) - 1);
-					const auto small_delta = big_delta >> (32 - kStubMinusBits);
+					const auto stub = big_delta & ((1ull << (k - kStubMinusBits)) - 1);
+					const auto small_delta = big_delta >> (k - kStubMinusBits);
 					if(small_delta >= 256) {
-						throw std::logic_error("small_delta >= 256 (" + std::to_string(small_delta) + ")");
+						throw std::logic_error("small_delta >= 256 (" + std::to_string(uint64_t(small_delta)) + ")");
 					}
 					deltas[i] = small_delta;
 					stubs[i] = stub;
@@ -405,6 +404,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 					points[0],
 					deltas,
 					stubs,
+					k,
 					L_index,
 					tmp.buffer.data(),
 					tmp.buffer.size());
@@ -419,8 +419,8 @@ uint64_t compute_stage2(int L_index, int num_threads,
 			parks.reserve(input.first.size() / kEntriesPerPark + 2);
 			uint64_t index = input.second;
 			for(const auto& entry : input.first) {
-				if(index >= uint64_t(1) << 32) {
-					break;	// skip 32-bit overflow
+				if(index >= uint64_t(1) << PMAX) {
+					break;	// skip PMAX-bit overflow
 				}
 				// Every EPP entries, writes a park
 				if(index % kEntriesPerPark == 0) {
@@ -460,7 +460,7 @@ uint64_t compute_stage2(int L_index, int num_threads,
 	Encoding::ANSFree(kRValues[L_index - 1]);
 	
 	if(L_num_write < R_num_read) {
-//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to 32-bit overflow." << std::endl;
+//		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to PMAX-bit overflow." << std::endl;
 	}
 	std::cout << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
@@ -474,20 +474,22 @@ void compute(	phase2::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				const std::string plot_dir)
 {
 	const auto total_begin = get_wall_time_micros();
 	
+	const int k = input.params.k;
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".";
 	
 	out.params = input.params;
-	out.plot_file_name = tmp_dir + plot_name + ".plot.tmp";
+	out.plot_file_name = plot_dir + plot_name + ".plot.tmp";
 	
 	FILE* plot_file = fopen(out.plot_file_name.c_str(), "wb");
 	if(!plot_file) {
-		throw std::runtime_error("fopen() failed");
+		throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
 	}
-	out.header_size = WriteHeader(	plot_file, 32, input.params.id.data(),
+	out.header_size = WriteHeader(	plot_file, k, input.params.id.data(),
 									input.params.memo.data(), input.params.memo.size());
 	
 	std::vector<uint64_t> final_pointers(8, 0);
@@ -498,7 +500,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	DiskTable<phase2::entry_1> L_table_1(input.table_1);
 	
 	auto R_sort_lp = std::make_shared<DiskSortLP>(
-			63, log_num_buckets, prefix_2 + "p3s1.t2");
+			2 * k - 1, log_num_buckets, prefix_2 + "p3s1.t2");
 	
 	compute_stage1<phase2::entry_1, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
 			1, num_threads, nullptr, input.sort[1].get(), R_sort_lp.get(), &L_table_1, input.bitfield_1.get());
@@ -507,10 +509,10 @@ void compute(	phase2::output_t& input, output_t& out,
 	remove(input.table_1.file_name);
 	
 	auto L_sort_np = std::make_shared<DiskSortNP>(
-			32, log_num_buckets, prefix_2 + "p3s2.t2");
+			k, log_num_buckets, prefix_2 + "p3s2.t2");
 	
 	num_written_final += compute_stage2(
-			1, num_threads, R_sort_lp.get(), L_sort_np.get(),
+			1, k, num_threads, R_sort_lp.get(), L_sort_np.get(),
 			plot_file, final_pointers[1], &final_pointers[2]);
 	
 	for(int L_index = 2; L_index < 6; ++L_index)
@@ -518,32 +520,32 @@ void compute(	phase2::output_t& input, output_t& out,
 		const std::string R_t = "t" + std::to_string(L_index + 1);
 		
 		R_sort_lp = std::make_shared<DiskSortLP>(
-				63, log_num_buckets, prefix_2 + "p3s1." + R_t);
+				2 * k - 1, log_num_buckets, prefix_2 + "p3s1." + R_t);
 		
 		compute_stage1<entry_np, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
 				L_index, num_threads, L_sort_np.get(), input.sort[L_index].get(), R_sort_lp.get());
 		
 		L_sort_np = std::make_shared<DiskSortNP>(
-				32, log_num_buckets, prefix_2 + "p3s2." + R_t);
+				k, log_num_buckets, prefix_2 + "p3s2." + R_t);
 		
 		num_written_final += compute_stage2(
-				L_index, num_threads, R_sort_lp.get(), L_sort_np.get(),
+				L_index, k, num_threads, R_sort_lp.get(), L_sort_np.get(),
 				plot_file, final_pointers[L_index], &final_pointers[L_index + 1]);
 	}
 	
 	DiskTable<phase2::entry_7> R_table_7(input.table_7);
 	
-	R_sort_lp = std::make_shared<DiskSortLP>(63, log_num_buckets, prefix_2 + "p3s1.t7");
+	R_sort_lp = std::make_shared<DiskSortLP>(2 * k - 1, log_num_buckets, prefix_2 + "p3s1.t7");
 	
 	compute_stage1<entry_np, phase2::entry_7, DiskSortNP, phase2::DiskSort7>(
 			6, num_threads, L_sort_np.get(), nullptr, R_sort_lp.get(), nullptr, nullptr, &R_table_7);
 	
 	remove(input.table_7.file_name);
 	
-	L_sort_np = std::make_shared<DiskSortNP>(32, log_num_buckets, prefix_2 + "p3s2.t7");
+	L_sort_np = std::make_shared<DiskSortNP>(k, log_num_buckets, prefix_2 + "p3s2.t7");
 	
 	const auto num_written_final_7 = compute_stage2(
-			6, num_threads, R_sort_lp.get(), L_sort_np.get(),
+			6, k, num_threads, R_sort_lp.get(), L_sort_np.get(),
 			plot_file, final_pointers[6], &final_pointers[7]);
 	num_written_final += num_written_final_7;
 	
@@ -553,7 +555,10 @@ void compute(	phase2::output_t& input, output_t& out,
 		Util::IntToEightBytes(tmp, final_pointers[i]);
 		fwrite_ex(plot_file, tmp, sizeof(tmp));
 	}
-	fclose(plot_file);
+	if(fclose(plot_file)) {
+		throw std::runtime_error("fclose() failed with: " + std::string(std::strerror(errno)));
+	}
+	plot_file = nullptr;
 	
 	out.sort_7 = L_sort_np;
 	out.num_written_7 = num_written_final_7;
