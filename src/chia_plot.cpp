@@ -90,16 +90,18 @@ phase4::output_t create_plot(	const int k,
 								const vector<uint8_t>& farmer_key_bytes,
 								const std::string& tmp_dir,
 								const std::string& tmp_dir_2,
-								const std::string& plot_dir)
+								const std::string& plot_dir,
+								std::ofstream* log_file = nullptr)
 {
 	const auto total_begin = get_wall_time_micros();
+	std::ostringstream temp_buff;
 	const bool have_puzzle = !puzzle_hash_bytes.empty();
 	
-	std::cout << "Process ID: " << GETPID() << std::endl;
-	std::cout << "Number of Threads: " << num_threads << std::endl;
-	std::cout << "Number of Buckets P1:    2^" << log_num_buckets
+	temp_buff << "Process ID: " << GETPID() << std::endl;
+	temp_buff << "Number of Threads: " << num_threads << std::endl;
+	temp_buff << "Number of Buckets P1:    2^" << log_num_buckets
 			<< " (" << (1 << log_num_buckets) << ")" << std::endl;
-	std::cout << "Number of Buckets P3+P4: 2^" << log_num_buckets_3
+	temp_buff << "Number of Buckets P3+P4: 2^" << log_num_buckets_3
 			<< " (" << (1 << log_num_buckets_3) << ")" << std::endl;
 	
 	bls::G1Element pool_key;
@@ -119,11 +121,11 @@ phase4::output_t create_plot(	const int k,
 		throw;
 	}
 	if(have_puzzle) {
-		std::cout << "Pool Puzzle Hash:  " << bls::Util::HexStr(puzzle_hash_bytes) << std::endl;
+		temp_buff << "Pool Puzzle Hash:  " << bls::Util::HexStr(puzzle_hash_bytes) << std::endl;
 	} else {
-		std::cout << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
+		temp_buff << "Pool Public Key:   " << bls::Util::HexStr(pool_key.Serialize()) << std::endl;
 	}
-	std::cout << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
+	temp_buff << "Farmer Public Key: " << bls::Util::HexStr(farmer_key.Serialize()) << std::endl;
 	
 	vector<uint8_t> seed(32);
 	randombytes_buf(seed.data(), seed.size());
@@ -182,9 +184,9 @@ phase4::output_t create_plot(	const int k,
 	const std::string plot_name = prefix + "-k" + std::to_string(k) + "-" + get_date_string_ex("%Y-%m-%d-%H-%M")
 			+ "-" + bls::Util::HexStr(params.id.data(), params.id.size());
 	
-	std::cout << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
-	std::cout << "Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
-	std::cout << "Plot Name: " << plot_name << std::endl;
+	temp_buff << "Working Directory:   " << (tmp_dir.empty() ? "$PWD" : tmp_dir) << std::endl;
+	temp_buff << "Working Directory 2: " << (tmp_dir_2.empty() ? "$PWD" : tmp_dir_2) << std::endl;
+	temp_buff << "Plot Name: " << plot_name << std::endl;
 	
 	if(have_puzzle) {
 		params.memo.insert(params.memo.end(), puzzle_hash_bytes.begin(), puzzle_hash_bytes.end());
@@ -198,21 +200,24 @@ phase4::output_t create_plot(	const int k,
 	}
 	params.plot_name = plot_name;
 	
+	show_message(&temp_buff, log_file);
+
 	phase1::output_t out_1;
-	phase1::compute(params, out_1, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2);
+	phase1::compute(params, out_1, num_threads, log_num_buckets, plot_name, tmp_dir, tmp_dir_2, log_file);
 	
 	phase2::output_t out_2;
-	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2);
+	phase2::compute(out_1, out_2, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, log_file);
 	
 	phase3::output_t out_3;
-	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, plot_dir);
+	phase3::compute(out_2, out_3, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, plot_dir, log_file);
 	
 	phase4::output_t out_4;
-	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, plot_dir);
+	phase4::compute(out_3, out_4, num_threads, log_num_buckets_3, plot_name, tmp_dir, tmp_dir_2, plot_dir, log_file);
 	
 	const auto time_secs = (get_wall_time_micros() - total_begin) / 1e6;
-	std::cout << "Total plot creation time was "
+	temp_buff << "Total plot creation time was "
 			<< time_secs << " sec (" << time_secs / 60. << " min)" << std::endl;
+	show_message(&temp_buff, log_file);
 	return out_4;
 }
 
@@ -220,6 +225,7 @@ phase4::output_t create_plot(	const int k,
 int main(int argc, char** argv)
 {
 
+	std::ostringstream cout_buff;
 	cxxopts::Options options("chia_plot",
 		"Multi-threaded pipelined Chia k" + std::to_string(KMAX) + " plotter"
 #ifdef GIT_COMMIT_HASH
@@ -242,6 +248,8 @@ int main(int argc, char** argv)
 	std::string tmp_dir;
 	std::string tmp_dir2;
 	std::string final_dir;
+	std::string log_filename;
+	std::ofstream log_file;
 	int k = 32;
 	int port = 8444;			// 8444 = chia, 9699 = chives
 	int num_plots = 1;
@@ -252,6 +260,9 @@ int main(int argc, char** argv)
 	bool tmptoggle = false;
 	bool directout = false;
 	bool make_unique = false;
+#if defined(__FreeBSD__)
+	std::atomic<bool> background_run;
+#endif
 	
 	options.allow_unrecognised_options().add_options()(
 		"k, size", "K size (default = 32, k <= " + std::to_string(KMAX) + ")", cxxopts::value<int>(k))(
@@ -268,6 +279,7 @@ int main(int argc, char** argv)
 		"c, contract", "Pool Contract Address (62 chars)", cxxopts::value<std::string>(contract_addr_str))(
 		"f, farmerkey", "Farmer Public Key (48 bytes)", cxxopts::value<std::string>(farmer_key_str))(
 		"G, tmptoggle", "Alternate tmpdir/tmpdir2 (default = false)", cxxopts::value<bool>(tmptoggle))(
+		"l, logfile", "Log filename", cxxopts::value<std::string>(log_filename))(
 		"D, directout", "Create plot directly in finaldir (default = false)", cxxopts::value<bool>(directout))(
 		"Z, unique", "Make unique plot (default = false)", cxxopts::value<bool>(make_unique))(
 		"K, rmulti2", "Thread multiplier for P2 (default = 1)", cxxopts::value<int>(phase2::g_thread_multi))(
@@ -407,6 +419,15 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
+	if (!log_filename.empty()) {
+		if(auto file = fopen(log_filename.c_str(), "wb")) {
+			fclose(file);
+			log_file.open(log_filename, std::ios::trunc | std::ios::out);
+		} else {
+			std::cout << "Failed to write to log file: '" << log_filename << "'" << std::endl;
+			return -2;
+		}
+	}
 	const int num_files_max = (1 << std::max(log_num_buckets, log_num_buckets_3)) + 2 * num_threads + 32;
 	
 #ifndef _WIN32
@@ -469,22 +490,23 @@ int main(int argc, char** argv)
 	#endif	
 	std::cout << std::endl;
 	std::cout << "(Sponsored by Flexpool.io - Check them out if you're looking for a secure and scalable Chia pool)" << std::endl << std::endl;
-	std::cout << "Network Port: " << port;
+	cout_buff << "Network Port: " << port;
 	switch(port) {
-		case 8444: std::cout << " [chia]"; break;
-		case 9699: std::cout << " [chives]"; break;
-		case 11337: std::cout << " [MMX]"; break;
+		case 8444: cout_buff << " [chia]"; break;
+		case 9699: cout_buff << " [chives]"; break;
+		case 11337: cout_buff << " [MMX]"; break;
 	}
 	if(make_unique) {
-		std::cout << " (unique)";
+		cout_buff << " (unique)";
 	}
-	std::cout << std::endl;
-	std::cout << "Final Directory: " << final_dir << std::endl;
+	cout_buff << std::endl;
+	cout_buff << "Final Directory: " << final_dir << std::endl;
 	if(num_plots >= 0) {
-		std::cout << "Number of Plots: " << num_plots << std::endl;
+		cout_buff << "Number of Plots: " << num_plots << std::endl;
 	} else {
-		std::cout << "Number of Plots: infinite" << std::endl;
+		cout_buff << "Number of Plots: infinite" << std::endl;
 	}
+	show_message(&cout_buff, &log_file);
 	
 	Thread<std::pair<std::string, std::string>> copy_thread(
 		[](std::pair<std::string, std::string>& from_to) {
@@ -508,17 +530,49 @@ int main(int argc, char** argv)
 			}
 		}, "final/copy");
 	
+#if defined(__FreeBSD__)
+	// Acquire the lock, allowing the background program to run.
+	background_run = true;
+#endif
+
+	Thread<std::pair<std::ofstream*, std::atomic<bool>*>> background(
+		[](std::pair<std::ofstream*, std::atomic<bool>*> log_lock) {
+
+			if (!log_lock.first->is_open()) {
+				std::cout << " Failed to write to log file from background." << std::endl;
+				return -2;
+			}
+			while(*(log_lock.second)) {
+				try {
+					report_stats(log_lock.first);
+					std::this_thread::sleep_for(std::chrono::seconds(60));
+				} catch(const std::exception& ex) {
+					std::cout << " exception/failed with: " << ex.what() << std::endl;
+					return -2;
+				}
+			}
+			std::cout << "Background stats thread ending." << std::endl;
+			return 0;
+		}, "background/stats");
+
+#if defined(__FreeBSD__)
+	if (log_file.is_open()) {
+		background.take_copy(std::make_pair(&log_file, &background_run));
+	}
+#endif
+
 	for(int i = 0; i < num_plots || num_plots < 0; ++i)
 	{
 		if (gracefully_exit) {
 			std::cout << std::endl << "Process has been interrupted, waiting for copy/rename operations to finish ..." << std::endl;
 			break;
 		}
-		std::cout << "Crafting plot " << i+1 << " out of " << num_plots
+		cout_buff << "Crafting plot " << i+1 << " out of " << num_plots
 				<< " (" << get_date_string_ex("%Y/%m/%d %H:%M:%S") << ")" << std::endl;
+		show_message(&cout_buff, &log_file);
 		const auto out = create_plot(
 				k, port, make_unique, num_threads, log_num_buckets, log_num_buckets_3,
-				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2, directout ? final_dir : tmp_dir);
+				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2,								directout ? final_dir : tmp_dir, &log_file);
 		
 		if(final_dir != tmp_dir)
 		{
@@ -539,6 +593,14 @@ int main(int argc, char** argv)
 		}
 	}
 	copy_thread.close();
+
+	if (!log_filename.empty() && log_file.is_open()) {
+		log_file.close();
+#if defined(__FreeBSD__)
+	background_run = false;
+	background.close();
+#endif
+	}
 	
 	return 0;
 }

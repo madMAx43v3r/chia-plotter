@@ -22,7 +22,7 @@ template<typename T, typename S, typename DS_L, typename DS_R>
 void compute_stage1(int L_index, int num_threads,
 					DS_L* L_sort, DS_R* R_sort, DiskSortLP* R_sort_2,
 					DiskTable<T>* L_table = nullptr, bitfield const* L_used = nullptr,
-					DiskTable<S>* R_table = nullptr)
+					DiskTable<S>* R_table = nullptr, std::ofstream* log_file = nullptr)
 {
 	const auto begin = get_wall_time_micros();
 	const int num_threads_merge = std::max(num_threads / 4, 1);
@@ -195,9 +195,11 @@ void compute_stage1(int L_index, int num_threads,
 	
 	R_sort_2->finish();
 	
-	std::cout << "[P3-1] Table " << L_index + 1 << " took "
+	std::ostringstream temp_buff;
+	temp_buff << "[P3-1] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", wrote " << R_num_write << " right entries" << std::endl;
+	show_message(&temp_buff, log_file);
 }
 
 static uint32_t CalculateLinePointSize(uint8_t k) {
@@ -229,7 +231,8 @@ uint32_t WriteHeader(
 	uint8_t k,
 	const uint8_t* id,
 	const uint8_t* memo,
-	uint32_t memo_len)
+	uint32_t memo_len,
+	std::ofstream* log_file = nullptr)
 {
 	// 19 bytes  - "Proof of Space Plot" (utf-8)
 	// 32 bytes  - unique plot id
@@ -261,7 +264,9 @@ uint32_t WriteHeader(
 	num_bytes += fwrite((pointers), 8, 10, file) * 8;
 
 	fflush(file);
-	std::cout << "Wrote plot header with " << num_bytes << " bytes" << std::endl;
+	std::ostringstream temp_buff;
+	temp_buff << "Wrote plot header with " << num_bytes << " bytes" << std::endl;
+	show_message(&temp_buff, log_file);
 	return num_bytes;
 }
 
@@ -329,7 +334,8 @@ void WritePark(
 inline
 uint64_t compute_stage2(int L_index, int k, int num_threads,
 						DiskSortLP* R_sort, DiskSortNP* L_sort,
-						FILE* plot_file, uint64_t L_final_begin, uint64_t* R_final_begin)
+						FILE* plot_file, uint64_t L_final_begin, uint64_t* R_final_begin,
+						std::ofstream* log_file = nullptr)
 {
 	const auto begin = get_wall_time_micros();
 	
@@ -462,10 +468,12 @@ uint64_t compute_stage2(int L_index, int k, int num_threads,
 	if(L_num_write < R_num_read) {
 //		std::cout << "[P3-2] Lost " << R_num_read - L_num_write << " entries due to PMAX-bit overflow." << std::endl;
 	}
-	std::cout << "[P3-2] Table " << L_index + 1 << " took "
+	std::ostringstream temp_buff;
+	temp_buff << "[P3-2] Table " << L_index + 1 << " took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", wrote " << L_num_write << " left entries"
 				<< ", " << num_written_final << " final" << std::endl;
+	show_message(&temp_buff, log_file);
 	return num_written_final;
 }
 
@@ -475,7 +483,8 @@ void compute(	phase2::output_t& input, output_t& out,
 				const std::string plot_name,
 				const std::string tmp_dir,
 				const std::string tmp_dir_2,
-				const std::string plot_dir)
+				const std::string plot_dir,
+				std::ofstream* log_file = nullptr)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -490,7 +499,7 @@ void compute(	phase2::output_t& input, output_t& out,
 		throw std::runtime_error("fopen() failed with: " + std::string(std::strerror(errno)));
 	}
 	out.header_size = WriteHeader(	plot_file, k, input.params.id.data(),
-									input.params.memo.data(), input.params.memo.size());
+									input.params.memo.data(), input.params.memo.size(), log_file);
 	
 	std::vector<uint64_t> final_pointers(8, 0);
 	final_pointers[1] = out.header_size;
@@ -503,7 +512,8 @@ void compute(	phase2::output_t& input, output_t& out,
 			2 * k - 1, log_num_buckets, prefix_2 + "p3s1.t2");
 	
 	compute_stage1<phase2::entry_1, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
-			1, num_threads, nullptr, input.sort[1].get(), R_sort_lp.get(), &L_table_1, input.bitfield_1.get());
+			1, num_threads, nullptr, input.sort[1].get(), R_sort_lp.get(),
+			&L_table_1, input.bitfield_1.get(), nullptr, log_file);
 	
 	input.bitfield_1 = nullptr;
 	remove(input.table_1.file_name);
@@ -513,7 +523,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	
 	num_written_final += compute_stage2(
 			1, k, num_threads, R_sort_lp.get(), L_sort_np.get(),
-			plot_file, final_pointers[1], &final_pointers[2]);
+			plot_file, final_pointers[1], &final_pointers[2], log_file);
 	
 	for(int L_index = 2; L_index < 6; ++L_index)
 	{
@@ -523,14 +533,15 @@ void compute(	phase2::output_t& input, output_t& out,
 				2 * k - 1, log_num_buckets, prefix_2 + "p3s1." + R_t);
 		
 		compute_stage1<entry_np, phase2::entry_x, DiskSortNP, phase2::DiskSortT>(
-				L_index, num_threads, L_sort_np.get(), input.sort[L_index].get(), R_sort_lp.get());
+				L_index, num_threads, L_sort_np.get(), input.sort[L_index].get(),
+				R_sort_lp.get(), nullptr, nullptr, nullptr, log_file);
 		
 		L_sort_np = std::make_shared<DiskSortNP>(
 				k, log_num_buckets, prefix_2 + "p3s2." + R_t);
 		
 		num_written_final += compute_stage2(
 				L_index, k, num_threads, R_sort_lp.get(), L_sort_np.get(),
-				plot_file, final_pointers[L_index], &final_pointers[L_index + 1]);
+				plot_file, final_pointers[L_index], &final_pointers[L_index + 1], log_file);
 	}
 	
 	DiskTable<phase2::entry_7> R_table_7(input.table_7);
@@ -538,7 +549,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	R_sort_lp = std::make_shared<DiskSortLP>(2 * k - 1, log_num_buckets, prefix_2 + "p3s1.t7");
 	
 	compute_stage1<entry_np, phase2::entry_7, DiskSortNP, phase2::DiskSort7>(
-			6, num_threads, L_sort_np.get(), nullptr, R_sort_lp.get(), nullptr, nullptr, &R_table_7);
+			6, num_threads, L_sort_np.get(), nullptr, R_sort_lp.get(), nullptr, nullptr, &R_table_7, log_file);
 	
 	remove(input.table_7.file_name);
 	
@@ -546,7 +557,7 @@ void compute(	phase2::output_t& input, output_t& out,
 	
 	const auto num_written_final_7 = compute_stage2(
 			6, k, num_threads, R_sort_lp.get(), L_sort_np.get(),
-			plot_file, final_pointers[6], &final_pointers[7]);
+			plot_file, final_pointers[6], &final_pointers[7], log_file);
 	num_written_final += num_written_final_7;
 	
 	fseek_set(plot_file, out.header_size - 10 * 8);
@@ -564,8 +575,11 @@ void compute(	phase2::output_t& input, output_t& out,
 	out.num_written_7 = num_written_final_7;
 	out.final_pointer_7 = final_pointers[7];
 	
-	std::cout << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
+	std::ostringstream temp_buff;
+	temp_buff << "Phase 3 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec"
 			", wrote " << num_written_final << " entries to final plot" << std::endl;
+	temp_buff << "Timestamp: " << get_date_string_ex("%Y/%m/%d %H:%M:%S") << std::endl;
+	show_message(&temp_buff, log_file);
 }
 
 

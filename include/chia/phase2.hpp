@@ -22,9 +22,11 @@ void compute_table(	int R_index, int num_threads,
 					DS* R_sort, DiskTable<S>* R_file,
 					const table_t& R_table,
 					bitfield* L_used,
-					const bitfield* R_used)
+					const bitfield* R_used,
+					std::ofstream* log_file = nullptr)
 {
 	const int num_threads_read = std::max(num_threads / 4, 2);
+	std::ostringstream temp_buff;
 	
 	DiskTable<T> R_input(R_table);
 	{
@@ -46,8 +48,9 @@ void compute_table(	int R_index, int num_threads,
 		R_input.read(&pool, num_threads_read);
 		pool.close();
 		
-		std::cout << "[P2] Table " << R_index << " scan took "
+		temp_buff << "[P2] Table " << R_index << " scan took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
+		show_message(&temp_buff, log_file);
 	}
 	const auto begin = get_wall_time_micros();
 	
@@ -116,10 +119,11 @@ void compute_table(	int R_index, int num_threads,
 	if(R_file) {
 		R_file->flush();
 	}
-	std::cout << "[P2] Table " << R_index << " rewrite took "
+	temp_buff << "[P2] Table " << R_index << " rewrite took "
 				<< (get_wall_time_micros() - begin) / 1e6 << " sec"
 				<< ", dropped " << R_table.num_entries - num_written << " entries"
 				<< " (" << 100 * (1 - double(num_written) / R_table.num_entries) << " %)" << std::endl;
+	show_message(&temp_buff, log_file);
 }
 
 inline
@@ -127,7 +131,8 @@ void compute(	const phase1::output_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				std::ofstream* log_file = nullptr)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -139,7 +144,9 @@ void compute(	const phase1::output_t& input, output_t& out,
 	for(const auto& table : input.table) {
 		max_table_size = std::max(max_table_size, table.num_entries);
 	}
-	std::cout << "[P2] max_table_size = " << max_table_size << std::endl;
+	std::ostringstream temp_buff;
+	temp_buff << "[P2] max_table_size = " << max_table_size << std::endl;
+	show_message(&temp_buff, log_file);
 	
 	auto curr_bitfield = std::make_shared<bitfield>(max_table_size);
 	auto next_bitfield = std::make_shared<bitfield>(max_table_size);
@@ -147,7 +154,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 	DiskTable<entry_7> table_7(prefix_2 + "table7.tmp");
 	
 	compute_table<entry_7, entry_7, DiskSort7>(
-			7, num_threads, nullptr, &table_7, input.table[6], next_bitfield.get(), nullptr);
+			7, num_threads, nullptr, &table_7, input.table[6], next_bitfield.get(), nullptr, log_file);
 	
 	table_7.close();
 	remove(input.table[6].file_name);
@@ -158,7 +165,7 @@ void compute(	const phase1::output_t& input, output_t& out,
 		out.sort[i] = std::make_shared<DiskSortT>(k, log_num_buckets, (i == 1 ? prefix_2 : prefix) + "t" + std::to_string(i + 1));
 		
 		compute_table<phase1::tmp_entry_x, entry_x, DiskSortT>(
-			i + 1, num_threads, out.sort[i].get(), nullptr, input.table[i], next_bitfield.get(), curr_bitfield.get());
+			i + 1, num_threads, out.sort[i].get(), nullptr, input.table[i], next_bitfield.get(), curr_bitfield.get(), log_file);
 		
 		remove(input.table[i].file_name);
 	}
@@ -168,7 +175,9 @@ void compute(	const phase1::output_t& input, output_t& out,
 	out.table_7 = table_7.get_info();
 	out.bitfield_1 = next_bitfield;
 	
-	std::cout << "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+	temp_buff << "Phase 2 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+	temp_buff << "Timestamp: " << get_date_string_ex("%Y/%m/%d %H:%M:%S") << std::endl;
+	show_message(&temp_buff, log_file);
 }
 
 
