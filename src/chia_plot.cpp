@@ -503,8 +503,9 @@ int main(int argc, char** argv)
 	}
 	std::cout << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
-	if (final_dir != stage_dir)
+	if (final_dir != stage_dir) {
 		std::cout << "Stage Directory: " << stage_dir << std::endl;
+	}
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
 	} else {
