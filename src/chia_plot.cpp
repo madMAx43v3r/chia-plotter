@@ -317,7 +317,7 @@ int main(int argc, char** argv)
 		final_dir = tmp_dir;
 	}
 	if(stage_dir.empty()) {
-		stage_dir = final_dir;
+		stage_dir = tmp_dir;
 	}
 	if(num_buckets_3 <= 0) {
 		num_buckets_3 = num_buckets;
