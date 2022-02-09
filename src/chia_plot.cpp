@@ -316,6 +316,10 @@ int main(int argc, char** argv)
 	if(final_dir.empty()) {
 		final_dir = tmp_dir;
 	}
+	if(!stage_dir.empty() && tmptoggle) {
+		std::cout << "Stagedir and tmptoggle are mutually exclusive options." << std::endl;
+		return -2;
+	}
 	if(stage_dir.empty()) {
 		stage_dir = tmp_dir;
 	}
@@ -372,10 +376,6 @@ int main(int argc, char** argv)
 	}
 	if(!stage_dir.empty() && stage_dir.find_last_of("/\\") != stage_dir.size() - 1) {
 		std::cout << "Invalid stagedir: " << stage_dir << " (needs trailing '/' or '\\')" << std::endl;
-		return -2;
-	}
-	if(!stage_dir.empty() && tmptoggle) {
-		std::cout << "Stagedir and tmptoggle are mutually exclusive options." << std::endl;
 		return -2;
 	}
 	if(num_threads < 1 || num_threads > 1024) {
