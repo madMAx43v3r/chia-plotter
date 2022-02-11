@@ -242,6 +242,7 @@ int main(int argc, char** argv)
 	std::string tmp_dir;
 	std::string tmp_dir2;
 	std::string final_dir;
+	std::string stage_dir;
 	int k = 32;
 	int port = 8444;			// 8444 = chia, 9699 = chives
 	int num_plots = 1;
@@ -263,6 +264,7 @@ int main(int argc, char** argv)
 		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
+		"s, stagedir", "Stage directory (default = <tmpdir>)", cxxopts::value<std::string>(stage_dir))(
 		"w, waitforcopy", "Wait for copy to start next plot", cxxopts::value<bool>(waitforcopy))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"c, contract", "Pool Contract Address (62 chars)", cxxopts::value<std::string>(contract_addr_str))(
@@ -313,6 +315,17 @@ int main(int argc, char** argv)
 	}
 	if(final_dir.empty()) {
 		final_dir = tmp_dir;
+	}
+	if(!stage_dir.empty() && tmptoggle) {
+		std::cout << "Stagedir and tmptoggle are mutually exclusive options." << std::endl;
+		return -2;
+	}
+	if(!stage_dir.empty() && stage_dir.find_last_of("/\\") != stage_dir.size() - 1) {
+		std::cout << "Invalid stagedir: " << stage_dir << " (needs trailing '/' or '\\')" << std::endl;
+		return -2;
+	}
+	if(stage_dir.empty()) {
+		stage_dir = tmp_dir;
 	}
 	if(num_buckets_3 <= 0) {
 		num_buckets_3 = num_buckets;
@@ -407,6 +420,16 @@ int main(int argc, char** argv)
 			return -2;
 		}
 	}
+	{
+		const std::string path = stage_dir + ".chia_plot_final";
+		if(auto file = fopen(path.c_str(), "wb")) {
+			fclose(file);
+			remove(path.c_str());
+		} else {
+			std::cout << "Failed to write to stagedir directory: '" << stage_dir << "'" << std::endl;
+			return -2;
+		}
+	}
 	const int num_files_max = (1 << std::max(log_num_buckets, log_num_buckets_3)) + 2 * num_threads + 32;
 	
 #ifndef _WIN32
@@ -480,6 +503,9 @@ int main(int argc, char** argv)
 	}
 	std::cout << std::endl;
 	std::cout << "Final Directory: " << final_dir << std::endl;
+	if (final_dir != stage_dir) {
+		std::cout << "Stage Directory: " << stage_dir << std::endl;
+	}
 	if(num_plots >= 0) {
 		std::cout << "Number of Plots: " << num_plots << std::endl;
 	} else {
@@ -518,9 +544,9 @@ int main(int argc, char** argv)
 				<< " (" << get_date_string_ex("%Y/%m/%d %H:%M:%S") << ")" << std::endl;
 		const auto out = create_plot(
 				k, port, make_unique, num_threads, log_num_buckets, log_num_buckets_3,
-				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2, directout ? final_dir : tmp_dir);
+				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2, directout ? final_dir : stage_dir);
 		
-		if(final_dir != tmp_dir)
+		if(final_dir != stage_dir)
 		{
 			if(!directout) {
 				const auto dst_path = final_dir + out.params.plot_name + ".plot";
