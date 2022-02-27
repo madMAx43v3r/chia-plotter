@@ -250,6 +250,7 @@ int main(int argc, char** argv)
 	std::string final_dir;
 	std::string log_filename;
 	std::ofstream log_file;
+	std::string stage_dir;
 	int k = 32;
 	int port = 8444;			// 8444 = chia, 9699 = chives
 	int num_plots = 1;
@@ -274,6 +275,7 @@ int main(int argc, char** argv)
 		"t, tmpdir", "Temporary directory, needs ~220 GiB (default = $PWD)", cxxopts::value<std::string>(tmp_dir))(
 		"2, tmpdir2", "Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)", cxxopts::value<std::string>(tmp_dir2))(
 		"d, finaldir", "Final directory (default = <tmpdir>)", cxxopts::value<std::string>(final_dir))(
+		"s, stagedir", "Stage directory (default = <tmpdir>)", cxxopts::value<std::string>(stage_dir))(
 		"w, waitforcopy", "Wait for copy to start next plot", cxxopts::value<bool>(waitforcopy))(
 		"p, poolkey", "Pool Public Key (48 bytes)", cxxopts::value<std::string>(pool_key_str))(
 		"c, contract", "Pool Contract Address (62 chars)", cxxopts::value<std::string>(contract_addr_str))(
@@ -325,6 +327,17 @@ int main(int argc, char** argv)
 	}
 	if(final_dir.empty()) {
 		final_dir = tmp_dir;
+	}
+	if(!stage_dir.empty() && tmptoggle) {
+		std::cout << "Stagedir and tmptoggle are mutually exclusive options." << std::endl;
+		return -2;
+	}
+	if(!stage_dir.empty() && stage_dir.find_last_of("/\\") != stage_dir.size() - 1) {
+		std::cout << "Invalid stagedir: " << stage_dir << " (needs trailing '/' or '\\')" << std::endl;
+		return -2;
+	}
+	if(stage_dir.empty()) {
+		stage_dir = tmp_dir;
 	}
 	if(num_buckets_3 <= 0) {
 		num_buckets_3 = num_buckets;
@@ -425,6 +438,13 @@ int main(int argc, char** argv)
 			log_file.open(log_filename, std::ios::trunc | std::ios::out);
 		} else {
 			std::cout << "Failed to write to log file: '" << log_filename << "'" << std::endl;
+	{
+		const std::string path = stage_dir + ".chia_plot_final";
+		if(auto file = fopen(path.c_str(), "wb")) {
+			fclose(file);
+			remove(path.c_str());
+		} else {
+			std::cout << "Failed to write to stagedir directory: '" << stage_dir << "'" << std::endl;
 			return -2;
 		}
 	}
@@ -501,6 +521,9 @@ int main(int argc, char** argv)
 	}
 	cout_buff << std::endl;
 	cout_buff << "Final Directory: " << final_dir << std::endl;
+	if (final_dir != stage_dir) {
+		std::cout << "Stage Directory: " << stage_dir << std::endl;
+	}
 	if(num_plots >= 0) {
 		cout_buff << "Number of Plots: " << num_plots << std::endl;
 	} else {
@@ -574,7 +597,7 @@ int main(int argc, char** argv)
 				k, port, make_unique, num_threads, log_num_buckets, log_num_buckets_3,
 				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2,								directout ? final_dir : tmp_dir, &log_file);
 		
-		if(final_dir != tmp_dir)
+		if(final_dir != stage_dir)
 		{
 			if(!directout) {
 				const auto dst_path = final_dir + out.params.plot_name + ".plot";
