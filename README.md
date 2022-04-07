@@ -32,8 +32,8 @@ Usage:
   -v, --buckets3 arg   Number of buckets for phase 3+4 (default = buckets)
   -t, --tmpdir arg     Temporary directory, needs ~220 GiB (default = $PWD)
   -2, --tmpdir2 arg    Temporary directory 2, needs ~110 GiB [RAM] (default = <tmpdir>)
-  -d, --finaldir arg   Final directory (default = <tmpdir>)
-  -s, --stagedir arg   Stage directory (default = <finaldir>)
+  -d, --finaldir arg   Final directory to copy plot in parallel (default = <tmpdir>)
+  -s, --stagedir arg   Stage directory to write plot file (default = <tmpdir>)
   -w, --waitforcopy    Wait for copy to start next plot
   -p, --poolkey arg    Pool Public Key (48 bytes)
   -c, --contract arg   Pool Contract Address (62 chars)
