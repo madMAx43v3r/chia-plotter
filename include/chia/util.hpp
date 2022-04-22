@@ -81,6 +81,13 @@ inline uint64_t bswap_64(uint64_t x) { return __builtin_bswap64(x); }
 #include <cpuid.h>
 #endif
 
+#if defined(__FreeBSD__)
+#include <sys/sysctl.h>
+#include <sys/resource.h>
+#include <vm/vm_param.h>
+#include <unistd.h>
+#endif
+
 class Timer {
 public:
     Timer()
@@ -392,6 +399,16 @@ std::vector<uint8_t> hex_to_bytes(const std::string& hex)
 }
 
 inline
+void show_message(std::ostringstream* msg, std::ofstream* log_file = nullptr) {
+	std::cout << msg->str();
+	if (log_file && log_file->is_open()) {
+		*log_file << msg->str();
+	}
+	msg->str("");
+	return;
+}
+
+inline
 std::string get_date_string_ex(const char* format, bool UTC = false, int64_t time_secs = -1) {
 	::time_t time_;
 	if(time_secs < 0) {
@@ -408,6 +425,146 @@ std::string get_date_string_ex(const char* format, bool UTC = false, int64_t tim
 	char buf[256];
 	::strftime(buf, sizeof(buf), format, tmp);
 	return std::string(buf);
+}
+
+std::ostringstream
+init_stats(int* swap_mib, size_t* swap_mibsize, int* free_mib, size_t* free_mibsize, int* cpu_mib, size_t* cpu_mibsize) {
+#if defined(__FreeBSD__)
+	int mib[16], i;
+	size_t mibsize = sizeof mib / sizeof mib[0];
+	std::ostringstream msg;
+
+	if (sysctlnametomib("vm.swap_info", mib, &mibsize) == -1) {
+		msg << "sysctlnametomib(vm.swap_info): " << strerror(errno) << std::endl;
+		return msg;
+	}
+
+	if (*swap_mibsize <= mibsize) {
+		swap_mib[0] = 0;
+		*swap_mibsize = 1;
+		msg << "swap_mibsize is too small." << std::endl;
+	} else {
+		for (i=0; i<mibsize ; i++) {
+			swap_mib[i] = mib[i];
+		}
+		swap_mib[mibsize] = 0;
+		*swap_mibsize = mibsize + 1; // vm.swap_info needs 1 additional byte for mibsize.
+	}
+
+	mibsize = sizeof mib / sizeof mib[0];
+	if (sysctlnametomib("vm.stats.vm.v_free_count", mib, &mibsize) == -1) {
+		msg << "sysctlnametomib(v_free_count): " << strerror(errno) << std::endl;
+		return msg;
+	}
+
+	if (*free_mibsize <= mibsize) {
+		free_mib[0] = 0;
+		*free_mibsize = 1;
+		msg << "free_mibsize is too small." << std::endl;
+	} else {
+		for (i=0; i<mibsize ; i++) {
+			free_mib[i] = mib[i];
+		}
+		free_mib[mibsize] = 0;
+		*free_mibsize = mibsize;
+	}
+
+	mibsize = sizeof mib / sizeof mib[0];
+	if (sysctlnametomib("kern.cp_time", mib, &mibsize) == -1) {
+		msg << "sysctlnametomib(cp_times): " << strerror(errno) << std::endl;
+		return msg;
+	}
+
+	if (*cpu_mibsize <= mibsize) {
+		cpu_mib[0] = 0;
+		*cpu_mibsize = 1;
+		msg << "cpu_mibsize is too small." << std::endl;
+	} else {
+		for (i=0; i<mibsize ; i++) {
+			cpu_mib[i] = mib[i];
+		}
+		cpu_mib[mibsize] = 0;
+		*cpu_mibsize = mibsize;
+	}
+
+	return msg;
+#endif
+}
+
+inline
+void report_stats(std::ofstream* log_file = nullptr) {
+#if defined(__FreeBSD__)
+	static struct timespec start, finish;
+	static int initialized = 0;
+
+	// Swap used variables
+	static int swap_mib[3], pagesize;
+	static size_t swap_mibsize = sizeof swap_mib / sizeof swap_mib[0];
+	static struct xswdev xsw;
+	static size_t swap_size = sizeof(xsw);
+
+	// Free ram variables
+	static int free_mib[5];
+	static size_t free_mibsize = sizeof free_mib / sizeof free_mib[0];
+	u_int free_ram;
+	static size_t free_size = sizeof(free_ram);
+
+	// CPU times variables
+	static int cpu_mib[3];
+	static size_t cpu_mibsize = sizeof cpu_mib / sizeof cpu_mib[0];
+	static long cp_time[CPUSTATES];
+	static size_t cpu_size = sizeof(cp_time);
+
+	// Load avg variables
+	static double loadavg;
+
+	std::ostringstream msg;
+	clock_gettime(CLOCK_REALTIME, &start);
+
+	if (!initialized) {
+		pagesize = getpagesize();
+		msg = init_stats(swap_mib, &swap_mibsize, free_mib, &free_mibsize, cpu_mib, &cpu_mibsize);
+		initialized = 1;
+		msg << "STATS;Timestamp;Swap_used:gb;Free_ram:gb;CPU_user%;CPU_idle%;Load:1min;Time_to_record:µs"
+			<< std::endl;
+	}
+
+	msg << "STATS;" << get_date_string_ex("%Y/%m/%d %H:%M:%S") << ";";
+   
+	if (sysctl(swap_mib, swap_mibsize, &xsw, &swap_size, NULL, 0) == -1)
+		msg << "sysctl(swapinfo): " << strerror(errno) << std::endl;
+	else {
+		msg << std::setprecision(1) << (double) xsw.xsw_used * pagesize / 1024 / 1024 / 1024 << ";";
+	}
+
+	if (sysctl(free_mib, free_mibsize, &free_ram, &free_size, NULL, 0) == -1)
+		msg << "sysctl(v_free_count): " << strerror(errno) << std::endl;
+	else {
+		msg << std::setprecision(1) << std::fixed
+			<< (double) free_ram * pagesize / 1024 / 1024 / 1024 << ";";
+	}
+
+	if (sysctl(cpu_mib, cpu_mibsize, cp_time, &cpu_size, NULL, 0) == -1)
+		msg << "sysctl(cp_time): " << strerror(errno) << std::endl;
+	else {
+		long total = cp_time[0] + cp_time[1] + cp_time[2] + cp_time[3] + cp_time[4];
+		msg << std::setprecision(1) << (double) 100*cp_time[0]/total << ";" << 100*cp_time[4]/total << ";";
+	}
+
+	if (getloadavg(&loadavg, 1) == -1)
+		msg << "getloadavg: " << strerror(errno) << std::endl;
+	else {
+		msg << std::setprecision(2) << loadavg << ";";
+	}
+
+	clock_gettime(CLOCK_REALTIME, &finish);
+	msg << std::setprecision(0) << std::noshowpoint
+		<< (long double) (1000000*(finish.tv_sec - start.tv_sec) + 
+		(finish.tv_nsec - start.tv_nsec)/1000) << std::endl;
+	
+	show_message(&msg, log_file);
+	return;
+#endif
 }
 
 inline

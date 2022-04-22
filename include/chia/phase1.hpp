@@ -258,7 +258,7 @@ private:
  * id = 32 bytes
  */
 template<typename DS>
-void compute_f1(const uint8_t* id, int k, int num_threads, DS* T1_sort)
+void compute_f1(const uint8_t* id, int k, int num_threads, DS* T1_sort, std::ofstream* log_file = nullptr)
 {
 	static constexpr size_t M = 4096;	// F1 block size
 	
@@ -292,7 +292,9 @@ void compute_f1(const uint8_t* id, int k, int num_threads, DS* T1_sort)
 	output.close();
 	T1_sort->finish();
 	
-	std::cout << "[P1] Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
+	std::ostringstream temp_buff;
+	temp_buff << "[P1] Table 1 took " << (get_wall_time_micros() - begin) / 1e6 << " sec" << std::endl;
+	show_message(&temp_buff, log_file);
 }
 
 template<typename T, typename S, typename R, typename DS_L, typename DS_R>
@@ -420,7 +422,8 @@ uint64_t compute_matches(	int R_index, int k, int num_threads,
 template<typename T, typename S, typename R, typename DS_L, typename DS_R>
 uint64_t compute_table(	int R_index, int k, int num_threads,
 						DS_L* L_sort, DS_R* R_sort,
-						DiskTable<R>* L_tmp, DiskTable<S>* R_tmp = nullptr)
+						DiskTable<R>* L_tmp, DiskTable<S>* R_tmp = nullptr,
+						std::ofstream* log_file = nullptr)
 {
 	Thread<std::vector<T>> L_write(
 		[L_tmp](std::vector<T>& input) {
@@ -454,8 +457,10 @@ uint64_t compute_table(	int R_index, int k, int num_threads,
 	if(R_tmp) {
 		R_tmp->close();
 	}
-	std::cout << "[P1] Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
+	std::ostringstream temp_buff;
+	temp_buff << "[P1] Table " << R_index << " took " << (get_wall_time_micros() - begin) / 1e6 << " sec"
 			<< ", found " << num_matches << " matches" << std::endl;
+	show_message(&temp_buff, log_file);
 	return num_matches;
 }
 
@@ -464,7 +469,8 @@ void compute(	const input_t& input, output_t& out,
 				const int num_threads, const int log_num_buckets,
 				const std::string plot_name,
 				const std::string tmp_dir,
-				const std::string tmp_dir_2)
+				const std::string tmp_dir_2,
+				std::ofstream* log_file = nullptr)
 {
 	const auto total_begin = get_wall_time_micros();
 	
@@ -475,37 +481,37 @@ void compute(	const input_t& input, output_t& out,
 	const std::string prefix_2 = tmp_dir_2 + plot_name + ".p1.";
 	
 	DiskSort1 sort_1(k + kExtraBits, log_num_buckets, prefix_2 + "t1");
-	compute_f1(input.id.data(), k, num_threads, &sort_1);
+	compute_f1(input.id.data(), k, num_threads, &sort_1, log_file);
 	
 	DiskTable<tmp_entry_1> tmp_1(prefix + "table1.tmp");
 	DiskSort2 sort_2(k + kExtraBits, log_num_buckets, prefix_2 + "t2");
 	compute_table<entry_1, entry_2, tmp_entry_1>(
-			2, k, num_threads, &sort_1, &sort_2, &tmp_1);
+			2, k, num_threads, &sort_1, &sort_2, &tmp_1, nullptr, log_file);
 	
 	DiskTable<tmp_entry_x> tmp_2(prefix + "table2.tmp");
 	DiskSort3 sort_3(k + kExtraBits, log_num_buckets, prefix_2 + "t3");
 	compute_table<entry_2, entry_3, tmp_entry_x>(
-			3, k, num_threads, &sort_2, &sort_3, &tmp_2);
+			3, k, num_threads, &sort_2, &sort_3, &tmp_2, nullptr, log_file);
 	
 	DiskTable<tmp_entry_x> tmp_3(prefix + "table3.tmp");
 	DiskSort4 sort_4(k + kExtraBits, log_num_buckets, prefix_2 + "t4");
 	compute_table<entry_3, entry_4, tmp_entry_x>(
-			4, k, num_threads, &sort_3, &sort_4, &tmp_3);
+			4, k, num_threads, &sort_3, &sort_4, &tmp_3, nullptr, log_file);
 	
 	DiskTable<tmp_entry_x> tmp_4(prefix + "table4.tmp");
 	DiskSort5 sort_5(k + kExtraBits, log_num_buckets, prefix_2 + "t5");
 	compute_table<entry_4, entry_5, tmp_entry_x>(
-			5, k, num_threads, &sort_4, &sort_5, &tmp_4);
+			5, k, num_threads, &sort_4, &sort_5, &tmp_4, nullptr, log_file);
 	
 	DiskTable<tmp_entry_x> tmp_5(prefix + "table5.tmp");
 	DiskSort6 sort_6(k + kExtraBits, log_num_buckets, prefix_2 + "t6");
 	compute_table<entry_5, entry_6, tmp_entry_x>(
-			6, k, num_threads, &sort_5, &sort_6, &tmp_5);
+			6, k, num_threads, &sort_5, &sort_6, &tmp_5, nullptr, log_file);
 	
 	DiskTable<tmp_entry_x> tmp_6(prefix + "table6.tmp");
 	DiskTable<entry_7> tmp_7(prefix_2 + "table7.tmp");
 	compute_table<entry_6, entry_7, tmp_entry_x, DiskSort6, DiskSort7>(
-			7, k, num_threads, &sort_6, nullptr, &tmp_6, &tmp_7);
+			7, k, num_threads, &sort_6, nullptr, &tmp_6, &tmp_7, log_file);
 	
 	out.params = input;
 	out.table[0] = tmp_1.get_info();
@@ -516,7 +522,10 @@ void compute(	const input_t& input, output_t& out,
 	out.table[5] = tmp_6.get_info();
 	out.table[6] = tmp_7.get_info();
 	
-	std::cout << "Phase 1 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+	std::ostringstream temp_buff;
+	temp_buff << "Phase 1 took " << (get_wall_time_micros() - total_begin) / 1e6 << " sec" << std::endl;
+	temp_buff << "Timestamp: " << get_date_string_ex("%Y/%m/%d %H:%M:%S") << std::endl;
+	show_message(&temp_buff, log_file);
 }
 
 
