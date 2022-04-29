@@ -1,33 +1,17 @@
-# Compiler image
-# -------------------------------------------------------------------------------------------------
-FROM alpine:3.13.5 AS compiler
+FROM ubuntu:latest
 
-WORKDIR /root
+COPY . /plotter
+WORKDIR /plotter
 
-RUN apk --no-cache add \
-    gcc \
-    g++ \
-    build-base \
-    cmake \
-    gmp-dev \
-    libsodium-dev \
-    libsodium-static \
-    git
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Chicago
+RUN apt-get update -y
+RUN apt-get install -y libsodium-dev cmake g++ git build-essential
 
-COPY . .
-RUN /bin/sh ./make_devel.sh
-
-# Runtime image
-# -------------------------------------------------------------------------------------------------
-FROM alpine:3.13.5 AS runtime
-
-WORKDIR /root
-
-RUN apk --no-cache add \
-    gmp-dev \
-    libsodium-dev
-
-COPY --from=compiler /root/build /usr/lib/chia-plotter
+RUN ./make_devel.sh
+RUN cp -r build/ /usr/lib/chia-plotter
 RUN ln -s /usr/lib/chia-plotter/chia_plot /usr/bin/chia_plot
 
 ENTRYPOINT ["/usr/bin/chia_plot"]
+
+
