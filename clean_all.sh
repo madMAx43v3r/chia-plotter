@@ -1,4 +1,5 @@
 #!/bin/bash
 
-rm -rf build
+set -euxo pipefail
 
+rm -rf build
