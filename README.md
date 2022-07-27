@@ -25,7 +25,7 @@ Usage:
   chia_plot [OPTION...]
 
   -k, --size arg       K size (default = 32, k <= 32)
-  -x, --port arg       Network port (default = 8444, chives = 9699)
+  -x, --port arg       Network port (default = 8444, chives = 9699, mmx = 11337)
   -n, --count arg      Number of plots to create (default = 1, -1 = infinite)
   -r, --threads arg    Number of threads (default = 4)
   -u, --buckets arg    Number of buckets (default = 256)
@@ -40,7 +40,9 @@ Usage:
   -f, --farmerkey arg  Farmer Public Key (48 bytes)
   -G, --tmptoggle      Alternate tmpdir/tmpdir2 (default = false)
   -D, --directout      Create plot directly in finaldir (default = false)
+  -Z, --unique         Make unique plot (default = false)
   -K, --rmulti2 arg    Thread multiplier for P2 (default = 1)
+      --version        Print version
       --help           Print help
 ```
 
