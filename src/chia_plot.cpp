@@ -436,10 +436,13 @@ int main(int argc, char** argv)
 	if(true) {
 		// try to increase the open file limit
 		::rlimit the_limit;
-		the_limit.rlim_cur = num_files_max + 10;
-		the_limit.rlim_max = num_files_max + 10;
-		if(setrlimit(RLIMIT_NOFILE, &the_limit)) {
-			std::cout << "Warning: setrlimit() failed!" << std::endl;
+		if(getrlimit(RLIMIT_NOFILE, &the_limit) == 0) {
+			the_limit.rlim_cur = num_files_max + 10;
+			if(setrlimit(RLIMIT_NOFILE, &the_limit)) {
+				std::cout << "Warning: setrlimit() failed!" << std::endl;
+			}
+		} else {
+			std::cout << "Warning: getrlimit() failed!" << std::endl;
 		}
 	}
 #endif
