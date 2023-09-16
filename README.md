@@ -67,12 +67,6 @@ XFX: xfx1succfn2z3uwmq50ukztjanrvs9kw294mqn4lv22rk6tzmcu7e2xsyxyaa5
 
 XCC: xcc16j65y35fs8u289nq6krcyehsmp5eqd4we493rxf36pg7eymcqrqqltsrat
 
-ETH-ERC20: 0x97057cdf529867838d2a1f7f23ba62456764e0cd
-
-LTC: MNUnszsX2srv5EJpu9YYHAXb19MqUpuBjD
-
-BTC: 15GSE5ymStxXMvJ58hyosEVm4FXFxUyJZg
-
 ## Results
 
 On a dual Xeon® E5-2650v2<span>@</span>2.60GHz R720 with 256GB RAM and a 3x800GB SATA SSD RAID0, using a 110G tmpfs for `<tmpdir2>`:
