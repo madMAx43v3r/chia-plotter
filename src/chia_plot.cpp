@@ -81,6 +81,7 @@ std::vector<uint8_t> bech32_address_decode(const std::string& addr)
 inline
 phase4::output_t create_plot(	const int k,
 								const int port,
+								const vector<uint8_t>& plot_id,
 								const bool make_unique,
 								const int num_threads,
 								const int log_num_buckets,
@@ -130,37 +131,40 @@ phase4::output_t create_plot(	const int k,
 	
 	bls::AugSchemeMPL MPL;
 	const bls::PrivateKey master_sk = MPL.KeyGen(seed);
-	
-	bls::PrivateKey local_sk = master_sk;
-	for(uint32_t i : {12381, port, 3, 0}) {
-		local_sk = MPL.DeriveChildSk(local_sk, i);
-	}
-	const bls::G1Element local_key = local_sk.GetG1Element();
-	
-	bls::G1Element plot_key;
-	if(have_puzzle) {
-		vector<uint8_t> bytes = (local_key + farmer_key).Serialize();
-		{
-			const auto more_bytes = local_key.Serialize();
-			bytes.insert(bytes.end(), more_bytes.begin(), more_bytes.end());
-		}
-		{
-			const auto more_bytes = farmer_key.Serialize();
-			bytes.insert(bytes.end(), more_bytes.begin(), more_bytes.end());
-		}
-		std::vector<uint8_t> hash(32);
-		bls::Util::Hash256(hash.data(), bytes.data(), bytes.size());
-		
-		const auto taproot_sk = MPL.KeyGen(hash);
-		plot_key = local_key + farmer_key + taproot_sk.GetG1Element();
-	}
-	else {
-		plot_key = local_key + farmer_key;
-	}
-	
+
 	phase1::input_t params;
 	params.k = k;
-	{
+
+	if (!plot_id.empty()) {
+		::memcpy(params.id.data(), plot_id.data(), plot_id.size());
+	} else {
+		bls::PrivateKey local_sk = master_sk;
+		for(uint32_t i : {12381, port, 3, 0}) {
+			local_sk = MPL.DeriveChildSk(local_sk, i);
+		}
+		const bls::G1Element local_key = local_sk.GetG1Element();
+		
+		bls::G1Element plot_key;
+		if(have_puzzle) {
+			vector<uint8_t> bytes = (local_key + farmer_key).Serialize();
+			{
+				const auto more_bytes = local_key.Serialize();
+				bytes.insert(bytes.end(), more_bytes.begin(), more_bytes.end());
+			}
+			{
+				const auto more_bytes = farmer_key.Serialize();
+				bytes.insert(bytes.end(), more_bytes.begin(), more_bytes.end());
+			}
+			std::vector<uint8_t> hash(32);
+			bls::Util::Hash256(hash.data(), bytes.data(), bytes.size());
+
+			const auto taproot_sk = MPL.KeyGen(hash);
+			plot_key = local_key + farmer_key + taproot_sk.GetG1Element();
+		}
+		else {
+			plot_key = local_key + farmer_key;
+		}
+	
 		vector<uint8_t> bytes = have_puzzle ? puzzle_hash_bytes : pool_key.Serialize();
 		{
 			const auto plot_bytes = plot_key.Serialize();
@@ -236,6 +240,7 @@ int main(int argc, char** argv)
 		"(Sponsored by Flexpool.io - Check them out if you're looking for a secure and scalable Chia pool)\n"
 	);
 	
+	std::string plot_id_str;
 	std::string pool_key_str;
 	std::string contract_addr_str;
 	std::string farmer_key_str;
@@ -257,6 +262,7 @@ int main(int argc, char** argv)
 	options.allow_unrecognised_options().add_options()(
 		"k, size", "K size (default = 32, k <= " + std::to_string(KMAX) + ")", cxxopts::value<int>(k))(
 		"x, port", "Network port (default = 8444, chives = 9699, mmx = 11337)", cxxopts::value<int>(port))(
+		"i, id", "32-byte fixed id for the plot, for debugging", cxxopts::value<std::string>(plot_id_str))(
 		"n, count", "Number of plots to create (default = 1, -1 = infinite)", cxxopts::value<int>(num_plots))(
 		"r, threads", "Number of threads (default = 4)", cxxopts::value<int>(num_threads))(
 		"u, buckets", "Number of buckets (default = 256)", cxxopts::value<int>(num_buckets))(
@@ -333,12 +339,21 @@ int main(int argc, char** argv)
 	switch(port) {
 		case 11337: make_unique = true; break;
 	}
+	std::vector<uint8_t> plot_id;
 	std::vector<uint8_t> pool_key;
 	std::vector<uint8_t> puzzle_hash;
 	const auto farmer_key = hex_to_bytes(farmer_key_str);
 	const int log_num_buckets = num_buckets >= 16 ? int(log2(num_buckets)) : num_buckets;
 	const int log_num_buckets_3 = num_buckets_3 >= 16 ? int(log2(num_buckets_3)) : num_buckets_3;
 
+	if(!plot_id_str.empty()) {
+		plot_id = hex_to_bytes(plot_id_str);
+		if(plot_id.size() != 32) {
+			std::cout << "Invalid plot ID: " << bls::Util::HexStr(plot_id) << ", '" << plot_id_str
+				<< "' (needs to be 32 bytes)" << std::endl;
+			return -2;
+		}
+	}
 	if(contract_addr_str.empty()) {
 		pool_key = hex_to_bytes(pool_key_str);
 		if(pool_key.size() != bls::G1Element::SIZE) {
@@ -546,7 +561,7 @@ int main(int argc, char** argv)
 		std::cout << "Crafting plot " << i+1 << " out of " << num_plots
 				<< " (" << get_date_string_ex("%Y/%m/%d %H:%M:%S") << ")" << std::endl;
 		const auto out = create_plot(
-				k, port, make_unique, num_threads, log_num_buckets, log_num_buckets_3,
+				k, port, plot_id, make_unique, num_threads, log_num_buckets, log_num_buckets_3,
 				pool_key, puzzle_hash, farmer_key, tmp_dir, tmp_dir2, directout ? final_dir : stage_dir);
 		
 		if(final_dir != stage_dir)
