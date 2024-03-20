@@ -1,10 +1,9 @@
 #!/bin/bash
 
-mkdir -p build
+set -euxo pipefail
 
+mkdir -p build
 cd build
 
-cmake -D CMAKE_CXX_FLAGS="-g -O3 -fmax-errors=1" -DARITH="easy" -DBUILD_BLS_PYTHON_BINDINGS=false -DBUILD_BLS_TESTS=false -DBUILD_BLS_BENCHMARKS=false ..
-
-make -j8 $@
-
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DARITH="easy" -DBUILD_BLS_PYTHON_BINDINGS=false ..
+cmake --build . --config RelWithDebInfo --parallel 8 -- $@

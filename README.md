@@ -128,7 +128,7 @@ On a dual Xeon® E5-2650v2<span>@</span>2.60GHz R720 with 256GB RAM and a 3x800G
 
 To make sure the plots are valid you can use the `ProofOfSpace` tool from [chiapos](https://github.com/Chia-Network/chiapos):
 
-```bash
+```sh
 git clone https://github.com/Chia-Network/chiapos.git
 cd chiapos && mkdir build && cd build && cmake .. && make -j8
 ./ProofOfSpace check -f plot-k32-???.plot [num_iterations]
@@ -136,12 +136,13 @@ cd chiapos && mkdir build && cd build && cmake .. && make -j8
 
 ## How to update to latest version
 
-```bash
+```sh
 cd chia-plotter
 git checkout master
 git pull
 git submodule update --init
-./make_devel.sh
+./clean_all.sh
+./make_release.sh
 ```
 
 ## Future Plans
@@ -171,17 +172,18 @@ https://github.com/stotiks/chia-plotter/releases
   <summary>Arch Linux</summary>
 
   First, install dependencies from pacman:
-  ```bash
+  ```sh
   sudo pacman -S cmake libsodium gmp gcc11
   ```
   Then, clone and compile the project:
-  ```bash
+  ```sh
   # Checkout the source and install
   git clone https://github.com/madMAx43v3r/chia-plotter.git
   cd chia-plotter
 
   git submodule update --init
-  ./make_devel.sh
+  ./clean_all.sh
+  ./make_release.sh
   ./build/chia_plot --help
   ```
 </details>
@@ -189,7 +191,7 @@ https://github.com/stotiks/chia-plotter/releases
 <details>
   <summary>CentOS 7</summary>
   
-  ```bash
+  ```sh
   git clone https://github.com/madMAx43v3r/chia-plotter.git
   cd chia-plotter
 
@@ -204,7 +206,8 @@ https://github.com/stotiks/chia-plotter/releases
   sudo yum install devtoolset-7 -y
   # Start using software collections:
   scl enable devtoolset-7 bash
-  ./make_devel.sh
+  ./clean_all.sh
+  ./make_release.sh
   ./build/chia_plot --help
   ```
 </details>
@@ -212,7 +215,7 @@ https://github.com/stotiks/chia-plotter/releases
 <details>
   <summary>Clear Linux</summary>
   
-  ```bash
+  ```sh
   sudo swupd update
   sudo swupd bundle-add c-basic devpkg-libsodium git wget
 
@@ -230,8 +233,10 @@ https://github.com/stotiks/chia-plotter/releases
   cd ~/
   git clone https://github.com/madMAx43v3r/chia-plotter.git 
   cd ~/chia-plotter
+
   git submodule update --init
-  ./make_devel.sh
+  ./clean_all.sh
+  ./make_release.sh
   ./build/chia_plot --help
   ```
 </details>
@@ -239,14 +244,15 @@ https://github.com/stotiks/chia-plotter/releases
 <details>
   <summary>Ubuntu 20.04</summary>
   
-  ```bash
+  ```sh
   sudo apt install -y libsodium-dev cmake g++ git build-essential
   # Checkout the source and install
   git clone https://github.com/madMAx43v3r/chia-plotter.git 
   cd chia-plotter
 
   git submodule update --init
-  ./make_devel.sh
+  ./clean_all.sh
+  ./make_release.sh
   ./build/chia_plot --help
   ```
 
@@ -258,7 +264,7 @@ https://github.com/stotiks/chia-plotter/releases
 
   Make sure to add buster-backports to your sources.list otherwise the installation will fail because an older cmake version. See the [debian backport documentation](https://backports.debian.org/Instructions/) for reference.
 
-  ```bash
+  ```sh
   # Install cmake 3.16 from buster-backports
   sudo apt install -t buster-backports cmake
   sudo apt install -y libsodium-dev g++ git
@@ -267,7 +273,8 @@ https://github.com/stotiks/chia-plotter/releases
   cd chia-plotter
 
   git submodule update --init
-  ./make_devel.sh
+  ./clean_all.sh
+  ./make_release.sh
   ./build/chia_plot --help
   ```
   The binaries will end up in `build/`, you can copy them elsewhere freely (on the same machine, or similar OS).
@@ -277,7 +284,7 @@ https://github.com/stotiks/chia-plotter/releases
   <summary>macOS</summary>
   
   First you need to install the [Brew](https://brew.sh/) package manager and [Xcode](https://apps.apple.com/app/xcode/id497799835) OR [Xcode Command Line Tools](https://developer.apple.com/download/).
-  ```bash
+  ```sh
   # Download Xcode Command Line Tools (skip if you already have Xcode)
   xcode-select --install
 
@@ -287,7 +294,8 @@ https://github.com/stotiks/chia-plotter/releases
   git clone https://github.com/madMAx43v3r/chia-plotter.git 
   cd chia-plotter
   git submodule update --init
-  ./make_devel.sh
+  ./clean_all.sh
+  ./make_release.sh
   ./build/chia_plot --help
   ```
 
@@ -304,18 +312,18 @@ https://github.com/stotiks/chia-plotter/releases
   ```
 
   Confirm which directory you have on YOUR Mac before applying following commands
-  ```
+  ```sh
   # For x86_64 Macs
   wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /usr/local/opt/cmake/share/cmake/Modules/FindSodium.cmake
   ```
    or
-  ``` 
+  ```sh
   # For ARM64 (M1) Macs
   wget https://raw.githubusercontent.com/facebookincubator/fizz/master/build/fbcode_builder/CMake/FindSodium.cmake -O /opt/homebrew/Cellar/cmake/*/share/cmake/Modules/FindSodium.cmake
   ```
 
   If a maximum open file limit error occurs (as default OS setting is 256, which is too low for default bucket size of `256`), run this before starting the plotter
-  ```
+  ```sh
   ulimit -n 3000
   ```
   This file limit change will only affect the current session.
